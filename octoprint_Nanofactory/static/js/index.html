@@ -24,21 +24,6 @@
 
     console.log("Running javascript...");
 
-    peer = new Peer("ac1c04db-daba-428d-af8a-954a9c10b3ba");
-
-    peer.on("open", function (id) {
-        console.log("Connected to peer server with id:" + id);
-    });
-
-    peer.on("connection", function (connection) {
-        console.log("Connected with peer:" + connection.peer)
-        connection.on("data", function (data) {
-            console.log("Received Label: " + connection.label)
-            handleIncomingData(data, connection.peer, connection.label, connection.metadata)
-
-            connection.close()
-        })
-    })
 
     const sendData = (peerID, data, label) => {
 

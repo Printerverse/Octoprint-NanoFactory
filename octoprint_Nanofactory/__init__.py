@@ -21,37 +21,33 @@ class NanofactoryPlugin(
     octoprint.plugin.TemplatePlugin,
 ):
     def initialize(self):
-        self.peer_ID = "ac1c04db-daba-428d-af8a-954a9c10b3ba"
+        self.peer_ID = ""
         self.browser = None
 
     # # ~~ StartupPlugin mixin
     def on_after_startup(self):
-        # self.get_peer_id()
+        self.get_peer_id()
         self._logger.warning(f"Your peer ID is {self.peer_ID}")
         self.start_browser()
 
-    # def get_peer_id(self):
-    #     nf_profile = {}
-    #     try:
-    #         with open(
-    #             os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r"
-    #         ) as f:
-    #             nf_profile = json.loads(f.read())
-    #     except IOError as e:
-    #         if e.errno == 2:
-    #             with open(
-    #                 os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "w"
-    #             ) as f:
-    #                 nf_profile = {"peer_ID": str(uuid4())}
-    #                 json.dump(nf_profile, f)
+    def get_peer_id(self):
+        nf_profile = {}
+        try:
+            with open(
+                os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r"
+            ) as f:
+                nf_profile = json.loads(f.read())
+        except IOError as e:
+            if e.errno == 2:
+                with open(
+                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "w"
+                ) as f:
+                    nf_profile = {"peer_ID": str(uuid4())}
+                    json.dump(nf_profile, f)
 
-    #     self.peer_ID = nf_profile["peer_ID"]
+        self.peer_ID = nf_profile["peer_ID"]
 
     def start_browser(self):
-        # browser = webbrowser.open(
-        #     "file:///"
-        #     + os.path.join(os.path.dirname(__file__), ".//static//js//index.html")
-        # )
         chrome_options = Options()
         if os.path.isfile("/usr/bin/chromium-browser"):
             chrome_options.binary_location = "/usr/bin/chromium-browser"
@@ -66,8 +62,6 @@ class NanofactoryPlugin(
         chrome_options.add_argument("--no-unsandboxed-zygote")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-mipmap-generation")
-        # d = DesiredCapabilities.CHROME
-        # d["goog:loggingPrefs"] = {"browser": "ALL"}
         self.browser = webdriver.Chrome(options=chrome_options)
 
         self.browser.get(
@@ -75,21 +69,15 @@ class NanofactoryPlugin(
             + os.path.join(os.path.dirname(__file__), ".//static//js//index.html")
         )
 
-    #     while self.browser:
-    #         try:
-    #             self.receive_data()
-    #         except Exception as e:
-    #             pass
+        initialize_peer_script = ""
+        with open(
+            os.path.join(os.path.dirname(__file__), "./static/js/initializePeer.js"),
+            "r",
+        ) as file:
+            initialize_peer_script = file.read()
+            assert initialize_peer_script
 
-    # def receive_data(self):
-    #     for entry in self.browser.get_log("browser"):
-    #         console_message: str = re.sub(
-    #             r"console-api [0-9]+:[0-9]+ ", "", entry["message"], 1
-    #         )
-
-    #         self._logger.info(console_message)
-
-    #     time.sleep(1)
+        self.browser.execute_script(initialize_peer_script, self.peer_ID)
 
     ##~~ AssetPlugin mixin
 
