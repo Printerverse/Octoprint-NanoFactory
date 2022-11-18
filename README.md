@@ -1,17 +1,10 @@
 # Octoprint-Nanofactory
 
-**TODO:** Describe what your plugin does.
+**TODO:** Describe what your plugin does: Well it does everything lol
 
 ## Setup
 
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
 or manually using this URL:
 
-    https://github.com/thakkaryash21/Octoprint-Nanofactory/archive/master.zip
-
-**TODO:** Describe how to install your plugin, if more needs to be done than just installing it via pip or through
-the plugin manager.
-
-## Configuration
-
-**TODO:** Describe your plugin's configuration options (if any).
+    https://github.com/Printerverse/Octoprint_Nanofactory/archive/master.zip
