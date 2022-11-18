@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+
+</body>
+
+
+<script src="./peerJS.js" type="text/javascript"></script>
+
+<script defer type="text/javascript">
+
+    const APIKEY = "F4F1B830E9E74B23BFF3BB340C0ADCA0";
+
+    let jobProgressConnection;
+
+    console.log("Running javascript...");
+
+    peer = new Peer("ac1c04db-daba-428d-af8a-954a9c10b3ba");
+
+    peer.on("open", function (id) {
+        console.log("Connected to peer server with id:" + id);
+    });
+
+    peer.on("connection", function (connection) {
+        console.log("Connected with peer:" + connection.peer)
+        connection.on("data", function (data) {
+            console.log("Received Label: " + connection.label)
+            handleIncomingData(data, connection.peer, connection.label, connection.metadata)
+
+            connection.close()
+        })
+    })
+
+    const sendData = (peerID, data, label) => {
+
+        const options = {
+            label: label,
+            metadata: peerID,
+            serialization: "json",
+            reliable: true,
+        }
+        const peerConnection = peer.connect(peerID, options);
+        //Send data when connection is open
+        peerConnection.on("open", function () {
+            peerConnection.send(JSON.stringify(data));
+            console.log("Sent:", data)
+        });
+
+        //Handle errors
+        peerConnection.on("error", function (err) {
+            console.error("Could not send data: " + err);
+        });
+    }
+
+
+    const handleIncomingData = (data, peerID, label, metadata) => {
+        switch (label) {
+            case "1":
+                // SyncAllRequest
+                handleSyncAllRequest(peerID)
+                break;
+
+            case "13":
+                // jobCreated
+                handleJob(data, peerID, label, metadata)
+                break;
+
+            case "50":
+                // HandshakeRequest
+                handleHandshakeRequest(peerID)
+                break;
+            default:
+                console.log("Unhandled label: " + label)
+                break;
+        }
+    }
+
+    const handleSyncAllRequest = async (peerID) => {
+        let payload = {
+            "current_position": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "e": 0,
+                "speed": 0,
+                "relative": false,
+            },
+            "bed_levelling_data": [],
+            "queue_state": {
+                "isQueuePaused": false,
+                "queuePausedReason": "testing"
+            },
+            "current_job": {
+                "id": ""
+            },
+            "print_queue": [],
+            "jobs_history": [],
+            "current_filament": {
+                "current_filament": {}
+            },
+            "scripts": {}
+        }
+
+        payload["printer_profile"] = await (await fetch("http://localhost:5000/api/printerprofiles/_default", {
+            method: "GET",
+            headers: {
+                "X-API-KEY": APIKEY
+            }
+        })).json()
+
+        payload["connection_options"] = (await (await fetch("http://localhost:5000/api/connection", {
+            method: "GET",
+            headers: {
+                "X-API-KEY": APIKEY
+            }
+        })).json())["options"]
+
+        payload["printer_state"] = {
+            "status": convertPrinterState((await (await fetch("http://localhost:5000/api/printer", {
+                method: "GET",
+                headers: {
+                    "X-API-KEY": APIKEY
+                }
+            })).json())["state"]["text"])
+        }
+
+        sendData(peerID, payload, "2")
+    }
+
+    const handleHandshakeRequest = async (peerID) => {
+        let payload = { "status": "" }
+
+        let response = await (await fetch("http://localhost:5000/api/printer?exclude=temperature,sd", {
+            method: "GET",
+            headers: {
+                "X-API-KEY": APIKEY
+            }
+        })).json()
+
+        payload["status"] = convertPrinterState(response["state"]["text"])
+
+        sendData(peerID, payload, "31")
+    }
+
+    const handleJob = async (data, peerID, label, metadata) => {
+        switch (label) {
+            case "13":
+                // jobCreated
+                metadata = JSON.parse(metadata)
+                let myHeaders = new Headers()
+                myHeaders.append("X-API-KEY", APIKEY)
+
+                let fileContent = new TextDecoder("utf-8").decode(data)
+                let fileBlob = new Blob([fileContent], { type: "text/plain;charset=utf-8" })
+                let file = new File([fileBlob], metadata["jobName"] + ".gcode")
+
+                let formData = new FormData()
+                formData.append("file", file, metadata["jobName"] + ".gcode")
+                formData.append("print", true);
+
+                let response = await fetch("http://localhost:5000/api/files/local", {
+                    method: 'POST',
+                    headers: myHeaders,
+                    body: formData
+                })
+
+                console.log(await response.json())
+
+                // jobPrinting
+                sendData(peerID, {
+                    "data": {
+                        "id": metadata["id"],
+                        "startTime": new Date().toISOString(),
+                    }
+                }, "37")
+
+
+
+                sendJobProgress(peerID)
+                break;
+        }
+    }
+
+    const sendJobProgress = (peerID) => {
+
+        // currentJobUpdates
+        const label = "49"
+
+        const options = {
+            label: label,
+            metadata: peerID,
+            serialization: "json",
+            reliable: true,
+        }
+
+        jobProgressConnection = peer.connect(peerID, options);
+
+        jobProgressConnection.on("open", function () {
+            // jobProgressConnection.send(data);
+            console.log("jobProgress connection is open " + peerID)
+            setInterval(pollProgress, 10000, 10000)
+        });
+
+        jobProgressConnection.on("error", function () {
+            jobProgressConnection = peer.connect(peerID, options);
+        })
+
+    }
+
+    const pollProgress = async () => {
+
+        payload = {
+            "data": {
+                "progress": null
+            }
+        }
+
+        payload["data"]["progress"] = (await (await fetch("http://localhost:5000/api/job", {
+            method: "GET",
+            headers: {
+                "X-API-KEY": APIKEY
+            }
+        })).json())["progress"]["completion"]
+
+        //console.log(payload)
+
+        jobProgressConnection.send(JSON.stringify(payload))
+    }
+
+
+    const convertPrinterState = (currentState) => {
+        if (currentState.includes("Operational"))
+            return "Operational"
+        else if (currentState.includes("Printing"))
+            return "Printing"
+        else if (currentState.includes("Paused"))
+            return "Paused"
+        else
+            return "Offline"
+    }
+</script>
+
+</html>

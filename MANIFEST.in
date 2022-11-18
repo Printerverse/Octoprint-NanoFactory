@@ -1,0 +1,4 @@
+include README.md
+recursive-include Octoprint-Nanofactory/templates *
+recursive-include Octoprint-Nanofactory/translations *
+recursive-include Octoprint-Nanofactory/static *
