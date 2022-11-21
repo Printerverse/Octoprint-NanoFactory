@@ -7,7 +7,7 @@ from octoprint.util.commandline import CommandlineCaller, CommandlineError
 ### Do not forget to adjust the following variables to your own plugin.
 
 # The plugin's identifier, has to be unique
-plugin_identifier = "Octoprint-Nanofactory"
+plugin_identifier = "Nanofactory"
 
 # The plugin's python package, should be "octoprint_<plugin identifier>", has to be unique
 plugin_package = "octoprint_Nanofactory"

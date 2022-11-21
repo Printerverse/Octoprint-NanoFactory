@@ -3,15 +3,11 @@ from __future__ import absolute_import
 
 import json
 import os
-import re
-import time
-import webbrowser
 from uuid import uuid4
 
 import octoprint.plugin
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
 class NanofactoryPlugin(
@@ -19,18 +15,51 @@ class NanofactoryPlugin(
     octoprint.plugin.SettingsPlugin,
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.TemplatePlugin,
+    octoprint.plugin.SimpleApiPlugin,
 ):
     def initialize(self):
         self.peer_ID = ""
+        self.api_key: str = None
         self.browser = None
 
     # # ~~ StartupPlugin mixin
     def on_after_startup(self):
-        self.get_peer_id()
-        self._logger.warning(f"Your peer ID is {self.peer_ID}")
+        self.load_nf_profile()
+        if not self.api_key:
+            self.get_api_key()
         self.start_browser()
 
-    def get_peer_id(self):
+    def get_api_commands(self):
+        return {"saveAPIKEY": ["api_key"], "getPeerID": []}
+
+    def on_api_command(self, command, data):
+        if command == "saveAPIKEY":
+            self.api_key = data["api_key"]
+            self.browser.execute_script(f"window.apiKey = '{self.api_key}';")
+            try:
+                with open(
+                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r+"
+                ) as f:
+                    nf_profile = json.loads(f.read())
+                    nf_profile["api_key"] = self.api_key
+                    f.seek(0)
+                    json.dump(nf_profile, f)
+                    f.truncate()
+
+            except Exception as e:
+                self._logger.warning(e, exc_info=True)
+
+        elif command == "getPeerID":
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {"peerID": self.peer_ID}
+            )
+
+    def get_api_key(self):
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"startAuthFlow": True}
+        )
+
+    def load_nf_profile(self):
         nf_profile = {}
         try:
             with open(
@@ -42,21 +71,19 @@ class NanofactoryPlugin(
                 with open(
                     os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "w"
                 ) as f:
-                    nf_profile = {"peer_ID": str(uuid4())}
+                    nf_profile = {"peer_ID": str(uuid4()), "api_key": ""}
                     json.dump(nf_profile, f)
 
         self.peer_ID = nf_profile["peer_ID"]
+        self.api_key = nf_profile["api_key"]
 
     def start_browser(self):
         chrome_options = Options()
         if os.path.isfile("/usr/bin/chromium-browser"):
             chrome_options.binary_location = "/usr/bin/chromium-browser"
         chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--headless")  # Ensure GUI is off
+        # chrome_options.add_argument("--headless")  # Ensure GUI is off
         chrome_options.add_argument("--use-fake-ui-for-media-stream")
-        chrome_options.add_argument(
-            "--unsafely-treat-insecure-origin-as-secure=http://localhost:5000"
-        )
         chrome_options.add_argument("--disable-web-security")
         # To test memory optimization
         chrome_options.add_argument("--no-unsandboxed-zygote")
@@ -77,7 +104,7 @@ class NanofactoryPlugin(
             initialize_peer_script = file.read()
             assert initialize_peer_script
 
-        self.browser.execute_script(initialize_peer_script, self.peer_ID)
+        self.browser.execute_script(initialize_peer_script, self.peer_ID, self.api_key)
 
     ##~~ AssetPlugin mixin
 
@@ -85,9 +112,7 @@ class NanofactoryPlugin(
         # Define your plugin's asset files to automatically include in the
         # core UI here.
         return {
-            "js": ["js/Octoprint-Nanofactory-V2.js"],
-            "css": ["css/Octoprint-Nanofactory-V2.css"],
-            "less": ["less/Octoprint-Nanofactory-V2.less"],
+            "js": ["js/Nanofactory.js"],
         }
 
     ##~~ Softwareupdate hook
@@ -97,8 +122,8 @@ class NanofactoryPlugin(
         # Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
         # for details.
         return {
-            "Octoprint-Nanofactory-V2": {
-                "displayName": "Octoprint-Nanofactory_V2",
+            "Nanofactory": {
+                "displayName": "Nanofactory",
                 "displayVersion": self._plugin_version,
                 # version check: github repository
                 "type": "github_release",
@@ -106,7 +131,7 @@ class NanofactoryPlugin(
                 "repo": "Octoprint-Nanofactory",
                 "current": self._plugin_version,
                 # update method: pip
-                "pip": "https://github.com/thakkaryash21/Octoprint-Nanofactory/archive/{target_version}.zip",
+                "pip": "https://github.com/Printerverse/Octoprint_Nanofactory/archive/main.zip",
             }
         }
 
