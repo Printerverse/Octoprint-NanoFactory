@@ -1,4 +1,2 @@
-
-const peerID = arguments[0]
-window.peer = new Peer(peerID);
+window.peerID = arguments[0]
 window.apiKey = arguments[1]
