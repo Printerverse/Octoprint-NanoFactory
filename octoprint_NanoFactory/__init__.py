@@ -94,7 +94,7 @@ class NanofactoryPlugin(
         if os.path.isfile("/usr/bin/chromium-browser"):
             chrome_options.binary_location = "/usr/bin/chromium-browser"
         chrome_options.add_argument("--no-sandbox")
-        # chrome_options.add_argument("--headless")  # Ensure GUI is off
+        chrome_options.add_argument("--headless")  # Ensure GUI is off
         chrome_options.add_argument("--use-fake-ui-for-media-stream")
         chrome_options.add_argument("--disable-web-security")
         chrome_options.add_argument("--profile-directory=Default")
@@ -103,6 +103,9 @@ class NanofactoryPlugin(
         chrome_options.add_argument("--no-unsandboxed-zygote")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-mipmap-generation")
+        # To turn off console logs
+        chrome_options.add_argument("--disable-logging")
+        chrome_options.add_argument("--log-level=3")
         self.browser = webdriver.Chrome(options=chrome_options)
 
         self.browser.get(
