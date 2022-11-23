@@ -1,11 +1,11 @@
 /*
- * View model for Octoprint-Nanofactory
+ * View model for Octoprint-NanoFactory
  *
  * Author: Printerverse
  * License: AGPLv3
  */
 $(function () {
-    function NanofactoryViewModel(parameters) {
+    function NanoFactoryViewModel(parameters) {
         var self = this;
 
         self.APIKEY = ko.observable("")
@@ -17,10 +17,10 @@ $(function () {
         // self.settingsViewModel = parameters[1];
 
         self.onDataUpdaterPluginMessage = function (plugin, data) {
-            if (plugin == "Nanofactory") {
+            if (plugin == "NanoFactory") {
 
-                if (data["startAuthFlow"]) {
-                    self.startAuthFlow()
+                if (data["api_key"]) {
+                    self.APIKEY(data["api_key"])
                 }
 
                 if (data["peerID"]) {
@@ -33,12 +33,10 @@ $(function () {
 
                     text = data["peerID"]
                     if (!navigator.clipboard) {
-                        console.log("No navigator.clipboard")
                         self.fallbackCopyTextToClipboard(text);
                         return;
                     }
                     navigator.clipboard.writeText(text).then(function () {
-                        console.log('Async: Copying to clipboard was successful for ' + text);
 
                         new PNotify({
                             title: "Copied successfully",
@@ -56,6 +54,21 @@ $(function () {
 
                 }
             }
+        }
+
+
+        self.onBeforeBinding = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "sendAPIKey").done(function (response) { }).catch(error => { console.log(error) });
+        }
+
+        self.onStartupComplete = function () {
+            setTimeout(() => {
+                let apiKey = self.APIKEY()
+                if (!(apiKey.length > 0)) {
+                    self.startAuthFlow()
+                }
+
+            }, 1000)
         }
 
         self.fallbackCopyTextToClipboard = function (text) {
@@ -102,7 +115,8 @@ $(function () {
         }
 
         self.getPeerID = function () {
-            OctoPrint.simpleApiCommand("Nanofactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
+            console.log("Button clicked!!!")
+            OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
         }
 
 
@@ -114,7 +128,7 @@ $(function () {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    "app": "Nanofactory",
+                    "app": "NanoFactory",
                 })
             })
 
@@ -141,11 +155,11 @@ $(function () {
 
                         self.APIKEY(responseBody["api_key"])
 
-                        OctoPrint.simpleApiCommand("Nanofactory", "saveAPIKEY", { api_key: responseBody["api_key"] }).done(function (response) { }).catch(error => { console.log(error) });
+                        OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: responseBody["api_key"] }).done(function (response) { }).catch(error => { console.log(error) });
 
                         new PNotify({
                             title: "APIKey generation success",
-                            text: "APIKey successfully generated for Nanofactory",
+                            text: "APIKey successfully generated for NanoFactory",
                             type: "success"
                         });
 
@@ -154,7 +168,7 @@ $(function () {
 
                         new PNotify({
                             title: "APIKey generation failed",
-                            text: "Failed to generate APIKey for Nanofactory. Please generate an APIKey and add it to Nanofactory settings",
+                            text: "Failed to generate APIKey for NanoFactory. Please generate an APIKey and add it to NanoFactory settings",
                             type: "error"
                         });
                     }
@@ -170,10 +184,10 @@ $(function () {
      * and a full list of the available options.
      */
     OCTOPRINT_VIEWMODELS.push({
-        construct: NanofactoryViewModel,
+        construct: NanoFactoryViewModel,
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
         dependencies: [ /* "loginStateViewModel", "settingsViewModel" */],
-        // Elements to bind to, e.g. #settings_plugin_Octoprint-Nanofactory-V2, #tab_plugin_Octoprint-Nanofactory-V2, ...
-        elements: ["#tab_plugin_Nanofactory"]
+        // Elements to bind to, e.g. #settings_plugin_NanoFactory, #tab_plugin_NanoFactory, ...
+        elements: ["#tab_plugin_NanoFactory"]
     });
 });

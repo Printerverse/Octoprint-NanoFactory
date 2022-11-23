@@ -23,14 +23,16 @@ class NanofactoryPlugin(
         self.browser = None
 
     # # ~~ StartupPlugin mixin
-    def on_after_startup(self):
+    def on_startup(self, host, port):
         self.load_nf_profile()
-        if not self.api_key:
-            self.get_api_key()
+
+    def on_after_startup(self):
+        self.check_chrome_data_folder()
         self.start_browser()
 
+    # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
-        return {"saveAPIKEY": ["api_key"], "getPeerID": []}
+        return {"saveAPIKEY": ["api_key"], "getPeerID": [], "sendAPIKey": []}
 
     def on_api_command(self, command, data):
         if command == "saveAPIKEY":
@@ -54,10 +56,20 @@ class NanofactoryPlugin(
                 self._identifier, {"peerID": self.peer_ID}
             )
 
-    def get_api_key(self):
+        elif command == "sendAPIKey":
+            self.send_api_key()
+
+    def send_api_key(self):
         self._plugin_manager.send_plugin_message(
-            self._identifier, {"startAuthFlow": True}
+            self._identifier, {"api_key": self.api_key}
         )
+
+    def check_chrome_data_folder(self):
+        if not os.path.isdir("./chrome-data"):
+            try:
+                os.mkdir("./chrome-data")
+            except Exception as e:
+                self._logger.warning(e)
 
     def load_nf_profile(self):
         nf_profile = {}
@@ -85,6 +97,8 @@ class NanofactoryPlugin(
         # chrome_options.add_argument("--headless")  # Ensure GUI is off
         chrome_options.add_argument("--use-fake-ui-for-media-stream")
         chrome_options.add_argument("--disable-web-security")
+        chrome_options.add_argument("--profile-directory=Default")
+        chrome_options.add_argument("--user-data-dir=./chrome-data")
         # To test memory optimization
         chrome_options.add_argument("--no-unsandboxed-zygote")
         chrome_options.add_argument("--disable-gpu")
@@ -112,7 +126,7 @@ class NanofactoryPlugin(
         # Define your plugin's asset files to automatically include in the
         # core UI here.
         return {
-            "js": ["js/Nanofactory.js"],
+            "js": ["js/NanoFactory.js"],
         }
 
     ##~~ Softwareupdate hook
@@ -139,7 +153,7 @@ class NanofactoryPlugin(
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
-__plugin_name__ = "Nanofactory"
+__plugin_name__ = "NanoFactory"
 
 
 # Set the Python version your plugin is compatible with below. Recommended is Python 3 only for all new plugins.
