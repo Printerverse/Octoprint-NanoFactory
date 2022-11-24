@@ -107,9 +107,16 @@ class NanofactoryPlugin(
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-mipmap-generation")
         # To turn off console logs
-        chrome_options.add_argument("--disable-logging")
-        chrome_options.add_argument("--log-level=3")
-        self.browser = webdriver.Chrome(options=chrome_options)
+        # chrome_options.add_argument("--disable-logging")
+        # chrome_options.add_argument("--log-level=3")
+
+        self.browser = webdriver.Chrome(
+            options=chrome_options,
+            service_args=[
+                "--verbose",
+                f"--log-path=/home/{getpass.getuser()}/chrome-data/nanofactory-console.log",
+            ],
+        )
 
         self.browser.get(
             "file:///"
