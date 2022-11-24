@@ -62,9 +62,11 @@ $(function () {
         }
 
         self.onStartupComplete = function () {
-            console.log("onStartupComplete Called")
+            console.log("onStartupComplete Called. calling setTimeout")
             setTimeout(() => {
+                console.log("Timeout complete")
                 let apiKey = self.APIKEY()
+                console.log("current apiKey: ", apiKey)
                 if (!(apiKey.length > 0)) {
                     console.log("apiKey not found. Calling startAuthFlow")
                     self.startAuthFlow()
