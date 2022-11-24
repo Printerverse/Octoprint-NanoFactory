@@ -7,4 +7,4 @@
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
 or manually using this URL:
 
-    https://github.com/Printerverse/Octoprint_Nanofactory/archive/master.zip
+    https://github.com/Printerverse/Octoprint-NanoFactory/archive/main.zip

@@ -3,15 +3,11 @@ from __future__ import absolute_import
 
 import json
 import os
-import re
-import time
-import webbrowser
 from uuid import uuid4
 
 import octoprint.plugin
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
 class NanofactoryPlugin(
@@ -19,18 +15,63 @@ class NanofactoryPlugin(
     octoprint.plugin.SettingsPlugin,
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.TemplatePlugin,
+    octoprint.plugin.SimpleApiPlugin,
 ):
     def initialize(self):
         self.peer_ID = ""
+        self.api_key: str = None
         self.browser = None
 
     # # ~~ StartupPlugin mixin
+    def on_startup(self, host, port):
+        self.load_nf_profile()
+
     def on_after_startup(self):
-        self.get_peer_id()
-        self._logger.warning(f"Your peer ID is {self.peer_ID}")
+        self.check_chrome_data_folder()
         self.start_browser()
 
-    def get_peer_id(self):
+    # # ~~ SimpleApiPlugin mixin
+    def get_api_commands(self):
+        return {"saveAPIKEY": ["api_key"], "getPeerID": [], "sendAPIKey": []}
+
+    def on_api_command(self, command, data):
+        if command == "saveAPIKEY":
+            self.api_key = data["api_key"]
+            self.browser.execute_script(f"window.apiKey = '{self.api_key}';")
+            try:
+                with open(
+                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r+"
+                ) as f:
+                    nf_profile = json.loads(f.read())
+                    nf_profile["api_key"] = self.api_key
+                    f.seek(0)
+                    json.dump(nf_profile, f)
+                    f.truncate()
+
+            except Exception as e:
+                self._logger.warning(e, exc_info=True)
+
+        elif command == "getPeerID":
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {"peerID": self.peer_ID}
+            )
+
+        elif command == "sendAPIKey":
+            self.send_api_key()
+
+    def send_api_key(self):
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"api_key": self.api_key}
+        )
+
+    def check_chrome_data_folder(self):
+        if not os.path.isdir("./chrome-data"):
+            try:
+                os.mkdir("./chrome-data")
+            except Exception as e:
+                self._logger.warning(e)
+
+    def load_nf_profile(self):
         nf_profile = {}
         try:
             with open(
@@ -42,10 +83,11 @@ class NanofactoryPlugin(
                 with open(
                     os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "w"
                 ) as f:
-                    nf_profile = {"peer_ID": str(uuid4())}
+                    nf_profile = {"peer_ID": str(uuid4()), "api_key": ""}
                     json.dump(nf_profile, f)
 
         self.peer_ID = nf_profile["peer_ID"]
+        self.api_key = nf_profile["api_key"]
 
     def start_browser(self):
         chrome_options = Options()
@@ -54,14 +96,16 @@ class NanofactoryPlugin(
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--headless")  # Ensure GUI is off
         chrome_options.add_argument("--use-fake-ui-for-media-stream")
-        chrome_options.add_argument(
-            "--unsafely-treat-insecure-origin-as-secure=http://localhost:5000"
-        )
         chrome_options.add_argument("--disable-web-security")
+        chrome_options.add_argument("--profile-directory=Default")
+        chrome_options.add_argument("--user-data-dir=./chrome-data")
         # To test memory optimization
         chrome_options.add_argument("--no-unsandboxed-zygote")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-mipmap-generation")
+        # To turn off console logs
+        chrome_options.add_argument("--disable-logging")
+        chrome_options.add_argument("--log-level=3")
         self.browser = webdriver.Chrome(options=chrome_options)
 
         self.browser.get(
@@ -77,7 +121,7 @@ class NanofactoryPlugin(
             initialize_peer_script = file.read()
             assert initialize_peer_script
 
-        self.browser.execute_script(initialize_peer_script, self.peer_ID)
+        self.browser.execute_script(initialize_peer_script, self.peer_ID, self.api_key)
 
     ##~~ AssetPlugin mixin
 
@@ -85,9 +129,7 @@ class NanofactoryPlugin(
         # Define your plugin's asset files to automatically include in the
         # core UI here.
         return {
-            "js": ["js/Octoprint-Nanofactory-V2.js"],
-            "css": ["css/Octoprint-Nanofactory-V2.css"],
-            "less": ["less/Octoprint-Nanofactory-V2.less"],
+            "js": ["js/NanoFactory.js"],
         }
 
     ##~~ Softwareupdate hook
@@ -97,8 +139,8 @@ class NanofactoryPlugin(
         # Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
         # for details.
         return {
-            "Octoprint-Nanofactory-V2": {
-                "displayName": "Octoprint-Nanofactory_V2",
+            "Nanofactory": {
+                "displayName": "Nanofactory",
                 "displayVersion": self._plugin_version,
                 # version check: github repository
                 "type": "github_release",
@@ -106,7 +148,7 @@ class NanofactoryPlugin(
                 "repo": "Octoprint-Nanofactory",
                 "current": self._plugin_version,
                 # update method: pip
-                "pip": "https://github.com/thakkaryash21/Octoprint-Nanofactory/archive/{target_version}.zip",
+                "pip": "https://github.com/Printerverse/Octoprint_Nanofactory/archive/main.zip",
             }
         }
 
@@ -114,7 +156,7 @@ class NanofactoryPlugin(
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
-__plugin_name__ = "Nanofactory"
+__plugin_name__ = "NanoFactory"
 
 
 # Set the Python version your plugin is compatible with below. Recommended is Python 3 only for all new plugins.
