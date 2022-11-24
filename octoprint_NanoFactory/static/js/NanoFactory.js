@@ -62,9 +62,11 @@ $(function () {
         }
 
         self.onStartupComplete = function () {
+            console.log("onStartupComplete Called")
             setTimeout(() => {
                 let apiKey = self.APIKEY()
                 if (!(apiKey.length > 0)) {
+                    console.log("apiKey not found. Calling startAuthFlow")
                     self.startAuthFlow()
                 }
 
@@ -121,6 +123,7 @@ $(function () {
 
 
         self.startAuthFlow = async function () {
+            console.log("startAuthFlow called")
             let response = await fetch("http://localhost:5000/plugin/appkeys/request", {
                 method: "POST",
                 headers: {
@@ -131,9 +134,12 @@ $(function () {
                     "app": "NanoFactory",
                 })
             })
-
+            console.log("api key requested. response:")
+            console.log((await response.json()))
             if (response.ok) {
+                console.log("response oka. polling for verification")
                 self.pollForVerification(response.headers.get("Location"))
+
             }
 
         }
@@ -141,11 +147,15 @@ $(function () {
 
         self.pollForVerification = function (pollURL) {
             if (pollURL) {
+                console.log("starting polling")
                 let pollingInterval = setInterval(async () => {
 
                     let response = await fetch(pollURL, {
                         method: "GET",
                     })
+
+                    console.log("polling result")
+                    console.log((await response.json()))
 
                     if (response.status === 200) {
                         clearInterval(pollingInterval)
