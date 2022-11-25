@@ -125,7 +125,7 @@ $(function () {
 
         self.startAuthFlow = async function () {
             console.log("startAuthFlow called")
-            let baseUrl = window.URL
+            let baseUrl = document.URL
             let index = baseUrl.indexOf("/#")
             if (index > -1) {
                 baseUrl = baseUrl.substring(0, index)
