@@ -8,3 +8,6 @@ dist
 .DS_Store
 *.zip
 chrome-data
+Scripts
+Lib
+Include
