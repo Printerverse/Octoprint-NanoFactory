@@ -119,14 +119,18 @@ $(function () {
         }
 
         self.getPeerID = function () {
-            console.log("Button clicked!!!")
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
         }
 
 
         self.startAuthFlow = async function () {
             console.log("startAuthFlow called")
-            let response = await fetch("http://localhost:5000/plugin/appkeys/request", {
+            let baseUrl = document.URL
+            let index = baseUrl.indexOf("/#")
+            if (index > -1) {
+                baseUrl = baseUrl.substring(0, index)
+            }
+            let response = await fetch(baseUrl + "/plugin/appkeys/request", {
                 method: "POST",
                 headers: {
                     "Accept": "application/json",
