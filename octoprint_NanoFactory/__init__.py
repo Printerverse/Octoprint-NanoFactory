@@ -113,6 +113,7 @@ class NanofactoryPlugin(
         self.browser = webdriver.Chrome(
             options=chrome_options,
             service_args=[
+                "verbose",
                 f"--log-path=/home/{getpass.getuser()}/chrome-data/nanofactory-console.log",
             ],
         )
