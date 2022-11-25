@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import getpass
 import json
 import os
 from uuid import uuid4
@@ -65,9 +66,9 @@ class NanofactoryPlugin(
         )
 
     def check_chrome_data_folder(self):
-        if not os.path.isdir("./chrome-data"):
+        if not os.path.isdir(f"/home/{getpass.getuser()}/chrome-data"):
             try:
-                os.mkdir("./chrome-data")
+                os.mkdir(f"/home/{getpass.getuser()}/chrome-data")
             except Exception as e:
                 self._logger.warning(e)
 
@@ -98,7 +99,9 @@ class NanofactoryPlugin(
         chrome_options.add_argument("--use-fake-ui-for-media-stream")
         chrome_options.add_argument("--disable-web-security")
         chrome_options.add_argument("--profile-directory=Default")
-        chrome_options.add_argument("--user-data-dir=./chrome-data")
+        chrome_options.add_argument(
+            f"--user-data-dir=/home/{getpass.getuser()}/chrome-data"
+        )
         # To test memory optimization
         chrome_options.add_argument("--no-unsandboxed-zygote")
         chrome_options.add_argument("--disable-gpu")
@@ -106,7 +109,13 @@ class NanofactoryPlugin(
         # To turn off console logs
         # chrome_options.add_argument("--disable-logging")
         # chrome_options.add_argument("--log-level=3")
-        self.browser = webdriver.Chrome(options=chrome_options)
+
+        self.browser = webdriver.Chrome(
+            options=chrome_options,
+            service_args=[
+                f"--log-path=/home/{getpass.getuser()}/chrome-data/nanofactory-console.log",
+            ],
+        )
 
         self.browser.get(
             "file:///"

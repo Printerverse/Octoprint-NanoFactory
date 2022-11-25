@@ -62,9 +62,13 @@ $(function () {
         }
 
         self.onStartupComplete = function () {
+            console.log("onStartupComplete Called. calling setTimeout")
             setTimeout(() => {
+                console.log("Timeout complete")
                 let apiKey = self.APIKEY()
+                console.log("current apiKey: ", apiKey)
                 if (!(apiKey.length > 0)) {
+                    console.log("apiKey not found. Calling startAuthFlow")
                     self.startAuthFlow()
                 }
 
@@ -115,13 +119,18 @@ $(function () {
         }
 
         self.getPeerID = function () {
-            console.log("Button clicked!!!")
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
         }
 
 
         self.startAuthFlow = async function () {
-            let response = await fetch("http://localhost:5000/plugin/appkeys/request", {
+            console.log("startAuthFlow called")
+            let baseUrl = window.URL
+            let index = baseUrl.indexOf("/#")
+            if (index > -1) {
+                baseUrl = baseUrl.substring(0, index)
+            }
+            let response = await fetch(baseUrl + "/plugin/appkeys/request", {
                 method: "POST",
                 headers: {
                     "Accept": "application/json",
@@ -131,9 +140,12 @@ $(function () {
                     "app": "NanoFactory",
                 })
             })
-
+            console.log("api key requested. response:")
+            console.log((await response.json()))
             if (response.ok) {
+                console.log("response oka. polling for verification")
                 self.pollForVerification(response.headers.get("Location"))
+
             }
 
         }
@@ -141,11 +153,15 @@ $(function () {
 
         self.pollForVerification = function (pollURL) {
             if (pollURL) {
+                console.log("starting polling")
                 let pollingInterval = setInterval(async () => {
 
                     let response = await fetch(pollURL, {
                         method: "GET",
                     })
+
+                    console.log("polling result")
+                    console.log((await response.json()))
 
                     if (response.status === 200) {
                         clearInterval(pollingInterval)
