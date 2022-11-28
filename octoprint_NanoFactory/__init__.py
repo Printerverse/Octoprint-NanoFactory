@@ -136,8 +136,6 @@ class NanofactoryPlugin(
                             f"window.cameraStream = '{image_base64}'"
                         )
 
-                    time.sleep(0.0167)
-
             except Exception as e:
                 pass
 
