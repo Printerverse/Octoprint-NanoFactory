@@ -13,6 +13,7 @@ from selenium.webdriver.chrome.options import Options
 
 class NanofactoryPlugin(
     octoprint.plugin.StartupPlugin,
+    octoprint.plugin.ShutdownPlugin,
     octoprint.plugin.SettingsPlugin,
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.TemplatePlugin,
@@ -30,6 +31,9 @@ class NanofactoryPlugin(
     def on_after_startup(self):
         self.check_chrome_data_folder()
         self.start_browser()
+
+    def on_shutdown(self):
+        self.browser.close()
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
