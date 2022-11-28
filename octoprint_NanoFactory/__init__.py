@@ -120,7 +120,7 @@ class NanofactoryPlugin(
 
         if stream_url:
             try:
-                video_capture = cv2.VideoCapture(stream_url)
+                video_capture = cv2.VideoCapture(stream_url + "/override")
 
                 while self.run_camera_loop:
                     frame = video_capture.read()[1]
