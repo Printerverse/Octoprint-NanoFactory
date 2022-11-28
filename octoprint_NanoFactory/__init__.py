@@ -1,15 +1,11 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-import base64
 import getpass
 import json
 import os
-import threading
-import time
 from uuid import uuid4
 
-import cv2
 import octoprint.plugin
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -17,7 +13,6 @@ from selenium.webdriver.chrome.options import Options
 
 class NanofactoryPlugin(
     octoprint.plugin.StartupPlugin,
-    octoprint.plugin.ShutdownPlugin,
     octoprint.plugin.SettingsPlugin,
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.TemplatePlugin,
@@ -27,7 +22,6 @@ class NanofactoryPlugin(
         self.peer_ID = ""
         self.api_key: str = None
         self.browser = None
-        self.run_camera_loop = True
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -36,11 +30,6 @@ class NanofactoryPlugin(
     def on_after_startup(self):
         self.check_chrome_data_folder()
         self.start_browser()
-        self.capture_camera()
-
-    def on_shutdown(self):
-        self._logger.warning("Nanofactory on shutdown called")
-        self.run_camera_loop = False
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
@@ -77,7 +66,10 @@ class NanofactoryPlugin(
             self.send_api_key()
 
         elif command == "restartCameraStream":
-            self.capture_camera()
+            self.browser.get(
+                "file:///"
+                + os.path.join(os.path.dirname(__file__), ".//static//js//index.html")
+            )
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
@@ -108,39 +100,6 @@ class NanofactoryPlugin(
 
         self.peer_ID = nf_profile["peer_ID"]
         self.api_key = nf_profile["api_key"]
-
-    def start_camera_stream(self):
-        camera_thread = threading.Thread(target=self.capture_camera)
-        camera_thread.daemon = True
-        camera_thread.start()
-
-    def capture_camera(self):
-
-        stream_url = self._settings.global_get(["webcam", "stream"])
-
-        if stream_url:
-            try:
-                video_capture = cv2.VideoCapture(stream_url + "/override")
-
-                while self.run_camera_loop:
-                    frame = video_capture.read()[1]
-
-                    image_base64 = (
-                        base64.b64encode(cv2.imencode(".jpg", frame)[1])
-                        .decode("utf-8")
-                        .replace("'", "")
-                    )
-
-                    if self.browser:
-                        self.browser.execute_script(
-                            f"window.cameraStream = '{image_base64}'"
-                        )
-
-            except Exception as e:
-                pass
-
-        else:
-            self._logger.warning("Stream url not setup for camera stream")
 
     def start_browser(self):
         chrome_options = Options()
