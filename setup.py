@@ -36,7 +36,7 @@ plugin_url = "https://github.com/Printerverse/Octoprint-NanoFactory/"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["selenium"]
+plugin_requires = ["selenium", "opencv-python"]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
