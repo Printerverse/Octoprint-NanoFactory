@@ -6,6 +6,7 @@ import json
 import os
 from uuid import uuid4
 
+import flask
 import octoprint.plugin
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -13,7 +14,6 @@ from selenium.webdriver.chrome.options import Options
 
 class NanofactoryPlugin(
     octoprint.plugin.StartupPlugin,
-    octoprint.plugin.ShutdownPlugin,
     octoprint.plugin.SettingsPlugin,
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.TemplatePlugin,
@@ -31,9 +31,6 @@ class NanofactoryPlugin(
     def on_after_startup(self):
         self.check_chrome_data_folder()
         self.start_browser()
-
-    def on_shutdown(self):
-        self.browser.close()
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
@@ -110,7 +107,7 @@ class NanofactoryPlugin(
         if os.path.isfile("/usr/bin/chromium-browser"):
             chrome_options.binary_location = "/usr/bin/chromium-browser"
         chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--headless")  # Ensure GUI is off
+        # chrome_options.add_argument("--headless")  # Ensure GUI is off
         chrome_options.add_argument("--use-fake-ui-for-media-stream")
         chrome_options.add_argument("--disable-web-security")
         chrome_options.add_argument("--profile-directory=Default")
