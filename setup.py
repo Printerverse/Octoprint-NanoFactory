@@ -1,7 +1,7 @@
 # coding=utf-8
 import os
 
-from octoprint.util.commandline import CommandlineCaller, CommandlineError
+import sarge
 
 ########################################################################################################################
 ### Do not forget to adjust the following variables to your own plugin.
@@ -100,21 +100,10 @@ setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
 
 if not os.path.isfile("/usr/bin/chromium-browser"):
     # To install webdriver, chrome
-    print("Will start executing webdriver.sh")
-    command_line = CommandlineCaller()
-    try:
-        command_line.checked_call(
-            [
-                "bash",
-                os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)),
-                    "octoprint_NanoFactory",
-                    "install_chromium.sh",
-                ),
-            ]
-        )
-    except CommandlineError:
-        raise
+    print("Installing chromium-browser")
+    sarge.run("sudo apt update; sudo apt-get install chromium-browser -y")
+    print("Done! chromium-browser installed")
+
 
 if len(additional_setup_parameters):
     from octoprint.util import dict_merge
