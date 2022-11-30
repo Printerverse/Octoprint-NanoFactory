@@ -1,7 +1,7 @@
 # coding=utf-8
 import os
 
-import sarge
+from octoprint.util.commandline import CommandLineCaller, CommandLineError
 
 ########################################################################################################################
 ### Do not forget to adjust the following variables to your own plugin.
@@ -100,8 +100,36 @@ setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
 
 # To install chromium-browser
 print("Installing chromium-browser")
-sarge.run("sudo apt update; sudo apt-get install chromium-browser -y")
-print("Done! chromium-browser installed")
+
+
+def log(prefix, *lines):
+    for line in lines:
+        print("{} {}".format(prefix, line))
+
+
+def log_stdout(*lines):
+    log(">>>", *lines)
+
+
+def log_stderr(*lines):
+    log("!!!", *lines)
+
+
+def log_call(*lines):
+    log("---", *lines)
+
+
+caller = CommandLineCaller()
+caller.on_log_call = log_call
+caller.on_log_stdout = log_stdout
+caller.on_log_stderr = log_stderr
+
+try:
+    caller.checked_call(["sudo apt update", "sudo apt-get install chromium-browser -y"])
+except CommandLineError as err:
+    print("Command returned {}".format(err.returncode))
+else:
+    print("Command finished successfully")
 
 
 if len(additional_setup_parameters):
