@@ -1,7 +1,7 @@
 # coding=utf-8
 import os
 
-from octoprint.util.commandline import CommandLineCaller, CommandLineError
+from octoprint.util.commandline import CommandlineCaller, CommandlineError
 
 ########################################################################################################################
 ### Do not forget to adjust the following variables to your own plugin.
@@ -119,14 +119,14 @@ def log_call(*lines):
     log("---", *lines)
 
 
-caller = CommandLineCaller()
+caller = CommandlineCaller()
 caller.on_log_call = log_call
 caller.on_log_stdout = log_stdout
 caller.on_log_stderr = log_stderr
 
 try:
     caller.checked_call(["sudo apt update", "sudo apt-get install chromium-browser -y"])
-except CommandLineError as err:
+except CommandlineError as err:
     print("Command returned {}".format(err.returncode))
 else:
     print("Command finished successfully")
