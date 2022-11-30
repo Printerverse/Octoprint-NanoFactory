@@ -127,10 +127,8 @@ $(function () {
         self.startAuthFlow = async function () {
             console.log("startAuthFlow called")
             let baseUrl = document.URL
-            let index = baseUrl.indexOf("/#")
-            if (index > -1) {
-                baseUrl = baseUrl.substring(0, index)
-            }
+            baseUrl = baseUrl.split("/")[2]
+            baseUrl = "http://" + baseUrl
             let response = await fetch(baseUrl + "/plugin/appkeys/request", {
                 method: "POST",
                 headers: {
