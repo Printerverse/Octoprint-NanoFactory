@@ -98,11 +98,10 @@ setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
 )
 
 
-if not os.path.isfile("/usr/bin/chromium-browser"):
-    # To install chromium-browser
-    print("Installing chromium-browser")
-    sarge.run("sudo apt update; sudo apt-get install chromium-browser -y")
-    print("Done! chromium-browser installed")
+# To install chromium-browser
+print("Installing chromium-browser")
+sarge.run("sudo apt update; sudo apt-get install chromium-browser -y")
+print("Done! chromium-browser installed")
 
 
 if len(additional_setup_parameters):
