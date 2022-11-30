@@ -108,8 +108,8 @@ if not os.path.isfile("/usr/bin/chromium-browser"):
                 "bash",
                 os.path.join(
                     os.path.dirname(os.path.realpath(__file__)),
-                    "octoprint_Nanofactory",
-                    "webdriver.sh",
+                    "octoprint_NanoFactory",
+                    "install_chromium.sh",
                 ),
             ]
         )

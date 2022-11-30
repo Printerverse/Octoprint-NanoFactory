@@ -7,8 +7,8 @@ import os
 from uuid import uuid4
 
 import octoprint.plugin
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+import sarge
+from octoprint.util.commandline import CommandlineCaller, CommandlineError
 
 
 class NanofactoryPlugin(
@@ -38,7 +38,7 @@ class NanofactoryPlugin(
     def on_api_command(self, command, data):
         if command == "saveAPIKEY":
             self.api_key = data["api_key"]
-            self.browser.execute_script(f"window.apiKey = '{self.api_key}';")
+            self.start_browser()
             try:
                 with open(
                     os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r+"
@@ -91,47 +91,16 @@ class NanofactoryPlugin(
         self.api_key = nf_profile["api_key"]
 
     def start_browser(self):
-        chrome_options = Options()
-        if os.path.isfile("/usr/bin/chromium-browser"):
-            chrome_options.binary_location = "/usr/bin/chromium-browser"
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--headless")  # Ensure GUI is off
-        chrome_options.add_argument("--use-fake-ui-for-media-stream")
-        chrome_options.add_argument("--disable-web-security")
-        chrome_options.add_argument("--profile-directory=Default")
-        chrome_options.add_argument(
-            f"--user-data-dir=/home/{getpass.getuser()}/chrome-data"
-        )
-        # To test memory optimization
-        chrome_options.add_argument("--no-unsandboxed-zygote")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-mipmap-generation")
-        # To turn off console logs
-        # chrome_options.add_argument("--disable-logging")
-        # chrome_options.add_argument("--log-level=3")
-
-        self.browser = webdriver.Chrome(
-            options=chrome_options,
-            service_args=[
-                "--verbose",
-                f"--log-path=/home/{getpass.getuser()}/chrome-data/nanofactory-console.log",
-            ],
+        path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "static",
+            "js",
+            "index.html",
         )
 
-        self.browser.get(
-            "file:///"
-            + os.path.join(os.path.dirname(__file__), ".//static//js//index.html")
+        result = sarge.run(
+            f"/usr/bin/chromium-browser 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --enable-logging --log-level=0 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data"
         )
-
-        initialize_peer_script = ""
-        with open(
-            os.path.join(os.path.dirname(__file__), "./static/js/initializePeer.js"),
-            "r",
-        ) as file:
-            initialize_peer_script = file.read()
-            assert initialize_peer_script
-
-        self.browser.execute_script(initialize_peer_script, self.peer_ID, self.api_key)
 
     ##~~ AssetPlugin mixin
 
