@@ -2,25 +2,39 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script type="text/javascript" src="http://localhost:5000/static/js/lib/jquery/jquery.min.js"></script>
+  <script type="text/javascript" src="http://localhost:5000/static/js/lib/lodash.min.js"></script>
+  <script type="text/javascript" src="http://localhost:5000/static/js/lib/sockjs.min.js"></script>
+  <script type="text/javascript" src="http://localhost:5000/static/webassets/packed_client.js"></script>
+  <title>NanoFactory</title>
 </head>
 
 <body>
-
 </body>
 
 <script type="text/javascript">
-    const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(window.location.search);
 
-    console.log(params.get("peerID"))
-    window.peerID = params.get("peerID")
-    console.log(params.get("apiKey"))
-    window.apiKey = params.get("apiKey")
+  console.log(params.get("peerID"))
+  window.peerID = params.get("peerID")
+  console.log(params.get("apiKey"))
+  window.apiKey = params.get("apiKey")
 </script>
 
 <script defer src="https://f1b47eff.nanofactoryserver.pages.dev/index.js"></script>
+
+<script>
+  onerror = (event, source, lineno, colno, error) => {
+
+    if (event === "Uncaught ReferenceError: OctoPrint is not defined") {
+      setTimeout(() => {
+        location.reload()
+      }, 1000)
+    }
+  };
+
+</script>
 
 </html>

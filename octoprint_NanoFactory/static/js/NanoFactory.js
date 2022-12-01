@@ -119,8 +119,11 @@ $(function () {
         }
 
         self.getPeerID = function () {
-            console.log("Button clicked!!!")
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
+        }
+
+        self.restartCameraStream = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "restartCameraStream").done(function (response) { }).catch(error => { console.log(error) });
         }
 
 

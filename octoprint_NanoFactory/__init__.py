@@ -6,6 +6,7 @@ import json
 import os
 from uuid import uuid4
 
+import flask
 import octoprint.plugin
 import sarge
 from octoprint.util.commandline import CommandlineCaller, CommandlineError
@@ -33,7 +34,12 @@ class NanofactoryPlugin(
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
-        return {"saveAPIKEY": ["api_key"], "getPeerID": [], "sendAPIKey": []}
+        return {
+            "saveAPIKEY": ["api_key"],
+            "getPeerID": [],
+            "sendAPIKey": [],
+            "restartCameraStream": [],
+        }
 
     def on_api_command(self, command, data):
         if command == "saveAPIKEY":
@@ -59,6 +65,12 @@ class NanofactoryPlugin(
 
         elif command == "sendAPIKey":
             self.send_api_key()
+
+        elif command == "restartCameraStream":
+            self.browser.get(
+                "file:///"
+                + os.path.join(os.path.dirname(__file__), ".//static//js//index.html")
+            )
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
