@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import getpass
 import json
 import os
+import platform
 from uuid import uuid4
 
 import octoprint.plugin
@@ -76,11 +77,18 @@ class NanofactoryPlugin(
         )
 
     def check_chrome_data_folder(self):
-        if not os.path.isdir(f"/home/{getpass.getuser()}/chrome-data"):
-            try:
-                os.mkdir(f"/home/{getpass.getuser()}/chrome-data")
-            except Exception as e:
-                self._logger.warning(e)
+        if platform.system() == "Windows":
+            if not os.path.isdir(os.path.join(os.getcwd(), "chrome-data")):
+                try:
+                    os.mkdir(os.path.join(os.getcwd(), "chrome-data"))
+                except Exception as e:
+                    self._logger.warning(e)
+        else:
+            if not os.path.isdir(f"/home/{getpass.getuser()}/chrome-data"):
+                try:
+                    os.mkdir(f"/home/{getpass.getuser()}/chrome-data")
+                except Exception as e:
+                    self._logger.warning(e)
 
     def load_nf_profile(self):
         nf_profile = {}
@@ -108,9 +116,15 @@ class NanofactoryPlugin(
             "index.html",
         )
 
-        result = sarge.run(
-            f"/usr/bin/chromium-browser 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data"
-        )
+        if platform.system() == "Windows":
+            chrome_path = r"C:\Users\ansel\chrome-win\chrome.exe"
+            os.system(
+                f"start {chrome_path} 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir={os.path.join(os.getcwd(),'chrome-data')}/"
+            )
+        else:
+            sarge.run(
+                f"/usr/bin/chromium-browser 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data"
+            )
 
         self._logger.info("Started chromium browser")
 
