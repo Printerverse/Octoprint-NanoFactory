@@ -117,9 +117,9 @@ class NanofactoryPlugin(
         )
 
         if platform.system() == "Windows":
-            chrome_path = r"C:\Users\ansel\chrome-win\chrome.exe"
+            # chrome_path = r"C:\Users\ansel\chrome-win\chrome.exe"
             os.system(
-                f"start {chrome_path} 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir={os.path.join(os.getcwd(),'chrome-data')}/"
+                f"start chrome 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir={os.path.join(os.getcwd(),'chrome-data')}/"
             )
         else:
             sarge.run(
