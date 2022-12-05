@@ -5,6 +5,7 @@ import getpass
 import json
 import os
 import platform
+import time
 from uuid import uuid4
 
 import octoprint.plugin
@@ -21,7 +22,6 @@ class NanofactoryPlugin(
     def initialize(self):
         self.peer_ID = ""
         self.api_key: str = None
-        self.browser = None
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -37,7 +37,7 @@ class NanofactoryPlugin(
             "saveAPIKEY": ["api_key"],
             "getPeerID": [],
             "sendAPIKey": [],
-            "restartCameraStream": [],
+            "restartNanoFactoryApp": [],
         }
 
     def on_api_command(self, command, data):
@@ -65,11 +65,10 @@ class NanofactoryPlugin(
         elif command == "sendAPIKey":
             self.send_api_key()
 
-        elif command == "restartCameraStream":
-            self.browser.get(
-                "file:///"
-                + os.path.join(os.path.dirname(__file__), ".//static//js//index.html")
-            )
+        elif command == "restartNanoFactoryApp":
+            self.close_browser()
+            time.sleep(1)
+            self.start_browser()
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
@@ -123,10 +122,16 @@ class NanofactoryPlugin(
             )
         else:
             sarge.run(
-                f"/usr/bin/chromium-browser 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data"
+                f"/usr/bin/chromium-browser 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data"
             )
 
         self._logger.info("Started chromium browser")
+
+    def close_browser(self):
+        if platform.system() == "Windows":
+            os.system("taskkill /IM chrome.exe >nul")
+        else:
+            sarge.run("killall -9 chrome")
 
     ##~~ AssetPlugin mixin
 
