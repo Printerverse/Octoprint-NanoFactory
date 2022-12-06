@@ -62,9 +62,7 @@ $(function () {
         }
 
         self.onStartupComplete = function () {
-            console.log("onStartupComplete Called. calling setTimeout")
             setTimeout(() => {
-                console.log("Timeout complete")
                 let apiKey = self.APIKEY()
                 console.log("current apiKey: ", apiKey)
                 if (!(apiKey.length > 0)) {
@@ -142,10 +140,7 @@ $(function () {
                     "app": "NanoFactory",
                 })
             })
-            console.log("api key requested. response:")
-            console.log((await response.json()))
             if (response.ok) {
-                console.log("response oka. polling for verification")
                 self.pollForVerification(response.headers.get("Location"))
 
             }
@@ -155,15 +150,11 @@ $(function () {
 
         self.pollForVerification = function (pollURL) {
             if (pollURL) {
-                console.log("starting polling")
                 let pollingInterval = setInterval(async () => {
 
                     let response = await fetch(pollURL, {
                         method: "GET",
                     })
-
-                    console.log("polling result")
-                    console.log((await response.json()))
 
                     if (response.status === 200) {
                         clearInterval(pollingInterval)

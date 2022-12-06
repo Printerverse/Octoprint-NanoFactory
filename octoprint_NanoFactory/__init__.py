@@ -18,6 +18,7 @@ class NanofactoryPlugin(
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.TemplatePlugin,
     octoprint.plugin.SimpleApiPlugin,
+    octoprint.plugin.ShutdownPlugin
 ):
     def initialize(self):
         self.peer_ID = ""
@@ -42,17 +43,21 @@ class NanofactoryPlugin(
 
     def on_api_command(self, command, data):
         if command == "saveAPIKEY":
+            self._logger.warning("Save api key called")
             self.api_key = data["api_key"]
             self.start_browser()
             try:
                 with open(
-                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r+"
+                    os.path.join(self.get_plugin_data_folder(),
+                                 "nf_profile.json"), "r+"
                 ) as f:
                     nf_profile = json.loads(f.read())
                     nf_profile["api_key"] = self.api_key
                     f.seek(0)
                     json.dump(nf_profile, f)
                     f.truncate()
+
+                self.restart_browser()
 
             except Exception as e:
                 self._logger.warning(e, exc_info=True)
@@ -66,9 +71,15 @@ class NanofactoryPlugin(
             self.send_api_key()
 
         elif command == "restartNanoFactoryApp":
-            self.close_browser()
-            time.sleep(1)
-            self.start_browser()
+            self.restart_browser()
+
+    def on_shutdown(self):
+        self.close_browser()
+
+    def restart_browser(self):
+        self.close_browser()
+        time.sleep(1)
+        self.start_browser()
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
@@ -77,9 +88,10 @@ class NanofactoryPlugin(
 
     def check_chrome_data_folder(self):
         if platform.system() == "Windows":
-            if not os.path.isdir(os.path.join(os.getcwd(), "chrome-data")):
+            if not os.path.isdir("C:\\temp\\chrome-data"):
                 try:
-                    os.mkdir(os.path.join(os.getcwd(), "chrome-data"))
+                    os.mkdir("C:\\temp")
+                    os.mkdir("C:\\temp\\chrome-data")
                 except Exception as e:
                     self._logger.warning(e)
         else:
@@ -93,13 +105,15 @@ class NanofactoryPlugin(
         nf_profile = {}
         try:
             with open(
-                os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r"
+                os.path.join(self.get_plugin_data_folder(),
+                             "nf_profile.json"), "r"
             ) as f:
                 nf_profile = json.loads(f.read())
         except IOError as e:
             if e.errno == 2:
                 with open(
-                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "w"
+                    os.path.join(self.get_plugin_data_folder(),
+                                 "nf_profile.json"), "w"
                 ) as f:
                     nf_profile = {"peer_ID": str(uuid4()), "api_key": ""}
                     json.dump(nf_profile, f)
@@ -116,24 +130,22 @@ class NanofactoryPlugin(
         )
 
         if platform.system() == "Windows":
-            # chrome_path = r"C:\Users\ansel\chrome-win\chrome.exe"
+            file_path = f'"file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}"'
             os.system(
-                f"start chrome 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir={os.path.join(os.getcwd(),'chrome-data')}/"
+                f"start chrome {file_path} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\"
             )
         else:
             sarge.run(
                 f"/usr/bin/chromium-browser 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data"
             )
 
-        self._logger.info("Started chromium browser")
-
     def close_browser(self):
         if platform.system() == "Windows":
-            os.system("taskkill /IM chrome.exe >nul")
+            os.system("taskkill -F /IM chrome.exe >nul")
         else:
             sarge.run("killall -9 chrome")
 
-    ##~~ AssetPlugin mixin
+    # ~~ AssetPlugin mixin
 
     def get_assets(self):
         # Define your plugin's asset files to automatically include in the
@@ -142,7 +154,7 @@ class NanofactoryPlugin(
             "js": ["js/NanoFactory.js"],
         }
 
-    ##~~ Softwareupdate hook
+    # ~~ Softwareupdate hook
 
     def get_update_information(self):
         # Define the configuration for your plugin to use with the Software Update
