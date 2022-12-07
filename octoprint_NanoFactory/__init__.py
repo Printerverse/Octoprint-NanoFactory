@@ -22,7 +22,8 @@ class NanofactoryPlugin(
 ):
     def initialize(self):
         self.peer_ID = ""
-        self.api_key: str = None
+        self.api_key: str = ""
+        self.master_peer_id: str = ""
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -35,17 +36,17 @@ class NanofactoryPlugin(
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
         return {
-            "saveAPIKEY": ["api_key"],
             "getPeerID": [],
-            "sendAPIKey": [],
+            "getAPIKey": [],
+            "saveAPIKEY": ["api_key"],
+            "getMasterPeerID": [],
+            "saveMasterPeerID": ["masterPeerID"],
             "restartNanoFactoryApp": [],
         }
 
     def on_api_command(self, command, data):
         if command == "saveAPIKEY":
-            self._logger.warning("Save api key called")
             self.api_key = data["api_key"]
-            self.start_browser()
             try:
                 with open(
                     os.path.join(self.get_plugin_data_folder(),
@@ -62,13 +63,33 @@ class NanofactoryPlugin(
             except Exception as e:
                 self._logger.warning(e, exc_info=True)
 
+        elif command == "getAPIKey":
+            self.send_api_key()
+
         elif command == "getPeerID":
             self._plugin_manager.send_plugin_message(
                 self._identifier, {"peerID": self.peer_ID}
             )
 
-        elif command == "sendAPIKey":
-            self.send_api_key()
+        elif command == "getMasterPeerID":
+            self.send_master_peer_id()
+
+        elif command == "saveMasterPeerID":
+            self.master_peer_id = data["masterPeerID"]
+            try:
+                with open(
+                    os.path.join(self.get_plugin_data_folder(),
+                                 "nf_profile.json"), "r+"
+                ) as f:
+                    nf_profile = json.loads(f.read())
+                    nf_profile["master_peer_id"] = self.master_peer_id
+                    f.seek(0)
+                    json.dump(nf_profile, f)
+                    f.truncate()
+
+                self.restart_browser()
+            except Exception as e:
+                self._logger.warning(e, exc_info=True)
 
         elif command == "restartNanoFactoryApp":
             self.restart_browser()
@@ -84,6 +105,11 @@ class NanofactoryPlugin(
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
             self._identifier, {"api_key": self.api_key}
+        )
+
+    def send_master_peer_id(self):
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"masterPeerID": self.master_peer_id}
         )
 
     def check_chrome_data_folder(self):
@@ -115,11 +141,13 @@ class NanofactoryPlugin(
                     os.path.join(self.get_plugin_data_folder(),
                                  "nf_profile.json"), "w"
                 ) as f:
-                    nf_profile = {"peer_ID": str(uuid4()), "api_key": ""}
+                    nf_profile = {"peer_ID": str(
+                        uuid4()), "api_key": "", "master_peer_id": ""}
                     json.dump(nf_profile, f)
 
         self.peer_ID = nf_profile["peer_ID"]
         self.api_key = nf_profile["api_key"]
+        self.master_peer_id = nf_profile["master_peer_id"]
 
     def start_browser(self):
         path = os.path.join(
@@ -130,7 +158,7 @@ class NanofactoryPlugin(
         )
 
         if platform.system() == "Windows":
-            file_path = f'"file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}"'
+            file_path = f'"file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}&masterPeerID={self.master_peer_id}"'
             os.system(
                 f"start chrome {file_path} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\"
             )

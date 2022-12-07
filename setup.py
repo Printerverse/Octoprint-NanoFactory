@@ -1,10 +1,11 @@
 # coding=utf-8
+from setuptools import setup
 import os
 
 from octoprint.util.commandline import CommandlineCaller, CommandlineError
 
 ########################################################################################################################
-### Do not forget to adjust the following variables to your own plugin.
+# Do not forget to adjust the following variables to your own plugin.
 
 # The plugin's identifier, has to be unique
 plugin_identifier = "NanoFactory"
@@ -36,11 +37,11 @@ plugin_url = "https://github.com/Printerverse/Octoprint-NanoFactory/"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = []
+plugin_requires = ["sarge"]
 
-### --------------------------------------------------------------------------------------------------------------------
-### More advanced options that you usually shouldn't have to touch follow after this point
-### --------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------------
+# More advanced options that you usually shouldn't have to touch follow after this point
+# --------------------------------------------------------------------------------------------------------------------
 
 # Additional package data to install for this plugin. The subfolders "templates", "static" and "translations" will
 # already be installed automatically if they exist. Note that if you add something here you'll also need to update
@@ -68,7 +69,6 @@ additional_setup_parameters = {"python_requires": ">=3,<4"}
 
 ########################################################################################################################
 
-from setuptools import setup
 
 try:
     import octoprint_setuptools
@@ -125,7 +125,8 @@ caller.on_log_stdout = log_stdout
 caller.on_log_stderr = log_stderr
 
 try:
-    caller.checked_call(["sudo apt update", "sudo apt-get install chromium-browser -y"])
+    caller.checked_call(
+        ["sudo apt update", "sudo apt-get install chromium-browser -y"])
 except CommandlineError as err:
     print("Command returned {}".format(err.returncode))
 else:
@@ -135,6 +136,7 @@ else:
 if len(additional_setup_parameters):
     from octoprint.util import dict_merge
 
-    setup_parameters = dict_merge(setup_parameters, additional_setup_parameters)
+    setup_parameters = dict_merge(
+        setup_parameters, additional_setup_parameters)
 
 setup(**setup_parameters)

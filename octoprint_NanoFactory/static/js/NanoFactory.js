@@ -11,6 +11,7 @@ $(function () {
         self.APIKEY = ko.observable("")
         self.peerID = ko.observable("")
         self.peerIDMessage = ko.observable("")
+        self.masterPeerID = ko.observable("")
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -21,6 +22,23 @@ $(function () {
 
                 if (data["api_key"]) {
                     self.APIKEY(data["api_key"])
+
+
+                    if (data["api_key"].length > 0) {
+                        document.getElementById("api-key").disabled = true
+                    } else {
+                        document.getElementById("api-key").disabled = false
+                    }
+                }
+
+                if (data["masterPeerID"]) {
+                    self.masterPeerID(data["masterPeerID"])
+
+                    if (data["masterPeerID"].length > 0) {
+                        document.getElementById("master-peer-id").disabled = true
+                    } else {
+                        document.getElementById("master-peer-id").disabled = false
+                    }
                 }
 
                 if (data["peerID"]) {
@@ -58,7 +76,8 @@ $(function () {
 
 
         self.onBeforeBinding = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "sendAPIKey").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
@@ -166,6 +185,9 @@ $(function () {
 
                         OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: responseBody["api_key"] }).done(function (response) { }).catch(error => { console.log(error) });
 
+                        document.getElementById("master-peer-id").disabled = true
+
+
                         new PNotify({
                             title: "APIKey generation success",
                             text: "APIKey successfully generated for NanoFactory",
@@ -184,6 +206,40 @@ $(function () {
 
                 }, 1000)
             }
+        }
+
+        self.handleAPIKeySubmit = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: self.APIKEY() }).done(function (response) {
+                new PNotify({
+                    title: "Save Successful",
+                    text: 'API Key saved successfully',
+                    type: "success"
+                });
+            }).catch(error => { console.log(error) });
+        }
+
+
+        self.handleAPIKeyEdit = function () {
+            let inputField = document.getElementById("api-key")
+            inputField.disabled = false
+            inputField.focus()
+        }
+
+        self.handleMasterPeerIDSubmit = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "saveMasterPeerID", { "masterPeerID": self.masterPeerID() }).done(function (response) {
+                new PNotify({
+                    title: "Save Successful",
+                    text: 'Master Device ID saved successfully',
+                    type: "success"
+                });
+            }).catch(error => { console.log(error) });
+        }
+
+
+        self.handleMasterPeerIDEdit = function () {
+            let inputField = document.getElementById("master-peer-id")
+            inputField.disabled = false
+            inputField.focus()
         }
     }
 

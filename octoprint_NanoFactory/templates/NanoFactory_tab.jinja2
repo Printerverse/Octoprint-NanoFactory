@@ -2,12 +2,34 @@
 
 
 <div>
-    <button data-bind="click: getPeerID" class="btn btn-primary">Copy Peer ID to Clipboard</button>
+    <button style="width: 20rem;" data-bind="click: getPeerID" class="btn btn-primary">Copy Peer ID to
+        Clipboard</button>
     <div><span data-bind="text: peerIDMessage" /></div>
 </div>
 
 <br />
 
 <div>
-    <button data-bind="click: restartNanoFactoryApp" class="btn btn-primary">Restart NanoFactory</button>
+    <h5>API Key for NanoFactory:</h5>
+    <input type="text" id="api-key" placeholder="Please enter the API Key for NanoFactory" style="width: 19rem;"
+        data-bind="value: APIKEY" />
+    <br />
+    <button style="width: 10rem;" data-bind="click: handleAPIKeyEdit" class="btn btn-primary">Edit</button>
+    <button style="width: 10rem;" data-bind="click: handleAPIKeySubmit" class="btn btn-primary">Submit</button>
+</div>
+
+<div>
+    <h5>Master Device ID:</h5>
+    <input type="text" id="master-peer-id" placeholder="Please enter the Master Device ID for this printer"
+        style="width: 19rem;" data-bind="value: masterPeerID" />
+    <br />
+    <button style="width: 10rem;" data-bind="click: handleMasterPeerIDEdit" class="btn btn-primary">Edit</button>
+    <button style="width: 10rem;" data-bind="click: handleMasterPeerIDSubmit" class="btn btn-primary">Submit</button>
+</div>
+
+<br />
+
+<div>
+    <button style="width: 20rem;" data-bind="click: restartNanoFactoryApp" class="btn btn-primary">Restart
+        NanoFactory</button>
 </div>
