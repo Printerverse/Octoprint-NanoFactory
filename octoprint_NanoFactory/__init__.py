@@ -114,9 +114,11 @@ class NanofactoryPlugin(
                 json.dump(nf_profile, f)
                 f.truncate()
 
-            self.restart_browser()
         except Exception as e:
             self._logger.warning(e, exc_info=True)
+
+        self.restart_browser()
+        self.send_master_peer_id()
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
