@@ -6,6 +6,7 @@ import json
 import os
 import platform
 import time
+from flask import request
 from uuid import uuid4
 
 import octoprint.plugin
@@ -18,7 +19,8 @@ class NanofactoryPlugin(
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.TemplatePlugin,
     octoprint.plugin.SimpleApiPlugin,
-    octoprint.plugin.ShutdownPlugin
+    octoprint.plugin.ShutdownPlugin,
+    octoprint.plugin.BlueprintPlugin
 ):
     def initialize(self):
         self.peer_ID = ""
@@ -75,24 +77,21 @@ class NanofactoryPlugin(
             self.send_master_peer_id()
 
         elif command == "saveMasterPeerID":
-            self.master_peer_id = data["masterPeerID"]
-            try:
-                with open(
-                    os.path.join(self.get_plugin_data_folder(),
-                                 "nf_profile.json"), "r+"
-                ) as f:
-                    nf_profile = json.loads(f.read())
-                    nf_profile["master_peer_id"] = self.master_peer_id
-                    f.seek(0)
-                    json.dump(nf_profile, f)
-                    f.truncate()
-
-                self.restart_browser()
-            except Exception as e:
-                self._logger.warning(e, exc_info=True)
+            self.save_master_peer_id(data["masterPeerID"])
 
         elif command == "restartNanoFactoryApp":
             self.restart_browser()
+
+    @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def save_master_peer_id_endpoint(self):
+        master_peer_id = request.args.get("master_peer_id", None)
+        if master_peer_id:
+            self.save_master_peer_id(master_peer_id)
+        return "Success"
+
+    def is_blueprint_csrf_protected(self):
+        return True
 
     def on_shutdown(self):
         self.close_browser()
@@ -101,6 +100,23 @@ class NanofactoryPlugin(
         self.close_browser()
         time.sleep(1)
         self.start_browser()
+
+    def save_master_peer_id(self, master_peer_id: str):
+        self.master_peer_id = master_peer_id
+        try:
+            with open(
+                os.path.join(self.get_plugin_data_folder(),
+                             "nf_profile.json"), "r+"
+            ) as f:
+                nf_profile = json.loads(f.read())
+                nf_profile["master_peer_id"] = self.master_peer_id
+                f.seek(0)
+                json.dump(nf_profile, f)
+                f.truncate()
+
+            self.restart_browser()
+        except Exception as e:
+            self._logger.warning(e, exc_info=True)
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
