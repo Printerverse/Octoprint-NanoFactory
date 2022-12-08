@@ -12,6 +12,7 @@ $(function () {
         self.peerID = ko.observable("")
         self.peerIDMessage = ko.observable("")
         self.masterPeerID = ko.observable("")
+        self.nanoFactoryURL = ko.observable("")
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -46,29 +47,10 @@ $(function () {
 
                     self.peerID(data["peerID"])
                     self.peerIDMessage("Your Peer ID: " + data["peerID"])
+                    // TODO: Change localhost to https://nanofactory.printerverse.net/printer/
+                    self.nanoFactoryURL("http://localhost:8080/printer/" + data["peerID"])
 
-                    //Copying it to the clipboard
-
-                    text = data["peerID"]
-                    if (!navigator.clipboard) {
-                        self.fallbackCopyTextToClipboard(text);
-                        return;
-                    }
-                    navigator.clipboard.writeText(text).then(function () {
-
-                        new PNotify({
-                            title: "Copied successfully",
-                            text: data["peerID"] + ' copied successfully',
-                            type: "success"
-                        });
-                    }, function (err) {
-                        console.error('Async: Could not copy text: ', err);
-                        new PNotify({
-                            title: "Failed to copy",
-                            text: "Failed to Copy " + text + ". Reason: " + err.message,
-                            type: "error"
-                        });
-                    });
+                    console.log(self.nanoFactoryURL())
 
                 }
             }
@@ -78,6 +60,7 @@ $(function () {
         self.onBeforeBinding = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
@@ -90,6 +73,36 @@ $(function () {
                 }
 
             }, 1000)
+        }
+
+        self.goToNanoFactoryURL = function () {
+            window.open(self.nanoFactoryURL(), "_blank")
+        }
+
+        self.copyNanoFactoryURL = function () {
+            self.copyToClipboard(self.nanoFactoryURL())
+        }
+
+        self.copyToClipboard = function (text) {
+            if (!navigator.clipboard) {
+                self.fallbackCopyTextToClipboard(text);
+                return; a
+            }
+            navigator.clipboard.writeText(text).then(function () {
+
+                new PNotify({
+                    title: "Copied successfully",
+                    text: text + ' copied successfully',
+                    type: "success"
+                });
+            }, function (err) {
+                console.error('Async: Could not copy text: ', err);
+                new PNotify({
+                    title: "Failed to copy",
+                    text: "Failed to Copy " + text + ". Reason: " + err.message,
+                    type: "error"
+                });
+            });
         }
 
         self.fallbackCopyTextToClipboard = function (text) {
@@ -135,9 +148,6 @@ $(function () {
             document.body.removeChild(textArea);
         }
 
-        self.getPeerID = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
-        }
 
         self.restartNanoFactoryApp = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp").done(function (response) { }).catch(error => { console.log(error) });
