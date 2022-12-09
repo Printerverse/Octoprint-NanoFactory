@@ -5732,7 +5732,6 @@ async function loadDatabase() {
     db = new NanofactoryDatabase();
     db.open();
 }
-let peerConnection;
 function sendData(peerID, data, label) {
     const options = {
         label,
@@ -5740,7 +5739,7 @@ function sendData(peerID, data, label) {
         serialization: "json",
         reliable: true
     };
-    peerConnection = peer.connect(peerID, options);
+    let peerConnection = peer.connect(peerID, options);
     peerConnection.on("open", function () {
         peerConnection.send(JSON.stringify(data));
         console.log("Sent:", data, " to peerID: ", peerID);
@@ -6165,7 +6164,6 @@ function handleDataFromLogs(logLines) {
                 } else {
                     extruderPosition = extrudeLength;
                 }
-                console.log("Updating extruder position to ", extruderPosition);
             }
             if (positionChanged) {
                 printer.save({ position: printer.position });
@@ -6254,7 +6252,6 @@ let extruderAtLastUpdate = 0;
 const filamentUpdateTimeout = 10;
 function updateFilamentUsage() {
     setInterval(async () => {
-        console.log("running update filament usage");
         let extruderPositionCopy = extruderPosition;
         let extrudeLengthForCurrentInterval = extruderPositionCopy - extruderAtLastUpdate;
         extruderAtLastUpdate = extruderPositionCopy;
@@ -6488,9 +6485,8 @@ async function handleSocketMessage(message) {
             console.log(message);
             break;
         case socketEventTypes.CURRENT:
-            if (currentJobID && "job" in message.data) {
-                console.log(message);
-            }
+            if (currentJobID && "job" in message.data)
+                ;
             if (currentJobID && "progress" in message.data) {
                 let payload = {
                     "data": {
@@ -12321,17 +12317,17 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
         this.connection = connection;
     }
     $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype.startConnection = function (options) {
-        var peerConnection2 = this._startPeerConnection();
-        this.connection.peerConnection = peerConnection2;
+        var peerConnection = this._startPeerConnection();
+        this.connection.peerConnection = peerConnection;
         if (this.connection.type === $60fadef21a2daafc$export$3157d57b4135e3bc.Media && options._stream)
-            this._addTracksToConnection(options._stream, peerConnection2);
+            this._addTracksToConnection(options._stream, peerConnection);
         if (options.originator) {
             if (this.connection.type === $60fadef21a2daafc$export$3157d57b4135e3bc.Data) {
                 var dataConnection = this.connection;
                 var config = {
                     ordered: !!options.reliable
                 };
-                var dataChannel = peerConnection2.createDataChannel(dataConnection.label, config);
+                var dataChannel = peerConnection.createDataChannel(dataConnection.label, config);
                 dataConnection.initialize(dataChannel);
             }
             this._makeOffer();
@@ -12340,18 +12336,18 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
     };
     $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._startPeerConnection = function () {
         $1615705ecc6adca3$exports.default.log("Creating RTCPeerConnection.");
-        var peerConnection2 = new RTCPeerConnection(this.connection.provider.options.config);
-        this._setupListeners(peerConnection2);
-        return peerConnection2;
+        var peerConnection = new RTCPeerConnection(this.connection.provider.options.config);
+        this._setupListeners(peerConnection);
+        return peerConnection;
     };
-    $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._setupListeners = function (peerConnection2) {
+    $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._setupListeners = function (peerConnection) {
         var _this = this;
         var peerId = this.connection.peer;
         var connectionId = this.connection.connectionId;
         var connectionType = this.connection.type;
         var provider = this.connection.provider;
         $1615705ecc6adca3$exports.default.log("Listening for ICE candidates.");
-        peerConnection2.onicecandidate = function (evt) {
+        peerConnection.onicecandidate = function (evt) {
             if (!evt.candidate || !evt.candidate.candidate)
                 return;
             $1615705ecc6adca3$exports.default.log("Received ICE candidates for ".concat(peerId, ":"), evt.candidate);
@@ -12365,8 +12361,8 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                 dst: peerId
             });
         };
-        peerConnection2.oniceconnectionstatechange = function () {
-            switch (peerConnection2.iceConnectionState) {
+        peerConnection.oniceconnectionstatechange = function () {
+            switch (peerConnection.iceConnectionState) {
                 case "failed":
                     $1615705ecc6adca3$exports.default.log("iceConnectionState is failed, closing connections to " + peerId);
                     _this.connection.emit("error", new Error("Negotiation of connection to " + peerId + " failed."));
@@ -12381,20 +12377,20 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                     $1615705ecc6adca3$exports.default.log("iceConnectionState changed to disconnected on the connection with " + peerId);
                     break;
                 case "completed":
-                    peerConnection2.onicecandidate = $06cb531ed7840f78$export$7debb50ef11d5e0b.noop;
+                    peerConnection.onicecandidate = $06cb531ed7840f78$export$7debb50ef11d5e0b.noop;
                     break;
             }
-            _this.connection.emit("iceStateChanged", peerConnection2.iceConnectionState);
+            _this.connection.emit("iceStateChanged", peerConnection.iceConnectionState);
         };
         $1615705ecc6adca3$exports.default.log("Listening for data channel");
-        peerConnection2.ondatachannel = function (evt) {
+        peerConnection.ondatachannel = function (evt) {
             $1615705ecc6adca3$exports.default.log("Received data channel");
             var dataChannel = evt.channel;
             var connection = provider.getConnection(peerId, connectionId);
             connection.initialize(dataChannel);
         };
         $1615705ecc6adca3$exports.default.log("Listening for remote stream");
-        peerConnection2.ontrack = function (evt) {
+        peerConnection.ontrack = function (evt) {
             $1615705ecc6adca3$exports.default.log("Received remote stream");
             var stream = evt.streams[0];
             var connection = provider.getConnection(peerId, connectionId);
@@ -12406,13 +12402,13 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
     };
     $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype.cleanup = function () {
         $1615705ecc6adca3$exports.default.log("Cleaning up PeerConnection to " + this.connection.peer);
-        var peerConnection2 = this.connection.peerConnection;
-        if (!peerConnection2)
+        var peerConnection = this.connection.peerConnection;
+        if (!peerConnection)
             return;
         this.connection.peerConnection = null;
-        peerConnection2.onicecandidate = peerConnection2.oniceconnectionstatechange = peerConnection2.ondatachannel = peerConnection2.ontrack = function () {
+        peerConnection.onicecandidate = peerConnection.oniceconnectionstatechange = peerConnection.ondatachannel = peerConnection.ontrack = function () {
         };
-        var peerConnectionNotClosed = peerConnection2.signalingState !== "closed";
+        var peerConnectionNotClosed = peerConnection.signalingState !== "closed";
         var dataChannelNotClosed = false;
         if (this.connection.type === $60fadef21a2daafc$export$3157d57b4135e3bc.Data) {
             var dataConnection = this.connection;
@@ -12421,15 +12417,15 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                 dataChannelNotClosed = !!dataChannel.readyState && dataChannel.readyState !== "closed";
         }
         if (peerConnectionNotClosed || dataChannelNotClosed)
-            peerConnection2.close();
+            peerConnection.close();
     };
     $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._makeOffer = function () {
         return $77f14d3e81888156$var$__awaiter(this, void 0, Promise, function () {
-            var peerConnection2, provider, offer, payload, dataConnection, err_2, err_1_1;
+            var peerConnection, provider, offer, payload, dataConnection, err_2, err_1_1;
             return $77f14d3e81888156$var$__generator(this, function (_a2) {
                 switch (_a2.label) {
                     case 0:
-                        peerConnection2 = this.connection.peerConnection;
+                        peerConnection = this.connection.peerConnection;
                         provider = this.connection.provider;
                         _a2.label = 1;
                     case 1:
@@ -12441,7 +12437,7 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                         ]);
                         return [
                             4,
-                            peerConnection2.createOffer(this.connection.options.constraints)
+                            peerConnection.createOffer(this.connection.options.constraints)
                         ];
                     case 2:
                         offer = _a2.sent();
@@ -12458,7 +12454,7 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                         ]);
                         return [
                             4,
-                            peerConnection2.setLocalDescription(offer)
+                            peerConnection.setLocalDescription(offer)
                         ];
                     case 4:
                         _a2.sent();
@@ -12520,11 +12516,11 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
     };
     $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._makeAnswer = function () {
         return $77f14d3e81888156$var$__awaiter(this, void 0, Promise, function () {
-            var peerConnection2, provider, answer, err_3, err_1_2;
+            var peerConnection, provider, answer, err_3, err_1_2;
             return $77f14d3e81888156$var$__generator(this, function (_a2) {
                 switch (_a2.label) {
                     case 0:
-                        peerConnection2 = this.connection.peerConnection;
+                        peerConnection = this.connection.peerConnection;
                         provider = this.connection.provider;
                         _a2.label = 1;
                     case 1:
@@ -12536,7 +12532,7 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                         ]);
                         return [
                             4,
-                            peerConnection2.createAnswer()
+                            peerConnection.createAnswer()
                         ];
                     case 2:
                         answer = _a2.sent();
@@ -12553,7 +12549,7 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                         ]);
                         return [
                             4,
-                            peerConnection2.setLocalDescription(answer)
+                            peerConnection.setLocalDescription(answer)
                         ];
                     case 4:
                         _a2.sent();
@@ -12603,12 +12599,12 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
     };
     $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype.handleSDP = function (type2, sdp2) {
         return $77f14d3e81888156$var$__awaiter(this, void 0, Promise, function () {
-            var peerConnection2, provider, self2, err_4;
+            var peerConnection, provider, self2, err_4;
             return $77f14d3e81888156$var$__generator(this, function (_a2) {
                 switch (_a2.label) {
                     case 0:
                         sdp2 = new RTCSessionDescription(sdp2);
-                        peerConnection2 = this.connection.peerConnection;
+                        peerConnection = this.connection.peerConnection;
                         provider = this.connection.provider;
                         $1615705ecc6adca3$exports.default.log("Setting remote description", sdp2);
                         self2 = this;
@@ -12622,7 +12618,7 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                         ]);
                         return [
                             4,
-                            peerConnection2.setRemoteDescription(sdp2)
+                            peerConnection.setRemoteDescription(sdp2)
                         ];
                     case 2:
                         _a2.sent();
@@ -12662,7 +12658,7 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
     };
     $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype.handleCandidate = function (ice) {
         return $77f14d3e81888156$var$__awaiter(this, void 0, Promise, function () {
-            var candidate, sdpMLineIndex, sdpMid, peerConnection2, provider, err_5;
+            var candidate, sdpMLineIndex, sdpMid, peerConnection, provider, err_5;
             return $77f14d3e81888156$var$__generator(this, function (_a2) {
                 switch (_a2.label) {
                     case 0:
@@ -12670,7 +12666,7 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                         candidate = ice.candidate;
                         sdpMLineIndex = ice.sdpMLineIndex;
                         sdpMid = ice.sdpMid;
-                        peerConnection2 = this.connection.peerConnection;
+                        peerConnection = this.connection.peerConnection;
                         provider = this.connection.provider;
                         _a2.label = 1;
                     case 1:
@@ -12682,7 +12678,7 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
                         ]);
                         return [
                             4,
-                            peerConnection2.addIceCandidate(new RTCIceCandidate({
+                            peerConnection.addIceCandidate(new RTCIceCandidate({
                                 sdpMid,
                                 sdpMLineIndex,
                                 candidate
@@ -12711,12 +12707,12 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
             });
         });
     };
-    $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._addTracksToConnection = function (stream, peerConnection2) {
+    $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._addTracksToConnection = function (stream, peerConnection) {
         $1615705ecc6adca3$exports.default.log("add tracks from stream ".concat(stream.id, " to peer connection"));
-        if (!peerConnection2.addTrack)
+        if (!peerConnection.addTrack)
             return $1615705ecc6adca3$exports.default.error("Your browser does't support RTCPeerConnection#addTrack. Ignored.");
         stream.getTracks().forEach(function (track) {
-            peerConnection2.addTrack(track, stream);
+            peerConnection.addTrack(track, stream);
         });
     };
     $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._addStreamToMediaConnection = function (stream, mediaConnection) {
