@@ -5436,10 +5436,7 @@ class NanoFactoryPeers {
         await db.nanofactoryPeers.put(this, this.id);
     }
     async removeFromList(listType, peerID) {
-        console.log("remove from list called");
-        console.log(this[listType].size);
         this[listType].delete(peerID);
-        console.log(this[listType].size);
         if (listType === "whitelisted") {
             this["available"].delete(peerID);
         }
@@ -5459,7 +5456,7 @@ var QueuePausedReason = /* @__PURE__ */ ((QueuePausedReason2) => {
     QueuePausedReason2["printerError"] = "Printer is in error state";
     QueuePausedReason2["printerPaused"] = "User has paused the queue";
     QueuePausedReason2["noFilament"] = "No filament is loaded";
-    QueuePausedReason2["depltedFilament"] = "Filament is depleted";
+    QueuePausedReason2["depletedFilament"] = "Filament is depleted";
     QueuePausedReason2["filamentMismatch"] = "Assigned filament does not match the one loaded";
     QueuePausedReason2["printPaused"] = "Current print has been paused";
     QueuePausedReason2["printCompletion"] = "Print has been completed";
@@ -5494,10 +5491,11 @@ class Printer {
         this.model = "";
         this.volume = {
             formFactor: "rectangular",
-            centerOrigin: "center",
+            origin: "center",
             width: 0,
             depth: 0,
-            height: 0
+            height: 0,
+            custom_box: false
         };
         this.heatedBed = true;
         this.heatedChamber = false;
@@ -5745,10 +5743,12 @@ function sendData(peerID, data, label) {
     peerConnection = peer.connect(peerID, options);
     peerConnection.on("open", function () {
         peerConnection.send(JSON.stringify(data));
-        console.log("Sent:", data);
+        console.log("Sent:", data, " to peerID: ", peerID);
     });
     peerConnection.on("error", async function (err) {
-        console.error("Could not send data: ", data, "\n Error: ", err);
+        console.error("Could not send data: ", data, " to peerID: ", peerID, "\n Error: ", err);
+        if (err.message.trim().includes("Connection is not open. You should listen for the `open` event before sending messages."))
+            return;
         let nanofactoryPeersObject2 = (await db.nanofactoryPeers.toArray())[0];
         nanofactoryPeersObject2.removeFromList(NanoFactoryPeerType.AVAILABLE, peerID);
     });
@@ -5805,7 +5805,7 @@ async function handleJob(data, peerID, label, metadata, fileContent) {
             }
             break;
         case ConnectionLabels.jobPause:
-            OctoPrint.job.pause();
+            pauseJob();
             break;
         case ConnectionLabels.jobResume:
             if (currentJobID.length > 0) {
@@ -5864,6 +5864,9 @@ function sendCurrentJobUpdates(peerID) {
     jobProgressConnection.on("error", function () {
         delete jobProgressConnections[peerID];
     });
+}
+function pauseJob() {
+    OctoPrint.job.pause();
 }
 function resetCurrentJobID() {
     currentJobID = "";
@@ -5949,6 +5952,18 @@ async function handlePrinter(data, peerID, label, _metadata) {
             break;
         case ConnectionLabels.emergencyStop:
             executeCustomGcode(["M112"]);
+            break;
+        case ConnectionLabels.profileChanged:
+            OctoPrint.printerprofiles.update("_default", data);
+            sendDataToAllAvailablePeers(data, ConnectionLabels.profileChanged);
+            Object.keys(data).forEach((key) => {
+                printer[key] = data[key];
+            });
+            printer.save(printer);
+            break;
+        case ConnectionLabels.refreshConnectionOptions:
+            await saveConnectionOptions();
+            sendData(peerID, printer.connectionOptions, ConnectionLabels.connectionOptionsChanged);
             break;
     }
 }
@@ -6079,22 +6094,24 @@ function startPositionChangedStream(peerID) {
         delete positionChangedConnections[peerID];
     });
 }
-const patternPositionAbsolute = ".*G90.*";
-const patternPositionRelative = ".*G91.*";
-const patternExtruderAbsolute = ".*M82.*";
-const patternExtruderRelative = ".*M83.*";
-const patternE = "E-?d+.?d+";
-const patternX = "X[-0-9]+";
-const patternY = "Y[-0-9]+";
-const patternZ = "Z[0-9]+";
-const patternHome = "Recv: X:[0-9]+.[0-9]{2} Y:[0-9]+.[0-9]{2} Z:[0-9]+.[0-9]{2} E:0.00 Count X:[0-9]+ Y:[0-9]+ Z:[0-9]+";
-const patternXHome = "X:[-0-9]+.[-0-9]+";
-const patternYHome = "Y:[-0-9]+.[-0-9]+";
-const patternZHome = "Z:[-0-9]+.[-0-9]+";
+const patternPositionAbsolute = /.*G90.*/;
+const patternPositionRelative = /.*G91.*/;
+const patternExtruderAbsolute = /.*M82.*/;
+const patternExtruderRelative = /.*M83.*/;
+const patternE = /E-?\d+\.?\d+/;
+const patternX = /X[\-0-9]+/;
+const patternY = /Y[\-0-9]+/;
+const patternZ = /Z[0-9]+/;
+const patternHome = /Recv: X:[0-9]+\.[0-9]{2} Y:[0-9]+\.[0-9]{2} Z:[0-9]+\.[0-9]{2} E:0.00 Count X:[0-9]+ Y:[0-9]+ Z:[0-9]+/;
+const patternXHome = /X\:[\-0-9]+\.[\-0-9]+/;
+const patternYHome = /Y\:[\-0-9]+\.[\-0-9]+/;
+const patternZHome = /Z\:[\-0-9]+\.[\-0-9]+/;
 let checkX = false;
 let checkY = false;
 let checkZ = false;
 let positionAbsolute = true;
+let extruderAbsolute = true;
+let extruderPosition = 0;
 function handleDataFromLogs(logLines) {
     let positionChanged = false;
     logLines.forEach((logLine) => {
@@ -6123,10 +6140,11 @@ function handleDataFromLogs(logLines) {
         } else if (logLine.match(patternPositionRelative)) {
             positionAbsolute = false;
         }
-        if (logLine.match(patternExtruderAbsolute))
-            ;
-        else if (logLine.match(patternExtruderRelative))
-            ;
+        if (logLine.match(patternExtruderAbsolute)) {
+            extruderAbsolute = true;
+        } else if (logLine.match(patternExtruderRelative)) {
+            extruderAbsolute = false;
+        }
         if (logLine.includes("G0") || logLine.includes("G1")) {
             if (logLine.match(patternX)) {
                 printer.position.x = positionAbsolute ? parseFloat(logLine.match(patternX)[0].substring(1)) : printer.position.x + parseFloat(logLine.match(patternX)[0].substring(1));
@@ -6141,7 +6159,13 @@ function handleDataFromLogs(logLines) {
                 positionChanged = true;
             }
             if (logLine.match(patternE)) {
-                parseFloat(logLine.match(patternE)[0].substring(1));
+                let extrudeLength = parseFloat(logLine.match(patternE)[0].substring(1));
+                if (!extruderAbsolute) {
+                    extruderPosition += extrudeLength;
+                } else {
+                    extruderPosition = extrudeLength;
+                }
+                console.log("Updating extruder position to ", extruderPosition);
             }
             if (positionChanged) {
                 printer.save({ position: printer.position });
@@ -6195,7 +6219,7 @@ var OctoPrintEventTypes = /* @__PURE__ */ ((OctoPrintEventTypes2) => {
     OctoPrintEventTypes2["PRINTCANCELLED"] = "PrintCancelled";
     return OctoPrintEventTypes2;
 })(OctoPrintEventTypes || {});
-async function handleFilament(data, _peerID, label, _metadata) {
+async function handleFilament(data, peerID, label, _metadata) {
     switch (label) {
         case ConnectionLabels.filamentAssigned:
             if (printer.state.status === PrinterStatus.operational) {
@@ -6218,7 +6242,63 @@ async function handleFilament(data, _peerID, label, _metadata) {
                 modifiedFilament.save(data);
             }
             break;
+        case ConnectionLabels.filamentModifiedRequest:
+            sendFilamentUpdates(peerID);
+            break;
+        case ConnectionLabels.filamentModifiedStop:
+            filamentUpdateConnections[peerID].close();
+            break;
     }
+}
+let extruderAtLastUpdate = 0;
+const filamentUpdateTimeout = 10;
+function updateFilamentUsage() {
+    setInterval(async () => {
+        console.log("running update filament usage");
+        let extruderPositionCopy = extruderPosition;
+        let extrudeLengthForCurrentInterval = extruderPositionCopy - extruderAtLastUpdate;
+        extruderAtLastUpdate = extruderPositionCopy;
+        if (extrudeLengthForCurrentInterval == 0)
+            return;
+        let filament = (await db.filaments.toArray())[0];
+        let extrudeWeight = await calculateFilamentWeightFromLength(extrudeLengthForCurrentInterval, filament.density, filament.diameter);
+        filament.weightPrinted += extrudeWeight;
+        filament.save({ weightPrinted: filament.weightPrinted });
+        if (filament.weightRemaining < filament.filamentDepletedCutoff)
+            handleFilamentDepletion();
+        for (let peerID in filamentUpdateConnections) {
+            filamentUpdateConnections[peerID].send(JSON.stringify(filament));
+        }
+    }, filamentUpdateTimeout * 1e3);
+}
+function sendFilamentUpdates(peerID) {
+    const options = {
+        label: ConnectionLabels.filamentModifiedResponse,
+        metadata: peerID,
+        serialization: "json",
+        reliable: true
+    };
+    let filamentUpdateConnection = peer.connect(peerID, options);
+    filamentUpdateConnection.on("open", function () {
+        console.log("filamentUpdate connection is open " + peerID);
+        filamentUpdateConnections[peerID] = filamentUpdateConnection;
+    });
+    filamentUpdateConnection.on("close", function () {
+        delete filamentUpdateConnections[peerID];
+    });
+    filamentUpdateConnection.on("error", function () {
+        delete filamentUpdateConnections[peerID];
+    });
+}
+async function calculateFilamentWeightFromLength(length, density, diameter) {
+    return density * (Math.PI * diameter * diameter * length / 4e3);
+}
+function handleFilamentDepletion() {
+    pauseJob();
+    printer.isQueuePaused = true;
+    printer.queuePausedReason = QueuePausedReason.depletedFilament;
+    printer.save({ isQueuePaused: printer.isQueuePaused, queuePausedReason: printer.queuePausedReason });
+    sendDataToAllAvailablePeers({ "data": printer.queuePausedReason }, ConnectionLabels.queuePaused);
 }
 async function handleAction(data, _peerID, label, metadata, fileContent) {
     switch (label) {
@@ -6303,6 +6383,8 @@ async function handleIncomingData(data, peerID, label, metadata) {
             case ConnectionLabels.positionChangedRequest:
             case ConnectionLabels.positionChangedStop:
             case ConnectionLabels.emergencyStop:
+            case ConnectionLabels.profileChanged:
+            case ConnectionLabels.refreshConnectionOptions:
                 handlePrinter(data, peerID, label);
                 break;
             case ConnectionLabels.jobCreated:
@@ -6319,6 +6401,8 @@ async function handleIncomingData(data, peerID, label, metadata) {
             case ConnectionLabels.filamentAssigned:
             case ConnectionLabels.filamentRemoved:
             case ConnectionLabels.filamentModified:
+            case ConnectionLabels.filamentModifiedRequest:
+            case ConnectionLabels.filamentModifiedStop:
                 handleFilament(data, peerID, label);
                 break;
             case ConnectionLabels.actionCreated:
@@ -6446,7 +6530,6 @@ async function handleSocketMessage(message) {
             }
             break;
         case socketEventTypes.EVENT:
-            console.log(message);
             handleOctoprintEvents(message);
             break;
         default:
@@ -6472,7 +6555,7 @@ async function handleOctoprintEvents(message) {
             break;
         case OctoPrintEventTypes.PRINTDONE:
         case OctoPrintEventTypes.PRINTFAILED:
-        case OctoPrintEventTypes.PRINTFAILED:
+        case OctoPrintEventTypes.PRINTCANCELLED:
             if (currentJobID) {
                 let labels = getLabelsFromOctoprintEvent(message.data.type);
                 let finishedJob = await db.printQueue.get(currentJobID);
@@ -6513,7 +6596,6 @@ function getLabelsFromOctoprintEvent(event) {
         payload.connectionLabel = ConnectionLabels.jobFailed;
         payload.printJobStatus = PrintJobStatus.FAILED;
     }
-    console.log(payload);
     return payload;
 }
 var bufferbuilder = { exports: {} };
@@ -13994,10 +14076,11 @@ let printer;
 let nanofactoryPeersObject;
 let jobProgressConnections = {};
 let temperatureStreamConnections = {};
-let cameraStreamConnections = [];
 let terminalConnections = {};
 let positionChangedConnections = {};
-const continousConnectionLabels = [ConnectionLabels.positionChanged];
+let filamentUpdateConnections = {};
+let cameraStreamConnections = [];
+const continuousConnectionLabels = [ConnectionLabels.positionChanged];
 const BASEURL = "http://localhost:5000/";
 OctoPrint.options.baseurl = BASEURL;
 loadDatabase().then(async () => {
@@ -14045,9 +14128,10 @@ async function startupFunctions() {
     printer = (await db.printer.toArray())[0];
     await saveConnectionOptions();
     await updatePrinterStateAndTemperature();
+    initializeCameraStream();
+    updateFilamentUsage();
     await OctoPrint.socket.connect();
     OctoPrint.socket.onMessage("*", (socketMessage) => handleSocketMessage(socketMessage));
-    initializeCameraStream();
 }
 function callbackFunctionsForPeer() {
     peer.on("open", function (id) {
@@ -14058,7 +14142,7 @@ function callbackFunctionsForPeer() {
         connection.on("data", function (data) {
             console.log("Received Label: " + connection.label);
             handleIncomingData(data, connection.peer, connection.label, connection.metadata);
-            if (!continousConnectionLabels.includes(connection.label)) {
+            if (!continuousConnectionLabels.includes(connection.label)) {
                 connection.close();
             }
         });
