@@ -5801,6 +5801,7 @@ async function handleJob(data, peerID, label, metadata, fileContent) {
                 rankChangedJob.queuePosition = data["queuePosition"];
                 rankChangedJob.save("printQueue", { queuePosition: rankChangedJob.queuePosition });
             }
+            sendDataToAllAvailablePeers(data, ConnectionLabels.jobRankChange);
             break;
         case ConnectionLabels.jobPause:
             pauseJob();
@@ -6232,6 +6233,7 @@ async function handleFilament(data, peerID, label, _metadata) {
             printer.filamentID = "";
             printer.save({ "filamentID": printer.filamentID });
             db.filaments.clear();
+            sendDataToAllAvailablePeers({}, ConnectionLabels.filamentRemoved);
             break;
         case ConnectionLabels.filamentModified:
             let modifiedFilament = await db.filaments.get(data["id"]);
@@ -6321,6 +6323,7 @@ async function handleAction(data, _peerID, label, metadata, fileContent) {
         case ConnectionLabels.actionDeleted:
             let actionToDelete = (await db.actions.where("name").equals(data["name"]).toArray())[0];
             actionToDelete.remove();
+            sendDataToAllAvailablePeers(data, ConnectionLabels.actionDeleted);
             break;
     }
 }
