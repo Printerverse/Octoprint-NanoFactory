@@ -77,7 +77,7 @@ class NanofactoryPlugin(
             self.send_master_peer_id()
 
         elif command == "saveMasterPeerID":
-            self.save_master_peer_id(data["masterPeerID"])
+            self.save_master_peer_id(data["masterPeerID"], True)
 
         elif command == "restartNanoFactoryApp":
             self.restart_browser()
@@ -87,7 +87,7 @@ class NanofactoryPlugin(
     def save_master_peer_id_endpoint(self):
         master_peer_id = request.args.get("master_peer_id", None)
         if master_peer_id:
-            self.save_master_peer_id(master_peer_id)
+            self.save_master_peer_id(master_peer_id, False)
         return "Success"
 
     def is_blueprint_csrf_protected(self):
@@ -101,7 +101,7 @@ class NanofactoryPlugin(
         time.sleep(1)
         self.start_browser()
 
-    def save_master_peer_id(self, master_peer_id: str):
+    def save_master_peer_id(self, master_peer_id: str, restart_browser: bool):
         self.master_peer_id = master_peer_id
         try:
             with open(
@@ -117,8 +117,10 @@ class NanofactoryPlugin(
         except Exception as e:
             self._logger.warning(e, exc_info=True)
 
-        self.restart_browser()
         self.send_master_peer_id()
+
+        if restart_browser:
+            self.restart_browser()
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
