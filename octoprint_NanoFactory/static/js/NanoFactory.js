@@ -150,7 +150,20 @@ $(function () {
 
 
         self.restartNanoFactoryApp = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp").done(function (response) {
+                new PNotify({
+                    title: "Restart successful",
+                    text: "Restarted NanoFactory Successfully",
+                    type: "success"
+                });
+            }).catch(error => {
+                console.log(error)
+                new PNotify({
+                    title: "Restart Failed",
+                    text: "Failed to restart NanoFactory. Reason: " + err.message,
+                    type: "error"
+                });
+            });
         }
 
 
