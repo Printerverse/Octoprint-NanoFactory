@@ -43,15 +43,27 @@ $(function () {
                 }
 
                 if (data["peerID"]) {
-
-
                     self.peerID(data["peerID"])
                     self.peerIDMessage("Your Peer ID: " + data["peerID"])
                     // TODO: Change localhost to https://nanofactory.printerverse.net/printer/
                     self.nanoFactoryURL("http://localhost:8080/printer/" + data["peerID"])
 
-                    console.log(self.nanoFactoryURL())
+                }
 
+                if (data["peer_error"]) {
+                    new PNotify({
+                        title: "Error",
+                        text: data["peer_error"],
+                        type: "error"
+                    });
+                }
+
+                if (data["peer_success"]) {
+                    new PNotify({
+                        title: "Success",
+                        text: data["peer_success"],
+                        type: "success"
+                    });
                 }
             }
         }

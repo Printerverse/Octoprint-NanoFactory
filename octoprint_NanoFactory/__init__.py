@@ -90,6 +90,25 @@ class NanofactoryPlugin(
             self.save_master_peer_id(master_peer_id, False)
         return "Success"
 
+    @octoprint.plugin.BlueprintPlugin.route("/peer_connection_error", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def send_peer_error_message_to_frontend(self):
+        retry_connection_timeout = request.args.get("timeout", 15)
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {
+                "peer_error": "NanoFactory could not connect to the peer server. We will automatically retry connection in " + retry_connection_timeout + " seconds"}
+        )
+        return "Success"
+
+    @octoprint.plugin.BlueprintPlugin.route("/peer_connection_success", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def send_peer_success_message_to_frontend(self):
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {
+                "peer_success": "NanoFactory connected to the peer server successfully"}
+        )
+        return "Success"
+
     def is_blueprint_csrf_protected(self):
         return True
 
@@ -180,7 +199,7 @@ class NanofactoryPlugin(
         if platform.system() == "Windows":
             file_path = f'"file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}&masterPeerID={self.master_peer_id}"'
             os.system(
-                f"start chrome {file_path} --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\"
+                f"start chrome {file_path} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\"
             )
         else:
             sarge.run(

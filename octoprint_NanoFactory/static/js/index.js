@@ -5440,6 +5440,7 @@ class NanoFactoryPeers {
         if (listType === "whitelisted") {
             this["available"].delete(peerID);
         }
+        console.log("remove from list called");
         await db.nanofactoryPeers.put(this, this.id);
     }
 }
@@ -5746,8 +5747,6 @@ function sendData(peerID, data, label) {
     });
     peerConnection.on("error", async function (err) {
         console.error("Could not send data: ", data, " to peerID: ", peerID, "\n Error: ", err);
-        if (err.message.trim().includes("Connection is not open. You should listen for the `open` event before sending messages."))
-            return;
         let nanofactoryPeersObject2 = (await db.nanofactoryPeers.toArray())[0];
         nanofactoryPeersObject2.removeFromList(NanoFactoryPeerType.AVAILABLE, peerID);
     });
@@ -14077,6 +14076,7 @@ let positionChangedConnections = {};
 let filamentUpdateConnections = {};
 let cameraStreamConnections = [];
 const continuousConnectionLabels = [ConnectionLabels.positionChanged];
+const retryConnectionTimeout = 15;
 const BASEURL = "http://localhost:5000/";
 OctoPrint.options.baseurl = BASEURL;
 loadDatabase().then(async () => {
@@ -14132,6 +14132,12 @@ async function startupFunctions() {
 function callbackFunctionsForPeer() {
     peer.on("open", function (id) {
         console.log("Connected to peer server with id:" + id);
+        fetch(BASEURL + "plugin/NanoFactory/peer_connection_success?", {
+            method: "GET",
+            headers: {
+                "X-API-KEY": networking.apiKey
+            }
+        });
     });
     peer.on("connection", function (connection) {
         console.log("Connected with peer:" + connection.peer);
@@ -14148,9 +14154,25 @@ function callbackFunctionsForPeer() {
         peer.reconnect();
     });
     peer.on("close", function () {
-        console.log("Peer destroyed, cannot reconnect");
+        console.log("Peer destroyed. Reconnecting...");
     });
-    peer.on("error", function (err) {
+    peer.on("error", async function (err) {
         console.error(err);
+        if (err.message === 'ID "' + peer.id + '" is taken') {
+            console.log("Will retry connection to Peer server in " + retryConnectionTimeout + " seconds!");
+            fetch(BASEURL + "plugin/NanoFactory/peer_connection_error?timeout=" + retryConnectionTimeout, {
+                method: "GET",
+                headers: {
+                    "X-API-KEY": networking.apiKey
+                }
+            });
+            setTimeout(() => {
+                peer = new $70d766613f57b014$export$2e2bcd8739ae039(networking.peerID);
+                callbackFunctionsForPeer();
+            }, retryConnectionTimeout * 1e3);
+        } else if (err.message.includes("Could not connect to peer ")) {
+            let nanofactoryPeersObject2 = (await db.nanofactoryPeers.toArray())[0];
+            nanofactoryPeersObject2.removeFromList(NanoFactoryPeerType.AVAILABLE, err.message.replace("Could not connect to peer ", ""));
+        }
     });
 }
