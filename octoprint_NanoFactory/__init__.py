@@ -13,6 +13,8 @@ from uuid import uuid4
 import octoprint.plugin
 import sarge
 
+from .BedLevelling import process_gcode
+
 
 class NanofactoryPlugin(
     octoprint.plugin.StartupPlugin,
@@ -29,10 +31,10 @@ class NanofactoryPlugin(
         self.master_peer_id: str = ""
 
     # # ~~ StartupPlugin mixin
-    def on_startup(self, host, port):
-        self.load_nf_profile()
+    # def on_startup(self, host, port):
 
     def on_after_startup(self):
+        self.load_nf_profile()
         self.check_chrome_data_folder()
         if self.api_key and self.peer_ID:
             self.start_browser()
@@ -111,15 +113,39 @@ class NanofactoryPlugin(
         )
         return "Success"
 
+    @octoprint.plugin.BlueprintPlugin.route("/initiate_bed_levelling", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def start_bed_levelling(self):
+        if not BedLevelling.processing:
+            BedLevelling.mesh = []
+            self._printer.commands("G29")
+            BedLevelling.processing = True
+
+        return "Success"
+
+    @octoprint.plugin.BlueprintPlugin.route("/get_bed_levelling", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def get_bed_levelling_data(self):
+        if BedLevelling.processing:
+            return {}
+        else:
+            try:
+                with open(os.path.join(self.get_plugin_data_folder(), "bed_levelling_data.json"), "r") as f:
+                    data = json.loads(f.read())
+                    return {"data": data}
+            except Exception as e:
+                return {}
+
     def is_blueprint_csrf_protected(self):
         return True
 
     def on_shutdown(self):
         self.close_browser()
 
-    def check_api_key_validity(self):
-        if self.api_key:
-            response = requests.get("http://localhost:5000/api/plugin/appkeys")
+    def check_api_key_validity(self, api_key):
+        if api_key:
+            response = requests.get(
+                "http://localhost:5000/api/plugin/appkeys", headers={"X-API-KEY": api_key})
             if response.ok:
                 return True
             else:
@@ -150,6 +176,15 @@ class NanofactoryPlugin(
 
         if restart_browser:
             self.restart_browser()
+
+    def save_bed_levelling_data(self, data):
+        try:
+            with open(os.path.join(self.get_plugin_data_folder(), "bed_levelling_data.json"), "w+") as f:
+                json.dump(data, f)
+
+        except Exception as e:
+            self._logger.warning(
+                "Error while saving bed levelling data: "+e, exc_info=True)
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
@@ -196,7 +231,7 @@ class NanofactoryPlugin(
 
         self.peer_ID = nf_profile["peer_ID"]
 
-        if self.check_api_key_validity():
+        if self.check_api_key_validity(nf_profile["api_key"]):
             self.api_key = nf_profile["api_key"]
         else:
             self._logger.warning("NanoFactory API Key not valid")
@@ -275,5 +310,7 @@ def __plugin_load__():
 
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+        "octoprint.comm.protocol.gcode.received": process_gcode,
+
     }

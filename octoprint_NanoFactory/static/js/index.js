@@ -5917,6 +5917,10 @@ function pauseJob() {
 function resetCurrentJobID() {
   currentJobID = "";
 }
+let bedLevelingRequests = [];
+const bedLevellingResponseInterval = 10;
+const bedLevellingResponseMaxTries = 60;
+let numberOfBedlevellingResponseTries = 0;
 async function handlePrinter(data, peerID, label, _metadata) {
   switch (label) {
     case ConnectionLabels.connectPrinter:
@@ -5976,7 +5980,40 @@ async function handlePrinter(data, peerID, label, _metadata) {
       await saveConnectionOptions();
       sendData(peerID, printer.connectionOptions, ConnectionLabels.connectionOptionsChanged);
       break;
+    case ConnectionLabels.bedLevelingRequest:
+      bedLevelingRequests.push(peerID);
+      fetch(BASEURL + "plugin/NanoFactory/initiate_bed_levelling", {
+        method: "GET",
+        headers: {
+          "X-API-KEY": networking.apiKey
+        }
+      });
+      getBedLevellingResponse();
+      break;
   }
+}
+function getBedLevellingResponse() {
+  numberOfBedlevellingResponseTries = 0;
+  let bedlevellingResponsePoll = setInterval(async () => {
+    if (numberOfBedlevellingResponseTries < bedLevellingResponseMaxTries) {
+      numberOfBedlevellingResponseTries += 1;
+      let response = (await fetch(BASEURL + "plugin/NanoFactory/get_bed_levelling", {
+        method: "GET",
+        headers: {
+          "X-API-KEY": networking.apiKey
+        }
+      })).json();
+      if ("data" in response) {
+        clearInterval(bedlevellingResponsePoll);
+        printer.bedLevellingGraph = response["data"];
+        printer.save({ bedLevellingGraph: printer.bedLevellingGraph });
+        for (let i = bedLevelingRequests.length - 1; i > -1; i--) {
+          sendData(bedLevelingRequests[i], printer.bedLevellingGraph, ConnectionLabels.bedLevelingResponse);
+          bedLevelingRequests.pop();
+        }
+      }
+    }
+  }, bedLevellingResponseInterval * 1e3);
 }
 function executeCustomGcode(gcode) {
   gcode.forEach(async (line) => {
@@ -6382,6 +6419,7 @@ async function handleIncomingData(data, peerID, label, metadata) {
       case ConnectionLabels.emergencyStop:
       case ConnectionLabels.profileChanged:
       case ConnectionLabels.refreshConnectionOptions:
+      case ConnectionLabels.bedLevelingRequest:
         handlePrinter(data, peerID, label);
         break;
       case ConnectionLabels.jobCreated:
@@ -14128,7 +14166,7 @@ async function startupFunctions() {
 function callbackFunctionsForPeer() {
   peer.on("open", function (id) {
     console.log("Connected to peer server with id:" + id);
-    fetch(BASEURL + "plugin/NanoFactory/peer_connection_success?", {
+    fetch(BASEURL + "plugin/NanoFactory/peer_connection_success", {
       method: "GET",
       headers: {
         "X-API-KEY": networking.apiKey
