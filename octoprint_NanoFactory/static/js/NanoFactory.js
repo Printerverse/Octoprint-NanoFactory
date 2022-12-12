@@ -65,6 +65,16 @@ $(function () {
                         type: "success"
                     });
                 }
+
+                if (data["start_auth_flow"]) {
+                    new PNotify({
+                        title: "API Key Invalid",
+                        text: "API key for NanoFactory is invalid. Initiating API Key generation flow!",
+                        type: "error"
+                    });
+
+                    self.startAuthFlow()
+                }
             }
         }
 

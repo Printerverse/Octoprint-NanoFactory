@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 import getpass
 import json
+import requests
 import os
 import platform
 import time
@@ -33,7 +34,8 @@ class NanofactoryPlugin(
 
     def on_after_startup(self):
         self.check_chrome_data_folder()
-        self.start_browser()
+        if self.api_key and self.peer_ID:
+            self.start_browser()
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
@@ -115,6 +117,14 @@ class NanofactoryPlugin(
     def on_shutdown(self):
         self.close_browser()
 
+    def check_api_key_validity(self):
+        if self.api_key:
+            response = requests.get("http://localhost:5000/api/plugin/appkeys")
+            if response.ok:
+                return True
+            else:
+                return False
+
     def restart_browser(self):
         self.close_browser()
         time.sleep(1)
@@ -185,7 +195,12 @@ class NanofactoryPlugin(
                     json.dump(nf_profile, f)
 
         self.peer_ID = nf_profile["peer_ID"]
-        self.api_key = nf_profile["api_key"]
+
+        if self.check_api_key_validity():
+            self.api_key = nf_profile["api_key"]
+        else:
+            self._logger.warning("NanoFactory API Key not valid")
+
         self.master_peer_id = nf_profile["master_peer_id"]
 
     def start_browser(self):
@@ -199,7 +214,7 @@ class NanofactoryPlugin(
         if platform.system() == "Windows":
             file_path = f'"file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}&masterPeerID={self.master_peer_id}"'
             os.system(
-                f"start chrome {file_path} --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\"
+                f"start chrome {file_path} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\"
             )
         else:
             sarge.run(
