@@ -1725,24 +1725,24 @@ function Events(ctx) {
       chainFunction = reverseStoppableEventChain;
     if (!defaultFunction)
       defaultFunction = nop;
-    var context2 = {
+    var context = {
       subscribers: [],
       fire: defaultFunction,
       subscribe: function (cb) {
-        if (context2.subscribers.indexOf(cb) === -1) {
-          context2.subscribers.push(cb);
-          context2.fire = chainFunction(context2.fire, cb);
+        if (context.subscribers.indexOf(cb) === -1) {
+          context.subscribers.push(cb);
+          context.fire = chainFunction(context.fire, cb);
         }
       },
       unsubscribe: function (cb) {
-        context2.subscribers = context2.subscribers.filter(function (fn) {
+        context.subscribers = context.subscribers.filter(function (fn) {
           return fn !== cb;
         });
-        context2.fire = context2.subscribers.reduce(chainFunction, defaultFunction);
+        context.fire = context.subscribers.reduce(chainFunction, defaultFunction);
       }
     };
-    evs[eventName] = rv[eventName] = context2;
-    return context2;
+    evs[eventName] = rv[eventName] = context;
+    return context;
   }
   function addConfiguredEvents(cfg) {
     keys(cfg).forEach(function (eventName) {
@@ -1750,11 +1750,11 @@ function Events(ctx) {
       if (isArray(args)) {
         add(eventName, cfg[eventName][0], cfg[eventName][1]);
       } else if (args === "asap") {
-        var context2 = add(eventName, mirror, function fire() {
+        var context = add(eventName, mirror, function fire() {
           var i2 = arguments.length, args2 = new Array(i2);
           while (i2--)
             args2[i2] = arguments[i2];
-          context2.subscribers.forEach(function (fn) {
+          context.subscribers.forEach(function (fn) {
             asap$1(function fireEvent() {
               fn.apply(null, args2);
             });
@@ -6233,32 +6233,36 @@ function handleDataFromLogs(logLines) {
     }
   });
 }
-let streamUrl;
-let canvas;
-let context;
-let baseImage = new Image();
+let snapshotUrl;
 const FPS = 60;
 async function initializeCameraStream() {
-  streamUrl = (await OctoPrint.settings.get())["webcam"]["streamUrl"];
-  canvas = document.getElementById("unique-id");
-  context = canvas.getContext("2d");
-  baseImage.src = streamUrl;
-  baseImage.setAttribute("crossOrigin", "anonymous");
-  baseImage.onload = function () {
-    canvas.width = baseImage.naturalWidth;
-    canvas.height = baseImage.naturalHeight;
-    redraw();
+  snapshotUrl = (await OctoPrint.settings.get())["webcam"]["snapshotUrl"];
+  let worker = new Worker("./camera.js");
+  worker.postMessage([snapshotUrl, FPS]);
+  worker.onmessage = (e) => {
+    for (let peerID in cameraStreamConnections) {
+      cameraStreamConnections[peerID].send(e.data);
+    }
   };
 }
-function redraw() {
-  setInterval(() => {
-    if (cameraStreamConnections.length > 0)
-      context.drawImage(baseImage, 0, 0);
-  }, 1e3 / FPS);
-}
 async function handleCameraStreamRequest(peerID) {
-  peer.call(peerID, canvas.captureStream(FPS));
-  cameraStreamConnections.push(peerID);
+  const options = {
+    label: ConnectionLabels.cameraStreamResponse,
+    metadata: peerID,
+    serialization: "binary",
+    reliable: true
+  };
+  let cameraStreamConnection = peer.connect(peerID, options);
+  cameraStreamConnection.on("open", function () {
+    console.log("camera stream connection is open " + peerID);
+    cameraStreamConnections[peerID] = cameraStreamConnection;
+  });
+  cameraStreamConnection.on("close", function () {
+    delete cameraStreamConnections[peerID];
+  });
+  cameraStreamConnection.on("error", function () {
+    delete cameraStreamConnections[peerID];
+  });
 }
 var socketEventTypes = /* @__PURE__ */ ((socketEventTypes2) => {
   socketEventTypes2["CONNECTED"] = "connected";
@@ -6457,9 +6461,7 @@ async function handleIncomingData(data, peerID, label, metadata) {
         handleCameraStreamRequest(peerID);
         break;
       case ConnectionLabels.cameraStreamStop:
-        let index = cameraStreamConnections.indexOf(peerID);
-        if (index > -1)
-          cameraStreamConnections.splice(index, 1);
+        cameraStreamConnections[peerID].close();
         break;
       default:
         console.log("Unhandled label: " + label);
@@ -11684,15 +11686,15 @@ if (Object.create) {
   if (!new $ac9b757d51178e15$var$Events().__proto__)
     $ac9b757d51178e15$var$prefix = false;
 }
-function $ac9b757d51178e15$var$EE(fn, context2, once2) {
+function $ac9b757d51178e15$var$EE(fn, context, once2) {
   this.fn = fn;
-  this.context = context2;
+  this.context = context;
   this.once = once2 || false;
 }
-function $ac9b757d51178e15$var$addListener(emitter, event, fn, context2, once2) {
+function $ac9b757d51178e15$var$addListener(emitter, event, fn, context, once2) {
   if (typeof fn !== "function")
     throw new TypeError("The listener must be a function");
-  var listener = new $ac9b757d51178e15$var$EE(fn, context2 || emitter, once2), evt = $ac9b757d51178e15$var$prefix ? $ac9b757d51178e15$var$prefix + event : event;
+  var listener = new $ac9b757d51178e15$var$EE(fn, context || emitter, once2), evt = $ac9b757d51178e15$var$prefix ? $ac9b757d51178e15$var$prefix + event : event;
   if (!emitter._events[evt])
     emitter._events[evt] = listener, emitter._eventsCount++;
   else if (!emitter._events[evt].fn)
@@ -11798,13 +11800,13 @@ $ac9b757d51178e15$var$EventEmitter.prototype.emit = function emit(event, a1, a2,
   }
   return true;
 };
-$ac9b757d51178e15$var$EventEmitter.prototype.on = function on(event, fn, context2) {
-  return $ac9b757d51178e15$var$addListener(this, event, fn, context2, false);
+$ac9b757d51178e15$var$EventEmitter.prototype.on = function on(event, fn, context) {
+  return $ac9b757d51178e15$var$addListener(this, event, fn, context, false);
 };
-$ac9b757d51178e15$var$EventEmitter.prototype.once = function once(event, fn, context2) {
-  return $ac9b757d51178e15$var$addListener(this, event, fn, context2, true);
+$ac9b757d51178e15$var$EventEmitter.prototype.once = function once(event, fn, context) {
+  return $ac9b757d51178e15$var$addListener(this, event, fn, context, true);
 };
-$ac9b757d51178e15$var$EventEmitter.prototype.removeListener = function removeListener(event, fn, context2, once2) {
+$ac9b757d51178e15$var$EventEmitter.prototype.removeListener = function removeListener(event, fn, context, once2) {
   var evt = $ac9b757d51178e15$var$prefix ? $ac9b757d51178e15$var$prefix + event : event;
   if (!this._events[evt])
     return this;
@@ -11814,11 +11816,11 @@ $ac9b757d51178e15$var$EventEmitter.prototype.removeListener = function removeLis
   }
   var listeners2 = this._events[evt];
   if (listeners2.fn) {
-    if (listeners2.fn === fn && (!once2 || listeners2.once) && (!context2 || listeners2.context === context2))
+    if (listeners2.fn === fn && (!once2 || listeners2.once) && (!context || listeners2.context === context))
       $ac9b757d51178e15$var$clearEvent(this, evt);
   } else {
     for (var i = 0, events = [], length = listeners2.length; i < length; i++)
-      if (listeners2[i].fn !== fn || once2 && !listeners2[i].once || context2 && listeners2[i].context !== context2)
+      if (listeners2[i].fn !== fn || once2 && !listeners2[i].once || context && listeners2[i].context !== context)
         events.push(listeners2[i]);
     if (events.length)
       this._events[evt] = events.length === 1 ? events[0] : events;
@@ -14112,7 +14114,7 @@ let temperatureStreamConnections = {};
 let terminalConnections = {};
 let positionChangedConnections = {};
 let filamentUpdateConnections = {};
-let cameraStreamConnections = [];
+let cameraStreamConnections = {};
 const continuousConnectionLabels = [ConnectionLabels.positionChanged];
 const retryConnectionTimeout = 15;
 const BASEURL = "http://localhost:5000/";
