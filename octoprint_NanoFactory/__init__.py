@@ -5,14 +5,14 @@ import getpass
 import json
 import requests
 import os
+import subprocess
+import psutil
 import platform
 import time
 from flask import request
 from uuid import uuid4
 
 import octoprint.plugin
-import sarge
-
 from .BedLevelling import process_gcode
 
 
@@ -29,6 +29,7 @@ class NanofactoryPlugin(
         self.peer_ID = ""
         self.api_key: str = ""
         self.master_peer_id: str = ""
+        self.pid: str = ""
 
     # # ~~ StartupPlugin mixin
     # def on_startup(self, host, port):
@@ -246,22 +247,58 @@ class NanofactoryPlugin(
             "index.html",
         )
 
+        FNULL = open(os.devnull, 'w')
+
+        url = f'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}&masterPeerID={self.master_peer_id}'
+
         if platform.system() == "Windows":
-            file_path = f'"file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}&masterPeerID={self.master_peer_id}"'
-            os.system(
-                f"start chrome {file_path} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\"
-            )
+            try:
+                chrome_path = r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+                process = psutil.Popen([chrome_path, url] + "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\".split(" "), stdin=subprocess.PIPE,
+                                       stdout=FNULL,  stderr=subprocess.PIPE)
+                self._logger.info(process)
+                self.pid = process.as_dict()["pid"]
+
+            except Exception as e:
+                self._logger.warning(
+                    "Error while opening chrome using chrome path. Starting chrome using an alternative method.")
+                self._logger.warning(e, exc_info=True)
+                subprocess.run(
+                    f"start chrome {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\", shell=True
+                )
         else:
-            sarge.run(
-                f"/usr/bin/chromium-browser 'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}' --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security  --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data"
-            )
+            try:
+                chrome_path = "/usr/bin/chromium-browser"
+                user_data_directory_flag = f"--user-data-dir=/home/{getpass.getuser()}/chrome-data"
+                process = psutil.Popen([chrome_path, url, user_data_directory_flag] + f"--headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
+                                       stdout=FNULL,  stderr=subprocess.PIPE)
+                self._logger.info(process)
+                self.pid = process.as_dict()["pid"]
+
+            except Exception as e:
+                self._logger.warning(
+                    "Error while opening chromium_browser using psutil. Trying with subprocess.")
+                subprocess.run(
+                    f"/usr/bin/chromium-browser {url} --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data", shell=True
+                )
 
     def close_browser(self):
-        if platform.system() == "Windows":
-            os.system("taskkill -F /IM chrome.exe >nul")
-        else:
-            sarge.run("killall -9 chrome")
+        try:
+            if self.pid:
+                if platform.system() == "Windows":
+                    subprocess.run("taskkill -F /PID " +
+                                   str(self.pid), shell=True)
+                else:
+                    subprocess.run("kill -9 " + str(self.pid), shell=True)
 
+            else:
+                if platform.system() == "Windows":
+                    subprocess.run(
+                        "taskkill -F /IM chrome.exe >nul", shell=True)
+                else:
+                    subprocess.run("killall -9 chrome", shell=True)
+        except Exception as e:
+            self._logger.warning(e)
     # ~~ AssetPlugin mixin
 
     def get_assets(self):
