@@ -1,8 +1,8 @@
 # coding=utf-8
 from setuptools import setup
 import os
-
-from octoprint.util.commandline import CommandlineCaller, CommandlineError
+import platform
+import subprocess
 
 ########################################################################################################################
 # Do not forget to adjust the following variables to your own plugin.
@@ -98,40 +98,22 @@ setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
 )
 
 
-# To install chromium-browser
-print("Installing chromium-browser")
+if not platform.system() == "Windows":
+    print("OS not windows. Will check for chromium-browser")
+    if not os.path.isfile("/usr/bin/chromium-browser"):
 
+        print("chromium-browser not found. Installing...")
 
-def log(prefix, *lines):
-    for line in lines:
-        print("{} {}".format(prefix, line))
+        output = subprocess.run(
+            "sudo apt update && sudo apt-get install chromium-browser -y", capture_output=True, shell=True)
 
+        print(output.stdout.decode())
 
-def log_stdout(*lines):
-    log(">>>", *lines)
+    else:
 
-
-def log_stderr(*lines):
-    log("!!!", *lines)
-
-
-def log_call(*lines):
-    log("---", *lines)
-
-
-caller = CommandlineCaller()
-caller.on_log_call = log_call
-caller.on_log_stdout = log_stdout
-caller.on_log_stderr = log_stderr
-
-try:
-    caller.checked_call(
-        ["sudo apt update", "sudo apt-get install chromium-browser -y"])
-except CommandlineError as err:
-    print("Command returned {}".format(err.returncode))
+        print("chromium-browser found. Not installing")
 else:
-    print("Command finished successfully")
-
+    print("OS is windows. Please ensure you have chrome installed to run NanoFactory")
 
 if len(additional_setup_parameters):
     from octoprint.util import dict_merge
