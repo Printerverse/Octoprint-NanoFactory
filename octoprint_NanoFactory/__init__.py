@@ -119,6 +119,9 @@ class NanofactoryPlugin(
     def start_bed_levelling(self):
         if not BedLevelling.processing:
             BedLevelling.mesh = []
+            # Homing all untrusted axes
+            self._printer.commands("G28 0")
+            # Initiating bed levelling
             self._printer.commands("G29")
             BedLevelling.processing = True
 
