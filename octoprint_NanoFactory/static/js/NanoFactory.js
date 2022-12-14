@@ -45,9 +45,7 @@ $(function () {
                 if (data["peerID"]) {
                     self.peerID(data["peerID"])
                     self.peerIDMessage("Your Peer ID: " + data["peerID"])
-                    // TODO: Change localhost to https://nanofactory.printerverse.net/printer/
-                    self.nanoFactoryURL("http://localhost:8080/printer/" + data["peerID"])
-
+                    self.nanoFactoryURL("https://nanofactory.printerverse.net/printer/" + data["peerID"])
                 }
 
                 if (data["peer_error"]) {
