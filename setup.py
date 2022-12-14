@@ -1,10 +1,11 @@
 # coding=utf-8
+from setuptools import setup
 import os
-
-from octoprint.util.commandline import CommandlineCaller, CommandlineError
+import platform
+import subprocess
 
 ########################################################################################################################
-### Do not forget to adjust the following variables to your own plugin.
+# Do not forget to adjust the following variables to your own plugin.
 
 # The plugin's identifier, has to be unique
 plugin_identifier = "NanoFactory"
@@ -36,11 +37,11 @@ plugin_url = "https://github.com/Printerverse/Octoprint-NanoFactory/"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["selenium"]
+plugin_requires = ["sarge"]
 
-### --------------------------------------------------------------------------------------------------------------------
-### More advanced options that you usually shouldn't have to touch follow after this point
-### --------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------------
+# More advanced options that you usually shouldn't have to touch follow after this point
+# --------------------------------------------------------------------------------------------------------------------
 
 # Additional package data to install for this plugin. The subfolders "templates", "static" and "translations" will
 # already be installed automatically if they exist. Note that if you add something here you'll also need to update
@@ -68,7 +69,6 @@ additional_setup_parameters = {"python_requires": ">=3,<4"}
 
 ########################################################################################################################
 
-from setuptools import setup
 
 try:
     import octoprint_setuptools
@@ -98,27 +98,27 @@ setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
 )
 
 
-if not os.path.isfile("/usr/bin/chromium-browser"):
-    # To install webdriver, chrome
-    print("Will start executing webdriver.sh")
-    command_line = CommandlineCaller()
-    try:
-        command_line.checked_call(
-            [
-                "bash",
-                os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)),
-                    "octoprint_Nanofactory",
-                    "webdriver.sh",
-                ),
-            ]
-        )
-    except CommandlineError:
-        raise
+if not platform.system() == "Windows":
+    print("OS not windows. Will check for chromium-browser")
+    if not os.path.isfile("/usr/bin/chromium-browser"):
+
+        print("chromium-browser not found. Installing...")
+
+        output = subprocess.run(
+            "sudo apt update && sudo apt-get install chromium-browser -y", capture_output=True, shell=True)
+
+        print(output.stdout.decode())
+
+    else:
+
+        print("chromium-browser found. Not installing")
+else:
+    print("OS is windows. Please ensure you have chrome installed to run NanoFactory")
 
 if len(additional_setup_parameters):
     from octoprint.util import dict_merge
 
-    setup_parameters = dict_merge(setup_parameters, additional_setup_parameters)
+    setup_parameters = dict_merge(
+        setup_parameters, additional_setup_parameters)
 
 setup(**setup_parameters)

@@ -1,17 +1,51 @@
-<h3>NanoFactory</h3>
+<h3>
+    <img src="plugin/NanoFactory/static/img/NanoFactory Logo.png" width="50" height="50" />
+    NanoFactory
+</h3>
 
+<br />
 
 <div>
-    <button data-bind="click: getPeerID" class="btn btn-primary">Copy Peer ID to Clipboard</button>
-    <div><span data-bind="text: peerIDMessage" /></div>
+    <button style="width: 12rem; text-decoration:none; height:2rem; vertical-align:middle"
+        data-bind="click: goToNanoFactoryURL" class="btn btn-primary">
+        <span> Go to NanoFactory</span>
+        <span> <img src="plugin/NanoFactory/static/img/NewTab.png" width="25" height="25" /></span>
+    </button>
+    <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: copyNanoFactoryURL"
+        class="btn btn-primary">Share
+        Printer</button>
 </div>
 
 <br />
 
 <div>
-    <button data-bind="click: restartCameraStream" class="btn btn-primary">Restart Camera Stream</button>
+    <h5>API Key for NanoFactory:</h5>
+    <input type="text" id="api-key" placeholder="Please enter the API Key for NanoFactory"
+        style="width: 23rem; height:2rem" data-bind="value: APIKEY" />
+    <br />
+    <button style="width: 12rem; height:2re; vertical-align:middlem" data-bind="click: handleAPIKeyEdit"
+        class="btn btn-primary">Edit</button>
+    <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: handleAPIKeySubmit"
+        class="btn btn-primary">Submit</button>
 </div>
-<!-- 
+
+<br />
+
 <div>
-    <button data-bind="click: startAuthFlow" class="btn btn-primary">Start Auth Flow</button>
-</div> -->
+    <h5>Master Device ID:</h5>
+    <input type="text" id="master-peer-id" placeholder="Please enter the Master Device ID for this printer"
+        style="width: 23rem; height:2rem" data-bind="value: masterPeerID" />
+    <br />
+    <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: handleMasterPeerIDEdit"
+        class="btn btn-primary">Edit</button>
+    <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: handleMasterPeerIDSubmit"
+        class="btn btn-primary">Submit</button>
+</div>
+
+<br />
+
+<div>
+    <button style="width: 24rem; height:2rem; vertical-align:middle" data-bind="click: restartNanoFactoryApp"
+        class="btn btn-primary">Restart
+        NanoFactory</button>
+</div>

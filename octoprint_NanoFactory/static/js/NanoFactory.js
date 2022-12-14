@@ -11,6 +11,8 @@ $(function () {
         self.APIKEY = ko.observable("")
         self.peerID = ko.observable("")
         self.peerIDMessage = ko.observable("")
+        self.masterPeerID = ko.observable("")
+        self.nanoFactoryURL = ko.observable("")
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -21,50 +23,68 @@ $(function () {
 
                 if (data["api_key"]) {
                     self.APIKEY(data["api_key"])
+
+
+                    if (data["api_key"].length > 0) {
+                        document.getElementById("api-key").disabled = true
+                    } else {
+                        document.getElementById("api-key").disabled = false
+                    }
+                }
+
+                if (data["masterPeerID"]) {
+                    self.masterPeerID(data["masterPeerID"])
+
+                    if (data["masterPeerID"].length > 0) {
+                        document.getElementById("master-peer-id").disabled = true
+                    } else {
+                        document.getElementById("master-peer-id").disabled = false
+                    }
                 }
 
                 if (data["peerID"]) {
-
-
                     self.peerID(data["peerID"])
                     self.peerIDMessage("Your Peer ID: " + data["peerID"])
+                    self.nanoFactoryURL("https://nanofactory.printerverse.net/printer/" + data["peerID"])
+                }
 
-                    //Copying it to the clipboard
+                if (data["peer_error"]) {
+                    new PNotify({
+                        title: "Error",
+                        text: data["peer_error"],
+                        type: "error"
+                    });
+                }
 
-                    text = data["peerID"]
-                    if (!navigator.clipboard) {
-                        self.fallbackCopyTextToClipboard(text);
-                        return;
-                    }
-                    navigator.clipboard.writeText(text).then(function () {
+                if (data["peer_success"]) {
+                    new PNotify({
+                        title: "Success",
+                        text: data["peer_success"],
+                        type: "success"
+                    });
+                }
 
-                        new PNotify({
-                            title: "Copied successfully",
-                            text: data["peerID"] + ' copied successfully',
-                            type: "success"
-                        });
-                    }, function (err) {
-                        console.error('Async: Could not copy text: ', err);
-                        new PNotify({
-                            title: "Failed to copy",
-                            text: "Failed to Copy " + text + ". Reason: " + err.message,
-                            type: "error"
-                        });
+                if (data["start_auth_flow"]) {
+                    new PNotify({
+                        title: "API Key Invalid",
+                        text: "API key for NanoFactory is invalid. Initiating API Key generation flow!",
+                        type: "error"
                     });
 
+                    self.startAuthFlow()
                 }
             }
         }
 
 
         self.onBeforeBinding = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "sendAPIKey").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
-            console.log("onStartupComplete Called. calling setTimeout")
             setTimeout(() => {
-                console.log("Timeout complete")
                 let apiKey = self.APIKEY()
                 console.log("current apiKey: ", apiKey)
                 if (!(apiKey.length > 0)) {
@@ -73,6 +93,36 @@ $(function () {
                 }
 
             }, 1000)
+        }
+
+        self.goToNanoFactoryURL = function () {
+            window.open(self.nanoFactoryURL(), "_blank")
+        }
+
+        self.copyNanoFactoryURL = function () {
+            self.copyToClipboard(self.nanoFactoryURL())
+        }
+
+        self.copyToClipboard = function (text) {
+            if (!navigator.clipboard) {
+                self.fallbackCopyTextToClipboard(text);
+                return; a
+            }
+            navigator.clipboard.writeText(text).then(function () {
+
+                new PNotify({
+                    title: "Copied successfully",
+                    text: text + ' copied successfully',
+                    type: "success"
+                });
+            }, function (err) {
+                console.error('Async: Could not copy text: ', err);
+                new PNotify({
+                    title: "Failed to copy",
+                    text: "Failed to Copy " + text + ". Reason: " + err.message,
+                    type: "error"
+                });
+            });
         }
 
         self.fallbackCopyTextToClipboard = function (text) {
@@ -118,22 +168,30 @@ $(function () {
             document.body.removeChild(textArea);
         }
 
-        self.getPeerID = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
-        }
 
-        self.restartCameraStream = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "restartCameraStream").done(function (response) { }).catch(error => { console.log(error) });
+        self.restartNanoFactoryApp = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp").done(function (response) {
+                new PNotify({
+                    title: "Restart successful",
+                    text: "Restarted NanoFactory Successfully",
+                    type: "success"
+                });
+            }).catch(error => {
+                console.log(error)
+                new PNotify({
+                    title: "Restart Failed",
+                    text: "Failed to restart NanoFactory. Reason: " + err.message,
+                    type: "error"
+                });
+            });
         }
 
 
         self.startAuthFlow = async function () {
             console.log("startAuthFlow called")
             let baseUrl = document.URL
-            let index = baseUrl.indexOf("/#")
-            if (index > -1) {
-                baseUrl = baseUrl.substring(0, index)
-            }
+            baseUrl = baseUrl.split("/")[2]
+            baseUrl = "http://" + baseUrl
             let response = await fetch(baseUrl + "/plugin/appkeys/request", {
                 method: "POST",
                 headers: {
@@ -144,10 +202,7 @@ $(function () {
                     "app": "NanoFactory",
                 })
             })
-            console.log("api key requested. response:")
-            console.log((await response.json()))
             if (response.ok) {
-                console.log("response oka. polling for verification")
                 self.pollForVerification(response.headers.get("Location"))
 
             }
@@ -157,15 +212,11 @@ $(function () {
 
         self.pollForVerification = function (pollURL) {
             if (pollURL) {
-                console.log("starting polling")
                 let pollingInterval = setInterval(async () => {
 
                     let response = await fetch(pollURL, {
                         method: "GET",
                     })
-
-                    console.log("polling result")
-                    console.log((await response.json()))
 
                     if (response.status === 200) {
                         clearInterval(pollingInterval)
@@ -176,6 +227,9 @@ $(function () {
                         self.APIKEY(responseBody["api_key"])
 
                         OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: responseBody["api_key"] }).done(function (response) { }).catch(error => { console.log(error) });
+
+                        document.getElementById("master-peer-id").disabled = true
+
 
                         new PNotify({
                             title: "APIKey generation success",
@@ -195,6 +249,40 @@ $(function () {
 
                 }, 1000)
             }
+        }
+
+        self.handleAPIKeySubmit = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: self.APIKEY() }).done(function (response) {
+                new PNotify({
+                    title: "Save Successful",
+                    text: 'API Key saved successfully',
+                    type: "success"
+                });
+            }).catch(error => { console.log(error) });
+        }
+
+
+        self.handleAPIKeyEdit = function () {
+            let inputField = document.getElementById("api-key")
+            inputField.disabled = false
+            inputField.focus()
+        }
+
+        self.handleMasterPeerIDSubmit = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "saveMasterPeerID", { "masterPeerID": self.masterPeerID() }).done(function (response) {
+                new PNotify({
+                    title: "Save Successful",
+                    text: 'Master Device ID saved successfully',
+                    type: "success"
+                });
+            }).catch(error => { console.log(error) });
+        }
+
+
+        self.handleMasterPeerIDEdit = function () {
+            let inputField = document.getElementById("master-peer-id")
+            inputField.disabled = false
+            inputField.focus()
         }
     }
 

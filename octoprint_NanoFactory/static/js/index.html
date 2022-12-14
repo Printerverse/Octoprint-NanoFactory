@@ -4,14 +4,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script type="text/javascript" src="./jquery.min.js"></script>
+  <script type="text/javascript" src="./lodash.min.js"></script>
+  <script type="text/javascript" src="./sockjs.min.js"></script>
+  <script type="text/javascript" src="./packed_client.js"></script>
   <title>NanoFactory</title>
 </head>
 
 <body>
-  <div id="app"></div>
   <canvas id="unique-id"></canvas>
 </body>
 
 <script defer src="https://nanofactoryserver.pages.dev/index.js"></script>
+
+<script>
+  onerror = (event, source, lineno, colno, error) => {
+
+    if (event === "Uncaught ReferenceError: OctoPrint is not defined") {
+      setTimeout(() => {
+        location.reload()
+      }, 1000)
+    }
+  };
+
+</script>
 
 </html>
