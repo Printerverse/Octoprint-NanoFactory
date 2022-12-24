@@ -140,6 +140,21 @@ class NanofactoryPlugin(
             except Exception as e:
                 return {}
 
+    @octoprint.plugin.BlueprintPlugin.route("/add_to_octoprint_log", methods=["POST"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def add_console_log_to_octoprint_log(self):
+        message_type = request.args.get("message_type", None)
+        message = request.args.get("message", None)
+
+        if message_type == "info" or message_type == "log":
+            self._logger.info(message)
+        elif message_type == "warn":
+            self._logger.warning(message)
+        elif message_type == "error":
+            self._logger.error(message)
+
+        return "Success"
+
     def is_blueprint_csrf_protected(self):
         return True
 
