@@ -170,6 +170,8 @@ class NanofactoryPlugin(
             self._identifier, {"browser_status": str(alive)}
         )
 
+        return "Success"
+
     def is_blueprint_csrf_protected(self):
         return True
 
@@ -271,8 +273,6 @@ class NanofactoryPlugin(
             self._logger.warning("NanoFactory API Key not valid")
 
         self.master_peer_id = nf_profile["master_peer_id"]
-
-
 
     def start_browser(self):
         path = os.path.join(

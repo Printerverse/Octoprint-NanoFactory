@@ -77,17 +77,7 @@ $(function () {
                 }
 
                 if (data["browser_status"]) {
-                    console.log(data["browser_status"])
-                    let status = Boolean(data["browser_status"])
-                    if (status) {
-                        self.browserStatus = "Alive"
-                        self.browserStatusColor = "green"
-                    }
-                    else {
-
-                        self.browserStatus = "Not Alive"
-                        self.browserStatusColor = "red"
-                    }
+                    self.browserStatus(new Date().toString())
 
                 }
             }
