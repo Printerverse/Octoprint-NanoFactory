@@ -92,7 +92,7 @@ $(function () {
         self.onAfterBinding = function () {
             setInterval(() => {
                 OctoPrint.simpleApiCommand("NanoFactory", "checkBrowser").done(function (response) { }).catch(error => { console.log(error) });
-            }, 1000)
+            }, 5000)
         }
 
 

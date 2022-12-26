@@ -161,15 +161,17 @@ class NanofactoryPlugin(
 
     def check_pid(self):
         """ Check For the existence of a unix pid. """
-        try:
-            os.kill(self.pid, 0)
-        except OSError:
-            alive = False
-        else:
-            alive = True
-            self._plugin_manager.send_plugin_message(
-                self._identifier, {"browser_status": str(alive)}
-            )
+        alive = False
+
+        if self.pid:
+            try:
+                os.kill(self.pid, 0)
+                alive = True
+                self._plugin_manager.send_plugin_message(
+                    self._identifier, {"browser_status": str(alive)}
+                )
+            except OSError:
+                alive = False
 
     def is_blueprint_csrf_protected(self):
         return True
