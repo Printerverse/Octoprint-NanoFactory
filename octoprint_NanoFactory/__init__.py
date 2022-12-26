@@ -167,10 +167,9 @@ class NanofactoryPlugin(
             alive = False
         else:
             alive = True
-
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"browser_status": str(alive)}
-        )
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {"browser_status": str(alive)}
+            )
 
     def is_blueprint_csrf_protected(self):
         return True
