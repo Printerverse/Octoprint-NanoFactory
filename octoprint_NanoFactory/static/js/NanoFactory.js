@@ -78,7 +78,6 @@ $(function () {
 
                 if (data["browser_status"]) {
                     self.browserStatus(new Date().toString())
-
                 }
             }
         }
@@ -89,6 +88,13 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
         }
+
+        self.onAfterBinding = function () {
+            setInterval(() => {
+                OctoPrint.simpleApiCommand("NanoFactory", "checkBrowser").done(function (response) { }).catch(error => { console.log(error) });
+            }, 1000)
+        }
+
 
         self.onStartupComplete = function () {
             setTimeout(() => {
@@ -101,6 +107,8 @@ $(function () {
 
             }, 1000)
         }
+
+
 
         self.goToNanoFactoryURL = function () {
             window.open(self.nanoFactoryURL(), "_blank")
