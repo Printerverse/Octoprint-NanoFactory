@@ -77,7 +77,9 @@ $(function () {
                 }
 
                 if (data["browser_status"]) {
-                    self.browserStatus(new Date().toString())
+                    console.log(data["browser_status"])
+                    if (Boolean(data["browser_status"]))
+                        self.browserStatus(new Date().toString())
                 }
             }
         }
