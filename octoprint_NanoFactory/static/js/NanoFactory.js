@@ -13,6 +13,8 @@ $(function () {
         self.peerIDMessage = ko.observable("")
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
+        self.browserStatus = ko.observable("Not Alive")
+        self.browserStatusColor = ko.observable("red")
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -72,6 +74,21 @@ $(function () {
                     });
 
                     self.startAuthFlow()
+                }
+
+                if (data["browser_status"]) {
+                    console.log(data["browser_status"])
+                    let status = Boolean(data["browser_status"])
+                    if (status) {
+                        self.browserStatus = "Alive"
+                        self.browserStatusColor = "green"
+                    }
+                    else {
+
+                        self.browserStatus = "Not Alive"
+                        self.browserStatusColor = "red"
+                    }
+
                 }
             }
         }

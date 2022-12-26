@@ -155,6 +155,21 @@ class NanofactoryPlugin(
 
         return "Success"
 
+    @octoprint.plugin.BlueprintPlugin.route("/check_browser", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def check_pid(self):
+        """ Check For the existence of a unix pid. """
+        try:
+            os.kill(self.pid, 0)
+        except OSError:
+            alive = False
+        else:
+            alive = True
+
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"browser_status": str(alive)}
+        )
+
     def is_blueprint_csrf_protected(self):
         return True
 
@@ -257,6 +272,8 @@ class NanofactoryPlugin(
 
         self.master_peer_id = nf_profile["master_peer_id"]
 
+
+
     def start_browser(self):
         path = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -299,6 +316,8 @@ class NanofactoryPlugin(
                 subprocess.run(
                     f"/usr/bin/chromium-browser {url} --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data", shell=True
                 )
+
+        self.check_pid()
 
     def close_browser(self):
         try:
