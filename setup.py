@@ -87,7 +87,7 @@ try:
     import subprocess
 
     if not platform.system() == "Windows":
-        print("OS not windows. Will check for chromium-browser")
+        print("Checking for chromium-browser")
         if not os.path.isfile("/usr/bin/chromium-browser"):
 
             print("chromium-browser not found. Installing...")
