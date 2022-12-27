@@ -6,13 +6,13 @@ import json
 import os
 import platform
 import re
-import shutil
 import subprocess
 import time
 from uuid import uuid4
 
 import psutil
 import requests
+import yaml
 from flask import request
 
 import octoprint.plugin
@@ -34,6 +34,7 @@ class NanofactoryPlugin(
         self.api_key: str = ""
         self.master_peer_id: str = ""
         self.pid: str = ""
+        self.cors_error = False
 
     # # ~~ StartupPlugin mixin
     # def on_startup(self, host, port):
@@ -41,6 +42,7 @@ class NanofactoryPlugin(
     def on_after_startup(self):
         self.load_nf_profile()
         self.check_chrome_data_folder()
+        self.check_cors()
         if self.api_key and self.peer_ID:
             self.start_browser()
 
@@ -54,7 +56,8 @@ class NanofactoryPlugin(
             "saveMasterPeerID": ["masterPeerID"],
             "restartNanoFactoryApp": [],
             "checkBrowser": [],
-            "deleteNanoFactoryDatabase": []
+            "deleteNanoFactoryDatabase": [],
+            "getCors": []
         }
 
     def on_api_command(self, command, data):
@@ -101,6 +104,13 @@ class NanofactoryPlugin(
                 self._identifier, {
                     "deleteDatabase": "deleteNanoFactoryDatabase"}
             )
+
+        elif command == "getCors":
+            if self.cors_error:
+                self._plugin_manager.send_plugin_message(
+                    self._identifier, {
+                        "cors_error": "Please enable CORS to allow NanoFactory to work properly. \n Go to Settings > API and check 'Allow Cross Origin Resource Sharing (CORS)'"}
+                )
 
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
@@ -170,6 +180,12 @@ class NanofactoryPlugin(
 
         return "Success"
 
+    @octoprint.plugin.BlueprintPlugin.route("/cors_error", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def inform_user_about_cors(self):
+        self.cors_error = True
+        return "Success"
+
     def check_pid(self):
         """ Check For the existence of a unix pid. """
         alive = False
@@ -214,6 +230,30 @@ class NanofactoryPlugin(
         self.close_browser()
         time.sleep(1)
         self.start_browser()
+
+    def check_cors(self):
+        path = self.get_plugin_data_folder()
+
+        paths = []
+
+        if ("/" in path):
+            paths = path.split("/")
+            config_path = "/".join(paths[:-2])
+        else:
+            paths = path.split("\\")
+            config_path = "\\".join(paths[:-2])
+
+        config = {}
+
+        try:
+            with open(os.path.join(config_path, "config.yaml"), "r") as f:
+                config = yaml.safe_load(f)
+        except Exception as e:
+            self._logger.warning(e)
+
+        if "api" in config:
+            if "allowCrossOrigin" not in config["api"]:
+                self.cors_error = True
 
     def save_master_peer_id(self, master_peer_id: str, restart_browser: bool):
         self.master_peer_id = master_peer_id

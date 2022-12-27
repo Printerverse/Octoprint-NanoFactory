@@ -81,6 +81,15 @@ $(function () {
                     if (Boolean(data["browser_status"]))
                         self.browserStatus(new Date().toString())
                 }
+
+                if (data["cors_error"]) {
+                    new PNotify({
+                        title: "CORS Access Needed",
+                        text: data["cors_error"],
+                        type: "notice",
+                        hide: false
+                    });
+                }
             }
         }
 
@@ -89,6 +98,7 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onAfterBinding = function () {
