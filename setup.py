@@ -82,23 +82,26 @@ except:
 
     sys.exit(-1)
 
+try:
+    if not platform.system() == "Windows":
+        print("OS not windows. Will check for chromium-browser")
+        if not os.path.isfile("/usr/bin/chromium-browser"):
 
-if not platform.system() == "Windows":
-    print("OS not windows. Will check for chromium-browser")
-    if not os.path.isfile("/usr/bin/chromium-browser"):
+            print("chromium-browser not found. Installing...")
 
-        print("chromium-browser not found. Installing...")
+            output = subprocess.run(
+                "sudo apt update && sudo apt-get install chromium-browser -y", capture_output=True, shell=True)
 
-        output = subprocess.run(
-            "sudo apt update && sudo apt-get install chromium-browser -y", capture_output=True, shell=True)
+            print(output.stdout.decode())
 
-        print(output.stdout.decode())
+        else:
 
+            print("chromium-browser found. Not installing")
     else:
+        print("OS is windows. Please ensure you have chrome installed to run NanoFactory")
 
-        print("chromium-browser found. Not installing")
-else:
-    print("OS is windows. Please ensure you have chrome installed to run NanoFactory")
+except Exception as e:
+    print(e)
 
 
 setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
