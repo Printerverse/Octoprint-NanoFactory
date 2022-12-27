@@ -1,14 +1,11 @@
 # coding=utf-8
-import os
-import platform
-import subprocess
-
-from setuptools import setup
 
 ########################################################################################################################
 # Do not forget to adjust the following variables to your own plugin.
 
 # The plugin's identifier, has to be unique
+from setuptools import setup
+
 plugin_identifier = "NanoFactory"
 
 # The plugin's python package, should be "octoprint_<plugin identifier>", has to be unique
@@ -83,6 +80,12 @@ except:
     sys.exit(-1)
 
 try:
+    print("Hello from NanoFactory")
+
+    import os
+    import platform
+    import subprocess
+
     if not platform.system() == "Windows":
         print("OS not windows. Will check for chromium-browser")
         if not os.path.isfile("/usr/bin/chromium-browser"):
