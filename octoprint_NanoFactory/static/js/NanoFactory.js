@@ -203,6 +203,23 @@ $(function () {
             });
         }
 
+        self.deleteNanoFactoryDatabase = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "deleteNanoFactoryDatabase").done(function (response) {
+                new PNotify({
+                    title: "Delete successful",
+                    text: "NanoFactory Database delete successfully",
+                    type: "success"
+                });
+            }).catch(error => {
+                console.log(error)
+                new PNotify({
+                    title: "Failed to delete the database",
+                    text: "Reason: " + err.message,
+                    type: "error"
+                });
+            });
+        }
+
 
         self.startAuthFlow = async function () {
             console.log("startAuthFlow called")

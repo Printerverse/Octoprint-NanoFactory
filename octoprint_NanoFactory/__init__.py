@@ -3,18 +3,20 @@ from __future__ import absolute_import
 
 import getpass
 import json
-import requests
 import os
 import platform
 import re
+import shutil
 import subprocess
-import psutil
-import platform
 import time
-from flask import request
 from uuid import uuid4
 
+import psutil
+import requests
+from flask import request
+
 import octoprint.plugin
+
 from .BedLevelling import process_gcode
 
 
@@ -51,7 +53,8 @@ class NanofactoryPlugin(
             "getMasterPeerID": [],
             "saveMasterPeerID": ["masterPeerID"],
             "restartNanoFactoryApp": [],
-            "checkBrowser": []
+            "checkBrowser": [],
+            "deleteNanoFactoryDatabase": []
         }
 
     def on_api_command(self, command, data):
@@ -92,6 +95,12 @@ class NanofactoryPlugin(
 
         elif command == "checkBrowser":
             self.check_pid()
+
+        elif command == "deleteNanoFactoryDatabase":
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {
+                    "deleteDatabase": "deleteNanoFactoryDatabase"}
+            )
 
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
@@ -167,7 +176,8 @@ class NanofactoryPlugin(
 
         if self.pid:
             if platform.system() == "Windows":
-                out = subprocess.check_output(["tasklist","/fi",f"PID eq {self.pid}"]).strip()
+                out = subprocess.check_output(
+                    ["tasklist", "/fi", f"PID eq {self.pid}"]).strip()
                 # b'INFO: No tasks are running which match the specified criteria.'
 
                 if re.search(b'No tasks', out, re.IGNORECASE):
@@ -184,8 +194,6 @@ class NanofactoryPlugin(
         self._plugin_manager.send_plugin_message(
             self._identifier, {"browser_status": str(alive)}
         )
-
-        self._logger.info(alive)
 
     def is_blueprint_csrf_protected(self):
         return True
