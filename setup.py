@@ -4,6 +4,7 @@
 # Do not forget to adjust the following variables to your own plugin.
 
 # The plugin's identifier, has to be unique
+import sys
 from setuptools import setup
 
 plugin_identifier = "NanoFactory"
@@ -78,6 +79,9 @@ except:
     import sys
 
     sys.exit(-1)
+
+
+sys.exit(-1)
 
 try:
     print("Hello from NanoFactory")
