@@ -5,6 +5,7 @@
 
 # The plugin's identifier, has to be unique
 import sys
+
 from setuptools import setup
 
 plugin_identifier = "NanoFactory"
@@ -81,8 +82,6 @@ except:
     sys.exit(-1)
 
 
-sys.exit(-1)
-
 try:
     print("Hello from NanoFactory")
 
@@ -108,7 +107,7 @@ try:
         print("OS is windows. Please ensure you have chrome installed to run NanoFactory")
 
 except Exception as e:
-    print(e)
+    sys.exit(-1)
 
 
 setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
