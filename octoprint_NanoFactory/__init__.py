@@ -366,7 +366,11 @@ class NanofactoryPlugin(
                 )
         else:
             try:
-                chrome_path = "/usr/bin/chromium-browser"
+                if os.path.isfile("/usr/bin/chromium-browser"):
+                    chrome_path = "/usr/bin/chromium-browser"
+                else:
+                    chrome_path = "/usr/bin/chromium"
+
                 user_data_directory_flag = f"--user-data-dir=/home/{getpass.getuser()}/chrome-data"
                 process = psutil.Popen([chrome_path, url, user_data_directory_flag] + f" --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
                                        stdout=FNULL,  stderr=subprocess.PIPE)
