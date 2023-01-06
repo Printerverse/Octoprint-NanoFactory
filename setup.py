@@ -1,13 +1,13 @@
 # coding=utf-8
-from setuptools import setup
-import os
-import platform
-import subprocess
 
 ########################################################################################################################
 # Do not forget to adjust the following variables to your own plugin.
 
 # The plugin's identifier, has to be unique
+import sys
+
+from setuptools import setup
+
 plugin_identifier = "NanoFactory"
 
 # The plugin's python package, should be "octoprint_<plugin identifier>", has to be unique
@@ -81,6 +81,35 @@ except:
 
     sys.exit(-1)
 
+
+try:
+    print("Hello from NanoFactory")
+
+    import os
+    import platform
+    import subprocess
+
+    if platform.system() != "Windows":
+        print("Checking for chromium-browser")
+        if not os.path.isfile("/usr/bin/chromium-browser"):
+
+            print("chromium-browser not found. Installing...")
+
+            output = subprocess.run(
+                "sudo apt update && sudo apt-get install chromium-browser -y", capture_output=True, shell=True)
+
+            print(output.stdout.decode())
+
+        else:
+
+            print("chromium-browser found. Not installing")
+    else:
+        print("OS is windows. Please ensure you have chrome installed to run NanoFactory")
+
+except Exception as e:
+    sys.exit(-1)
+
+
 setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
     identifier=plugin_identifier,
     package=plugin_package,
@@ -97,23 +126,6 @@ setup_parameters = octoprint_setuptools.create_plugin_setup_parameters(
     additional_data=plugin_additional_data,
 )
 
-
-if not platform.system() == "Windows":
-    print("OS not windows. Will check for chromium-browser")
-    if not os.path.isfile("/usr/bin/chromium-browser"):
-
-        print("chromium-browser not found. Installing...")
-
-        output = subprocess.run(
-            "sudo apt update && sudo apt-get install chromium-browser -y", capture_output=True, shell=True)
-
-        print(output.stdout.decode())
-
-    else:
-
-        print("chromium-browser found. Not installing")
-else:
-    print("OS is windows. Please ensure you have chrome installed to run NanoFactory")
 
 if len(additional_setup_parameters):
     from octoprint.util import dict_merge

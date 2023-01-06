@@ -3,16 +3,20 @@ from __future__ import absolute_import
 
 import getpass
 import json
-import requests
 import os
-import subprocess
-import psutil
 import platform
+import re
+import subprocess
 import time
-from flask import request
 from uuid import uuid4
 
+import psutil
+import requests
+import yaml
+from flask import request
+
 import octoprint.plugin
+
 from .BedLevelling import process_gcode
 
 
@@ -30,6 +34,7 @@ class NanofactoryPlugin(
         self.api_key: str = ""
         self.master_peer_id: str = ""
         self.pid: str = ""
+        self.cors_error = False
 
     # # ~~ StartupPlugin mixin
     # def on_startup(self, host, port):
@@ -37,6 +42,7 @@ class NanofactoryPlugin(
     def on_after_startup(self):
         self.load_nf_profile()
         self.check_chrome_data_folder()
+        self.check_cors()
         if self.api_key and self.peer_ID:
             self.start_browser()
 
@@ -49,6 +55,9 @@ class NanofactoryPlugin(
             "getMasterPeerID": [],
             "saveMasterPeerID": ["masterPeerID"],
             "restartNanoFactoryApp": [],
+            "checkBrowser": [],
+            "deleteNanoFactoryDatabase": [],
+            "getCors": []
         }
 
     def on_api_command(self, command, data):
@@ -86,6 +95,22 @@ class NanofactoryPlugin(
 
         elif command == "restartNanoFactoryApp":
             self.restart_browser()
+
+        elif command == "checkBrowser":
+            self.check_pid()
+
+        elif command == "deleteNanoFactoryDatabase":
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {
+                    "deleteDatabase": "deleteNanoFactoryDatabase"}
+            )
+
+        elif command == "getCors":
+            if self.cors_error:
+                self._plugin_manager.send_plugin_message(
+                    self._identifier, {
+                        "cors_error": "Please enable CORS to allow NanoFactory to work properly. \n Go to Settings > API and check 'Allow Cross Origin Resource Sharing (CORS)'"}
+                )
 
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
@@ -155,6 +180,31 @@ class NanofactoryPlugin(
 
         return "Success"
 
+    def check_pid(self):
+        """ Check For the existence of a unix pid. """
+        alive = False
+
+        if self.pid:
+            if platform.system() == "Windows":
+                out = subprocess.check_output(
+                    ["tasklist", "/fi", f"PID eq {self.pid}"]).strip()
+                # b'INFO: No tasks are running which match the specified criteria.'
+
+                if re.search(b'No tasks', out, re.IGNORECASE):
+                    alive = False
+                else:
+                    alive = True
+            else:
+                try:
+                    os.kill(self.pid, 0)
+                    alive = True
+                except Exception:
+                    alive = False
+
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"browser_status": str(alive)}
+        )
+
     def is_blueprint_csrf_protected(self):
         return True
 
@@ -174,6 +224,30 @@ class NanofactoryPlugin(
         self.close_browser()
         time.sleep(1)
         self.start_browser()
+
+    def check_cors(self):
+        path = self.get_plugin_data_folder()
+
+        paths = []
+
+        if ("/" in path):
+            paths = path.split("/")
+            config_path = "/".join(paths[:-2])
+        else:
+            paths = path.split("\\")
+            config_path = "\\".join(paths[:-2])
+
+        config = {}
+
+        try:
+            with open(os.path.join(config_path, "config.yaml"), "r") as f:
+                config = yaml.safe_load(f)
+        except Exception as e:
+            self._logger.warning(e)
+
+        if "api" in config:
+            if "allowCrossOrigin" not in config["api"]:
+                self.cors_error = True
 
     def save_master_peer_id(self, master_peer_id: str, restart_browser: bool):
         self.master_peer_id = master_peer_id
@@ -286,9 +360,13 @@ class NanofactoryPlugin(
                 )
         else:
             try:
-                chrome_path = "/usr/bin/chromium-browser"
+                if os.path.isfile("/usr/bin/chromium-browser"):
+                    chrome_path = "/usr/bin/chromium-browser"
+                else:
+                    chrome_path = "/usr/bin/chromium"
+
                 user_data_directory_flag = f"--user-data-dir=/home/{getpass.getuser()}/chrome-data"
-                process = psutil.Popen([chrome_path, url, user_data_directory_flag] + f"--headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
+                process = psutil.Popen([chrome_path, url, user_data_directory_flag] + f" --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
                                        stdout=FNULL,  stderr=subprocess.PIPE)
                 self._logger.info(process)
                 self.pid = process.as_dict()["pid"]
@@ -297,7 +375,7 @@ class NanofactoryPlugin(
                 self._logger.warning(
                     "Error while opening chromium_browser using psutil. Trying with subprocess.")
                 subprocess.run(
-                    f"/usr/bin/chromium-browser {url} --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data", shell=True
+                    f"/usr/bin/chromium-browser {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data", shell=True
                 )
 
     def close_browser(self):

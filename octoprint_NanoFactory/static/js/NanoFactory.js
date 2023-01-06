@@ -13,6 +13,8 @@ $(function () {
         self.peerIDMessage = ko.observable("")
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
+        self.browserStatus = ko.observable("Not Alive")
+        self.browserStatusColor = ko.observable("red")
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -73,6 +75,21 @@ $(function () {
 
                     self.startAuthFlow()
                 }
+
+                if (data["browser_status"]) {
+                    console.log(data["browser_status"])
+                    if (Boolean(data["browser_status"]))
+                        self.browserStatus(new Date().toString())
+                }
+
+                if (data["cors_error"]) {
+                    new PNotify({
+                        title: "CORS Access Needed",
+                        text: data["cors_error"],
+                        type: "notice",
+                        hide: false
+                    });
+                }
             }
         }
 
@@ -81,7 +98,15 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
         }
+
+        self.onAfterBinding = function () {
+            setInterval(() => {
+                OctoPrint.simpleApiCommand("NanoFactory", "checkBrowser").done(function (response) { }).catch(error => { console.log(error) });
+            }, 5000)
+        }
+
 
         self.onStartupComplete = function () {
             setTimeout(() => {
@@ -94,6 +119,8 @@ $(function () {
 
             }, 1000)
         }
+
+
 
         self.goToNanoFactoryURL = function () {
             window.open(self.nanoFactoryURL(), "_blank")
@@ -181,6 +208,23 @@ $(function () {
                 new PNotify({
                     title: "Restart Failed",
                     text: "Failed to restart NanoFactory. Reason: " + err.message,
+                    type: "error"
+                });
+            });
+        }
+
+        self.deleteNanoFactoryDatabase = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "deleteNanoFactoryDatabase").done(function (response) {
+                new PNotify({
+                    title: "Delete successful",
+                    text: "NanoFactory Database delete successfully",
+                    type: "success"
+                });
+            }).catch(error => {
+                console.log(error)
+                new PNotify({
+                    title: "Failed to delete the database",
+                    text: "Reason: " + err.message,
                     type: "error"
                 });
             });
