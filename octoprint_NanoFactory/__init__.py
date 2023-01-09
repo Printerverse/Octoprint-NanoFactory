@@ -97,7 +97,8 @@ class NanofactoryPlugin(
             self.restart_browser()
 
         elif command == "checkBrowser":
-            self.check_pid()
+            # self.check_pid()
+            pass
 
         elif command == "deleteNanoFactoryDatabase":
             self._plugin_manager.send_plugin_message(
@@ -208,8 +209,8 @@ class NanofactoryPlugin(
     def is_blueprint_csrf_protected(self):
         return True
 
-    def on_shutdown(self):
-        self.close_browser()
+    # def on_shutdown(self):
+    #     self.close_browser()
 
     def check_api_key_validity(self, api_key):
         if api_key:
@@ -221,7 +222,7 @@ class NanofactoryPlugin(
                 return False
 
     def restart_browser(self):
-        self.close_browser()
+        # self.close_browser()
         time.sleep(1)
         self.start_browser()
 
@@ -343,40 +344,42 @@ class NanofactoryPlugin(
 
         url = f'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}&masterPeerID={self.master_peer_id}'
 
-        if platform.system() == "Windows":
-            try:
-                chrome_path = r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-                process = psutil.Popen([chrome_path, url] + "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\".split(" "), stdin=subprocess.PIPE,
-                                       stdout=FNULL,  stderr=subprocess.PIPE)
-                self._logger.info(process)
-                self.pid = process.as_dict()["pid"]
+        self._logger.warning(url)
 
-            except Exception as e:
-                self._logger.warning(
-                    "Error while opening chrome using chrome path. Starting chrome using an alternative method.")
-                self._logger.warning(e, exc_info=True)
-                subprocess.run(
-                    f"start chrome {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\", shell=True
-                )
-        else:
-            try:
-                if os.path.isfile("/usr/bin/chromium-browser"):
-                    chrome_path = "/usr/bin/chromium-browser"
-                else:
-                    chrome_path = "/usr/bin/chromium"
+        # if platform.system() == "Windows":
+        #     try:
+        #         chrome_path = r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        #         process = psutil.Popen([chrome_path, url] + "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\".split(" "), stdin=subprocess.PIPE,
+        #                                stdout=FNULL,  stderr=subprocess.PIPE)
+        #         self._logger.info(process)
+        #         self.pid = process.as_dict()["pid"]
 
-                user_data_directory_flag = f"--user-data-dir=/home/{getpass.getuser()}/chrome-data"
-                process = psutil.Popen([chrome_path, url, user_data_directory_flag] + f" --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
-                                       stdout=FNULL,  stderr=subprocess.PIPE)
-                self._logger.info(process)
-                self.pid = process.as_dict()["pid"]
+        #     except Exception as e:
+        #         self._logger.warning(
+        #             "Error while opening chrome using chrome path. Starting chrome using an alternative method.")
+        #         self._logger.warning(e, exc_info=True)
+        #         subprocess.run(
+        #             f"start chrome {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\", shell=True
+        #         )
+        # else:
+        #     try:
+        #         if os.path.isfile("/usr/bin/chromium-browser"):
+        #             chrome_path = "/usr/bin/chromium-browser"
+        #         else:
+        #             chrome_path = "/usr/bin/chromium"
 
-            except Exception as e:
-                self._logger.warning(
-                    "Error while opening chromium_browser using psutil. Trying with subprocess.")
-                subprocess.run(
-                    f"/usr/bin/chromium-browser {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data", shell=True
-                )
+        #         user_data_directory_flag = f"--user-data-dir=/home/{getpass.getuser()}/chrome-data"
+        #         process = psutil.Popen([chrome_path, url, user_data_directory_flag] + f" --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
+        #                                stdout=FNULL,  stderr=subprocess.PIPE)
+        #         self._logger.info(process)
+        #         self.pid = process.as_dict()["pid"]
+
+        #     except Exception as e:
+        #         self._logger.warning(
+        #             "Error while opening chromium_browser using psutil. Trying with subprocess.")
+        #         subprocess.run(
+        #             f"/usr/bin/chromium-browser {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data", shell=True
+        #         )
 
     def close_browser(self):
         try:
