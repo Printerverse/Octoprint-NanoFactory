@@ -14,6 +14,7 @@ import psutil
 import requests
 import yaml
 from flask import request
+from typing_extensions import Literal
 
 import octoprint.plugin
 
@@ -35,9 +36,11 @@ class NanofactoryPlugin(
         self.master_peer_id: str = ""
         self.pid: str = ""
         self.cors_error = False
+        self.os: Literal["Windows", "Darwin", "Linux"] = ""
 
     # # ~~ StartupPlugin mixin
-    # def on_startup(self, host, port):
+    def on_startup(self, host, port):
+        self.os = platform.system()
 
     def on_after_startup(self):
         self.load_nf_profile()
@@ -185,7 +188,7 @@ class NanofactoryPlugin(
         alive = False
 
         if self.pid:
-            if platform.system() == "Windows":
+            if self.os == "Windows":
                 out = subprocess.check_output(
                     ["tasklist", "/fi", f"PID eq {self.pid}"]).strip()
                 # b'INFO: No tasks are running which match the specified criteria.'
@@ -194,7 +197,7 @@ class NanofactoryPlugin(
                     alive = False
                 else:
                     alive = True
-            else:
+            if self.os == "Linux":
                 try:
                     os.kill(self.pid, 0)
                     alive = True
@@ -290,14 +293,14 @@ class NanofactoryPlugin(
         )
 
     def check_chrome_data_folder(self):
-        if platform.system() == "Windows":
+        if self.os == "Windows":
             if not os.path.isdir("C:\\temp\\chrome-data"):
                 try:
                     os.mkdir("C:\\temp")
                     os.mkdir("C:\\temp\\chrome-data")
                 except Exception as e:
                     self._logger.warning(e)
-        else:
+        if self.os == "Linux":
             if not os.path.isdir(f"/home/{getpass.getuser()}/chrome-data"):
                 try:
                     os.mkdir(f"/home/{getpass.getuser()}/chrome-data")
@@ -343,7 +346,7 @@ class NanofactoryPlugin(
 
         url = f'file:///{path}?apiKey={self.api_key}&peerID={self.peer_ID}&masterPeerID={self.master_peer_id}'
 
-        if platform.system() == "Windows":
+        if self.os == "Windows":
             try:
                 chrome_path = r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
                 process = psutil.Popen([chrome_path, url] + "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\".split(" "), stdin=subprocess.PIPE,
@@ -358,7 +361,7 @@ class NanofactoryPlugin(
                 subprocess.run(
                     f"start chrome {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\", shell=True
                 )
-        else:
+        if self.os == "Linux":
             try:
                 if os.path.isfile("/usr/bin/chromium-browser"):
                     chrome_path = "/usr/bin/chromium-browser"
@@ -381,17 +384,17 @@ class NanofactoryPlugin(
     def close_browser(self):
         try:
             if self.pid:
-                if platform.system() == "Windows":
+                if self.os == "Windows":
                     subprocess.run("taskkill -F /PID " +
                                    str(self.pid), shell=True)
-                else:
+                if self.os == "Linux":
                     subprocess.run("kill -9 " + str(self.pid), shell=True)
 
             else:
-                if platform.system() == "Windows":
+                if self.os == "Windows":
                     subprocess.run(
                         "taskkill -F /IM chrome.exe >nul", shell=True)
-                else:
+                if self.os == "Linux":
                     subprocess.run("killall -9 chrome", shell=True)
         except Exception as e:
             self._logger.warning(e)
