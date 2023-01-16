@@ -52,24 +52,20 @@ var ConnectionLabels = /* @__PURE__ */ ((ConnectionLabels2) => {
   ConnectionLabels2[ConnectionLabels2["positionChanged"] = 57] = "positionChanged";
   ConnectionLabels2[ConnectionLabels2["positionChangedResponse"] = 4] = "positionChangedResponse";
   ConnectionLabels2[ConnectionLabels2["positionChangedRequest"] = 53] = "positionChangedRequest";
-  ConnectionLabels2[ConnectionLabels2["positionChangedStop"] = 54] = "positionChangedStop";
   ConnectionLabels2[ConnectionLabels2["cameraStreamRequest"] = 5] = "cameraStreamRequest";
   ConnectionLabels2[ConnectionLabels2["cameraStreamResponse"] = 34] = "cameraStreamResponse";
   ConnectionLabels2[ConnectionLabels2["cameraStreamStop"] = 44] = "cameraStreamStop";
   ConnectionLabels2[ConnectionLabels2["temperatureStreamRequest"] = 6] = "temperatureStreamRequest";
   ConnectionLabels2[ConnectionLabels2["temperatureStreamResponse"] = 35] = "temperatureStreamResponse";
-  ConnectionLabels2[ConnectionLabels2["temperatureStreamStop"] = 43] = "temperatureStreamStop";
   ConnectionLabels2[ConnectionLabels2["bedLevelingRequest"] = 7] = "bedLevelingRequest";
   ConnectionLabels2[ConnectionLabels2["bedLevelingResponse"] = 8] = "bedLevelingResponse";
   ConnectionLabels2[ConnectionLabels2["terminalRequest"] = 9] = "terminalRequest";
   ConnectionLabels2[ConnectionLabels2["terminalResponse"] = 10] = "terminalResponse";
-  ConnectionLabels2[ConnectionLabels2["terminalStop"] = 42] = "terminalStop";
   ConnectionLabels2[ConnectionLabels2["filamentModified"] = 58] = "filamentModified";
   ConnectionLabels2[ConnectionLabels2["filamentAssigned"] = 11] = "filamentAssigned";
   ConnectionLabels2[ConnectionLabels2["filamentRemoved"] = 12] = "filamentRemoved";
   ConnectionLabels2[ConnectionLabels2["filamentModifiedResponse"] = 40] = "filamentModifiedResponse";
   ConnectionLabels2[ConnectionLabels2["filamentModifiedRequest"] = 52] = "filamentModifiedRequest";
-  ConnectionLabels2[ConnectionLabels2["filamentModifiedStop"] = 55] = "filamentModifiedStop";
   ConnectionLabels2[ConnectionLabels2["jobCreated"] = 13] = "jobCreated";
   ConnectionLabels2[ConnectionLabels2["jobFile"] = 41] = "jobFile";
   ConnectionLabels2[ConnectionLabels2["jobDone"] = 14] = "jobDone";
@@ -82,7 +78,6 @@ var ConnectionLabels = /* @__PURE__ */ ((ConnectionLabels2) => {
   ConnectionLabels2[ConnectionLabels2["jobFilamentModified"] = 30] = "jobFilamentModified";
   ConnectionLabels2[ConnectionLabels2["currentJobUpdatesResponse"] = 49] = "currentJobUpdatesResponse";
   ConnectionLabels2[ConnectionLabels2["currentJobUpdatesRequest"] = 51] = "currentJobUpdatesRequest";
-  ConnectionLabels2[ConnectionLabels2["currentJobUpdatesStop"] = 56] = "currentJobUpdatesStop";
   ConnectionLabels2[ConnectionLabels2["jobRankChange"] = 18] = "jobRankChange";
   ConnectionLabels2[ConnectionLabels2["actionCreated"] = 19] = "actionCreated";
   ConnectionLabels2[ConnectionLabels2["actionModified"] = 20] = "actionModified";
@@ -110,6 +105,9 @@ var ConnectionLabels = /* @__PURE__ */ ((ConnectionLabels2) => {
   ConnectionLabels2[ConnectionLabels2["peerSyncDataRequest"] = 62] = "peerSyncDataRequest";
   ConnectionLabels2[ConnectionLabels2["peerSyncDataResponse"] = 63] = "peerSyncDataResponse";
   ConnectionLabels2[ConnectionLabels2["peerIDChange"] = 64] = "peerIDChange";
+  ConnectionLabels2[ConnectionLabels2["usernameUpdate"] = 65] = "usernameUpdate";
+  ConnectionLabels2[ConnectionLabels2["deviceNameUpdate"] = 66] = "deviceNameUpdate";
+  ConnectionLabels2[ConnectionLabels2["removeFromGroup"] = 67] = "removeFromGroup";
   return ConnectionLabels2;
 })(ConnectionLabels || {});
 var OctoPrintEndPoint = /* @__PURE__ */ ((OctoPrintEndPoint2) => {
@@ -5475,6 +5473,7 @@ class Printer {
     __publicField(this, "isQueuePaused");
     __publicField(this, "queuePausedReason");
     __publicField(this, "nanofactoryInstallDate");
+    __publicField(this, "videoConfiguration");
     this.id = id;
     this.name = "";
     this.model = "";
@@ -5523,6 +5522,11 @@ class Printer {
     this.filamentID = "";
     this.isQueuePaused = true;
     this.queuePausedReason = "Printer has not been assigned a job";
+    this.videoConfiguration = {
+      rotate: 0,
+      flipH: false,
+      flipV: false
+    };
   }
   async save(changes) {
     await db.printer.update(this.id, changes);
@@ -5726,11 +5730,6 @@ var NanoFactoryPeerType = /* @__PURE__ */ ((NanoFactoryPeerType2) => {
   NanoFactoryPeerType2["BLACKLISTED"] = "blacklisted";
   return NanoFactoryPeerType2;
 })(NanoFactoryPeerType || {});
-var NanoFactoryPeerIDType = /* @__PURE__ */ ((NanoFactoryPeerIDType2) => {
-  NanoFactoryPeerIDType2["DEVICE_IDS"] = "deviceIDs";
-  NanoFactoryPeerIDType2["GROUP_IDS"] = "groupIDs";
-  return NanoFactoryPeerIDType2;
-})(NanoFactoryPeerIDType || {});
 class NanoFactoryPeers {
   constructor() {
     __publicField(this, "id");
@@ -5738,18 +5737,9 @@ class NanoFactoryPeers {
     __publicField(this, "blacklisted");
     __publicField(this, "available");
     this.id = "1";
-    this.whitelisted = {
-      deviceIDs: /* @__PURE__ */ new Set([]),
-      groupIDs: /* @__PURE__ */ new Set([])
-    };
-    this.blacklisted = {
-      deviceIDs: /* @__PURE__ */ new Set([]),
-      groupIDs: /* @__PURE__ */ new Set([])
-    };
-    this.available = {
-      deviceIDs: /* @__PURE__ */ new Set([]),
-      groupIDs: /* @__PURE__ */ new Set([])
-    };
+    this.whitelisted = /* @__PURE__ */ new Map();
+    this.blacklisted = /* @__PURE__ */ new Map();
+    this.available = /* @__PURE__ */ new Map();
   }
   async save(changes) {
     await db.nanofactoryPeers.update(this.id, changes);
@@ -5760,70 +5750,100 @@ class NanoFactoryPeers {
   remove() {
     db.nanofactoryPeers.delete(this.id);
   }
-  getDeviceAndGroupIDs(peerType) {
-    return /* @__PURE__ */ new Set([...this[peerType].deviceIDs, ...this[peerType].groupIDs]);
+  getJSONifiedString(peerType) {
+    return JSON.stringify(this[peerType], replacer);
   }
-  getGroupIDs(peerType) {
-    let groupIDs = /* @__PURE__ */ new Set([]);
-    this[peerType].groupIDs.forEach((peerID) => {
-      groupIDs.add(extractGroupID(peerID));
+  getFlatMapOfAllIDs(peerType) {
+    let flatMap = [];
+    this[peerType].forEach((peerInformation, id) => {
+      if (peerInformation.devices.size > 0) {
+        peerInformation.devices.forEach((_deviceName, deviceID) => {
+          flatMap.push(deviceID + "-" + id);
+        });
+      } else {
+        flatMap.push(id);
+      }
     });
-    return groupIDs;
+    return flatMap;
+  }
+}
+function replacer(_key, value) {
+  if (value instanceof Map) {
+    return {
+      dataType: "Map",
+      value: Array.from(value.entries())
+    };
+  } else {
+    return value;
   }
 }
 async function handleSecurityTasks(data, peerID, label, _metadata) {
   switch (label) {
     case ConnectionLabels.peerPermissionResponse:
-      if (peerID === networking.masterPeerID) {
-        if (data["accept"]) {
-          addToList(NanoFactoryPeerType.WHITELISTED, data["peerID"]);
-          handleSyncAllRequest(data["peerID"]);
-        } else {
-          addToList(NanoFactoryPeerType.BLACKLISTED, data["peerID"]);
-        }
+      if (!isRequestFromMaster(peerID))
+        return;
+      if (data["accept"]) {
+        addToList(NanoFactoryPeerType.WHITELISTED, data["peerID"], "", "");
+        handleSyncAllRequest(data["peerID"]);
+      } else {
+        addToList(NanoFactoryPeerType.BLACKLISTED, data["peerID"], "", "");
       }
       break;
     case ConnectionLabels.peerListModification:
-      if (peerID === networking.masterPeerID) {
-        if (data["action"] === "add") {
-          addToList(data["peerType"], data["peerID"]);
-        } else if (data["action"] === "delete") {
-          removeFromList(data["peerType"], data["peerID"]);
-        }
-        sendData(networking.masterPeerID, data, ConnectionLabels.peerListModification);
+      if (!isRequestFromMaster(peerID))
+        return;
+      if (data["action"] === "add") {
+        addToList(data["peerType"], data["peerID"], "", "");
+      } else if (data["action"] === "delete") {
+        removeFromList(data["peerType"], data["peerID"]);
       }
+      sendData(networking.masterPeerID, {
+        "whitelisted": nanofactoryPeersObject.getJSONifiedString(NanoFactoryPeerType.WHITELISTED),
+        "blacklisted": nanofactoryPeersObject.getJSONifiedString(NanoFactoryPeerType.BLACKLISTED)
+      }, ConnectionLabels.peerListModification);
+      break;
+    case ConnectionLabels.usernameUpdate:
+      updateUsername(peerID, data["username"]);
+      break;
+    case ConnectionLabels.deviceNameUpdate:
+      updateDeviceName(peerID, data["deviceName"]);
+      break;
+    case ConnectionLabels.removeFromGroup:
+      removeFromList(NanoFactoryPeerType.WHITELISTED, peerID);
       break;
   }
 }
-async function addToList(listType, peerID) {
-  let peerIDType = peerID.includes("-") ? NanoFactoryPeerIDType.GROUP_IDS : NanoFactoryPeerIDType.DEVICE_IDS;
-  nanofactoryPeersObject[listType][peerIDType].add(peerID);
-  if (listType === NanoFactoryPeerType.WHITELISTED) {
-    nanofactoryPeersObject[NanoFactoryPeerType.AVAILABLE][peerIDType].add(peerID);
-  }
-  await nanofactoryPeersObject.save(nanofactoryPeersObject);
+function isRequestFromMaster(peerID) {
+  var _a2;
+  if (networking.masterPeerID.includes("-"))
+    return (_a2 = nanofactoryPeersObject.whitelisted.get(extractGroupID(networking.masterPeerID))) == null ? void 0 : _a2.devices.has(extractDeviceID(peerID));
+  else
+    return peerID === networking.masterPeerID;
 }
-async function removeFromList(listType, peerID) {
-  let peerIDType = peerID.includes("-") ? NanoFactoryPeerIDType.GROUP_IDS : NanoFactoryPeerIDType.DEVICE_IDS;
-  if (peerIDType === NanoFactoryPeerIDType.DEVICE_IDS || peerIDType === NanoFactoryPeerIDType.GROUP_IDS && listType === NanoFactoryPeerType.AVAILABLE) {
-    nanofactoryPeersObject[listType][peerIDType].delete(peerID);
-    if (listType === NanoFactoryPeerType.WHITELISTED) {
-      nanofactoryPeersObject[NanoFactoryPeerType.AVAILABLE][peerIDType].delete(peerID);
+async function addToList(listType, peerID, username, deviceName) {
+  if (peerID.includes("-")) {
+    if (nanofactoryPeersObject[listType].has(extractGroupID(peerID))) {
+      nanofactoryPeersObject[listType].get(extractGroupID(peerID)).devices.set(extractDeviceID(peerID), deviceName);
+      nanofactoryPeersObject[listType].set(extractGroupID(peerID), { username, devices: nanofactoryPeersObject[listType].get(extractGroupID(peerID)).devices });
+    } else {
+      nanofactoryPeersObject[listType].set(extractGroupID(peerID), { username, devices: /* @__PURE__ */ new Map([[extractDeviceID(peerID), deviceName]]) });
     }
   } else {
-    let groupID = extractGroupID(peerID);
-    nanofactoryPeersObject[listType][peerIDType].forEach((value) => {
-      if (value.includes(groupID))
-        nanofactoryPeersObject[listType][peerIDType].delete(value);
-    });
-    if (listType === NanoFactoryPeerType.WHITELISTED) {
-      nanofactoryPeersObject[NanoFactoryPeerType.AVAILABLE][peerIDType].forEach((value) => {
-        if (value.includes(groupID))
-          nanofactoryPeersObject[NanoFactoryPeerType.AVAILABLE][peerIDType].delete(value);
-      });
-    }
+    nanofactoryPeersObject[listType].set(peerID, { username, devices: /* @__PURE__ */ new Map([]) });
   }
   await nanofactoryPeersObject.save(nanofactoryPeersObject);
+  if (listType === NanoFactoryPeerType.AVAILABLE)
+    addToList(NanoFactoryPeerType.WHITELISTED, peerID, username, deviceName);
+}
+async function removeFromList(listType, peerID) {
+  var _a2;
+  if (peerID.includes("-"))
+    (_a2 = nanofactoryPeersObject[listType].get(extractGroupID(peerID))) == null ? void 0 : _a2.devices.delete(extractDeviceID(peerID));
+  else
+    nanofactoryPeersObject[listType].delete(peerID);
+  await nanofactoryPeersObject.save(nanofactoryPeersObject);
+  if (listType === NanoFactoryPeerType.WHITELISTED)
+    await removeFromList(NanoFactoryPeerType.AVAILABLE, peerID);
 }
 function extractGroupID(peerID) {
   if (peerID.indexOf("-") > 0) {
@@ -5838,11 +5858,30 @@ function extractDeviceID(peerID) {
     return peerID.substring(0, 18);
   }
 }
-async function handleMasterPeerIDChange(newMasterPeerID) {
+async function handleMasterPeerIDChange(newMasterPeerID, username, deviceName) {
   networking.masterPeerID = newMasterPeerID;
   await networking.save({ masterPeerID: networking.masterPeerID });
-  await addToList(NanoFactoryPeerType.WHITELISTED, networking.masterPeerID);
+  await addToList(NanoFactoryPeerType.WHITELISTED, networking.masterPeerID, username, deviceName);
   callOctoprintEndPoint(OctoPrintEndPoint.saveMasterPeerID, "POST", { master_peer_id: networking.masterPeerID });
+}
+function updateUsername(peerID, newUsername) {
+  let idToSearch = peerID.includes("-") ? extractGroupID(peerID) : peerID;
+  let groupInfo = nanofactoryPeersObject.whitelisted.get(idToSearch);
+  if (groupInfo) {
+    groupInfo.username = newUsername;
+    nanofactoryPeersObject.whitelisted.set(idToSearch, groupInfo);
+  }
+  nanofactoryPeersObject.save(nanofactoryPeersObject);
+}
+function updateDeviceName(peerID, newDeviceName) {
+  if (peerID.includes("-")) {
+    let groupInfo = nanofactoryPeersObject.whitelisted.get(extractGroupID(peerID));
+    if (groupInfo) {
+      groupInfo.devices.set(extractDeviceID(peerID), newDeviceName);
+      nanofactoryPeersObject.whitelisted.set(extractGroupID(peerID), groupInfo);
+    }
+  }
+  nanofactoryPeersObject.save(nanofactoryPeersObject);
 }
 function sendData(peerID, data, label) {
   const options = {
@@ -5879,12 +5918,12 @@ function sendFile(peerID, fileContent, metadata, label) {
   });
 }
 async function sendDataToAllAvailablePeers(data, label) {
-  nanofactoryPeersObject.getDeviceAndGroupIDs(NanoFactoryPeerType.AVAILABLE).forEach((peerID) => {
+  nanofactoryPeersObject.getFlatMapOfAllIDs(NanoFactoryPeerType.AVAILABLE).forEach((peerID) => {
     sendData(peerID, data, label);
   });
 }
 async function sendFileToAllAvailablePeers(fileContent, metadata, label) {
-  nanofactoryPeersObject.getDeviceAndGroupIDs(NanoFactoryPeerType.AVAILABLE).forEach((peerID) => {
+  nanofactoryPeersObject.getFlatMapOfAllIDs(NanoFactoryPeerType.AVAILABLE).forEach((peerID) => {
     sendFile(peerID, fileContent, metadata, label);
   });
 }
@@ -5902,9 +5941,6 @@ async function handleJob(data, peerID, label, metadata, fileContent) {
       break;
     case ConnectionLabels.currentJobUpdatesRequest:
       sendCurrentJobUpdates(peerID);
-      break;
-    case ConnectionLabels.currentJobUpdatesStop:
-      jobProgressConnections[peerID].close();
       break;
     case ConnectionLabels.jobCancelled:
       let jobToCancel = await db.printQueue.get(data["id"]);
@@ -6001,6 +6037,7 @@ let bedLevelingRequests = [];
 const BED_LEVELLING_TIMEOUT = 60;
 const BED_LEVELLING_RESPONSE_INTERVAL = 10;
 const BED_LEVELLING_MAX_TRIES = 60;
+const PRINTER_PROFILE_CHANGES_TO_IGNORE = ["videoConfiguration"];
 let numberOfBedlevellingResponseTries = 0;
 async function handlePrinter(data, peerID, label, _metadata) {
   switch (label) {
@@ -6016,9 +6053,6 @@ async function handlePrinter(data, peerID, label, _metadata) {
     case ConnectionLabels.temperatureStreamRequest:
       startTemperatureStream(peerID);
       break;
-    case ConnectionLabels.temperatureStreamStop:
-      temperatureStreamConnections[peerID].close();
-      break;
     case ConnectionLabels.filamentExtrude:
       OctoPrint.printer.extrude(data["data"]);
       break;
@@ -6027,9 +6061,6 @@ async function handlePrinter(data, peerID, label, _metadata) {
       break;
     case ConnectionLabels.terminalRequest:
       startTerminalStream(peerID);
-      break;
-    case ConnectionLabels.terminalStop:
-      terminalConnections[peerID].close();
       break;
     case ConnectionLabels.targetBed:
       OctoPrint.printer.setBedTargetTemperature(data["data"]);
@@ -6043,19 +6074,20 @@ async function handlePrinter(data, peerID, label, _metadata) {
     case ConnectionLabels.positionChangedRequest:
       startPositionChangedStream(peerID);
       break;
-    case ConnectionLabels.positionChangedStop:
-      positionChangedConnections[peerID].close();
-      break;
     case ConnectionLabels.emergencyStop:
       executeCustomGcode(["M112"]);
       break;
     case ConnectionLabels.profileChanged:
-      OctoPrint.printerprofiles.update("_default", data);
       sendDataToAllAvailablePeers(data, ConnectionLabels.profileChanged);
-      Object.keys(data).forEach((key) => {
+      var length = Object.keys(data).length;
+      while (length--) {
+        let key = Object.keys(data)[length];
         printer[key] = data[key];
-      });
+        if (PRINTER_PROFILE_CHANGES_TO_IGNORE.includes(key))
+          delete data[key];
+      }
       printer.save(printer);
+      OctoPrint.printerprofiles.update("_default", data);
       break;
     case ConnectionLabels.refreshConnectionOptions:
       await saveConnectionOptions();
@@ -6335,9 +6367,6 @@ async function handleFilament(data, peerID, label, _metadata) {
     case ConnectionLabels.filamentModifiedRequest:
       sendFilamentUpdates(peerID);
       break;
-    case ConnectionLabels.filamentModifiedStop:
-      filamentUpdateConnections[peerID].close();
-      break;
   }
 }
 function sendFilamentUpdates(peerID) {
@@ -6348,13 +6377,10 @@ function sendFilamentUpdates(peerID) {
   };
   let filamentUpdateConnection = peer.connect(peerID, options);
   filamentUpdateConnection.on("open", function () {
-    filamentUpdateConnections[peerID] = filamentUpdateConnection;
   });
   filamentUpdateConnection.on("close", function () {
-    delete filamentUpdateConnections[peerID];
   });
   filamentUpdateConnection.on("error", function () {
-    delete filamentUpdateConnections[peerID];
   });
 }
 async function handleAction(data, _peerID, label, metadata, fileContent) {
@@ -6398,27 +6424,21 @@ async function handleIncomingData(data, peerID, label, metadata) {
   }
   metadata = JSON.parse(metadata);
   if (isIdInList(peerID, NanoFactoryPeerType.WHITELISTED)) {
-    if (!nanofactoryPeersObject.getDeviceAndGroupIDs(NanoFactoryPeerType.WHITELISTED).has(peerID)) {
-      await addToList(NanoFactoryPeerType.WHITELISTED, peerID);
-    }
     switch (label) {
       case ConnectionLabels.syncAllRequest:
-        handleSyncAllRequest(peerID);
+        handleSyncAllRequest(peerID, data);
         break;
       case ConnectionLabels.connectPrinter:
       case ConnectionLabels.disconnectPrinter:
       case ConnectionLabels.executeCustomGcode:
       case ConnectionLabels.temperatureStreamRequest:
-      case ConnectionLabels.temperatureStreamStop:
       case ConnectionLabels.filamentExtrude:
       case ConnectionLabels.home:
       case ConnectionLabels.terminalRequest:
-      case ConnectionLabels.terminalStop:
       case ConnectionLabels.targetBed:
       case ConnectionLabels.targetTool:
       case ConnectionLabels.positionChanged:
       case ConnectionLabels.positionChangedRequest:
-      case ConnectionLabels.positionChangedStop:
       case ConnectionLabels.emergencyStop:
       case ConnectionLabels.profileChanged:
       case ConnectionLabels.refreshConnectionOptions:
@@ -6427,7 +6447,6 @@ async function handleIncomingData(data, peerID, label, metadata) {
         break;
       case ConnectionLabels.jobCreated:
       case ConnectionLabels.currentJobUpdatesRequest:
-      case ConnectionLabels.currentJobUpdatesStop:
       case ConnectionLabels.jobCancelled:
       case ConnectionLabels.jobDeleted:
       case ConnectionLabels.jobRankChange:
@@ -6440,7 +6459,6 @@ async function handleIncomingData(data, peerID, label, metadata) {
       case ConnectionLabels.filamentRemoved:
       case ConnectionLabels.filamentModified:
       case ConnectionLabels.filamentModifiedRequest:
-      case ConnectionLabels.filamentModifiedStop:
         handleFilament(data, peerID, label);
         break;
       case ConnectionLabels.actionCreated:
@@ -6451,6 +6469,9 @@ async function handleIncomingData(data, peerID, label, metadata) {
         break;
       case ConnectionLabels.peerPermissionResponse:
       case ConnectionLabels.peerListModification:
+      case ConnectionLabels.usernameUpdate:
+      case ConnectionLabels.deviceNameUpdate:
+      case ConnectionLabels.removeFromGroup:
         handleSecurityTasks(data, peerID, label);
         break;
       case ConnectionLabels.handshakeRequest:
@@ -6462,35 +6483,38 @@ async function handleIncomingData(data, peerID, label, metadata) {
         break;
     }
   } else if (isIdInList(peerID, NanoFactoryPeerType.BLACKLISTED)) {
-    if (!nanofactoryPeersObject.getDeviceAndGroupIDs(NanoFactoryPeerType.BLACKLISTED).has(peerID)) {
-      await addToList(NanoFactoryPeerType.BLACKLISTED, peerID);
+    if (label === ConnectionLabels.syncAllRequest) {
+      await addToList(NanoFactoryPeerType.BLACKLISTED, peerID, data["username"], data["deviceName"]);
     }
-    console.log("Request from blacklisted peer: " + peerID + ". Label: " + label);
+    console.log("Request from blacklisted peer: " + peerID + ". Label: " + ConnectionLabels[label]);
   } else {
     if (label === ConnectionLabels.syncAllRequest) {
-      if (networking.masterPeerID.length > 0) {
+      if (networking.masterPeerID.length > 0 && isIdInList(networking.masterPeerID, NanoFactoryPeerType.WHITELISTED)) {
         sendData(networking.masterPeerID, data, ConnectionLabels.peerPermissionRequest);
       } else {
-        await handleMasterPeerIDChange(peerID);
-        addToList(NanoFactoryPeerType.WHITELISTED, peerID);
-        handleSyncAllRequest(peerID);
+        await handleMasterPeerIDChange(peerID, data["username"], data["deviceName"]);
+        handleSyncAllRequest(peerID, data);
       }
-    } else if (label === ConnectionLabels.peerIDChange && nanofactoryPeersObject.whitelisted.deviceIDs.has(extractDeviceID(peerID))) {
+    } else if (label === ConnectionLabels.peerIDChange && isIdInList(extractDeviceID(peerID), NanoFactoryPeerType.WHITELISTED)) {
       removeFromList(NanoFactoryPeerType.WHITELISTED, extractDeviceID(peerID));
-      addToList(NanoFactoryPeerType.WHITELISTED, peerID);
+      addToList(NanoFactoryPeerType.WHITELISTED, peerID, data["username"], data["deviceName"]);
       if (extractDeviceID(peerID) === networking.masterPeerID) {
-        await handleMasterPeerIDChange(peerID);
-        handleSyncAllRequest(peerID);
+        await handleMasterPeerIDChange(peerID, data["username"], data["deviceName"]);
+        handleSyncAllRequest(peerID, data);
       }
     }
   }
 }
 function isIdInList(peerID, listType) {
-  if (nanofactoryPeersObject.getDeviceAndGroupIDs(listType).has(peerID))
-    return true;
-  return peerID.includes("-") && nanofactoryPeersObject.getGroupIDs(listType).has(extractGroupID(peerID));
+  let idInList = false;
+  let idToCheck = peerID.includes("-") ? extractGroupID(peerID) : peerID;
+  nanofactoryPeersObject[listType].forEach((_value, key) => {
+    if (idToCheck === key)
+      idInList = true;
+  });
+  return idInList;
 }
-async function handleSyncAllRequest(peerID) {
+async function handleSyncAllRequest(peerID, data) {
   let payload = {
     "printer_profile": (await db.printer.toArray())[0],
     "current_job": {
@@ -6501,8 +6525,8 @@ async function handleSyncAllRequest(peerID) {
     "current_filament": await db.filaments.get(printer.filamentID),
     "scripts": await db.actions.toArray(),
     "is_master": false,
-    "whitelisted": [""],
-    "blacklisted": [""]
+    "whitelisted": {},
+    "blacklisted": {}
   };
   if (networking.masterPeerID.includes("-")) {
     if (peerID.includes("-")) {
@@ -6512,11 +6536,11 @@ async function handleSyncAllRequest(peerID) {
     payload.is_master = peerID === networking.masterPeerID;
   }
   if (payload.is_master) {
-    payload["whitelisted"] = Array.from(nanofactoryPeersObject.getDeviceAndGroupIDs(NanoFactoryPeerType.WHITELISTED));
-    payload["blacklisted"] = Array.from(nanofactoryPeersObject.getDeviceAndGroupIDs(NanoFactoryPeerType.BLACKLISTED));
+    payload["whitelisted"] = nanofactoryPeersObject.getJSONifiedString(NanoFactoryPeerType.WHITELISTED);
+    payload["blacklisted"] = nanofactoryPeersObject.getJSONifiedString(NanoFactoryPeerType.BLACKLISTED);
   }
   sendData(peerID, payload, ConnectionLabels.syncAllResponse);
-  addToList(NanoFactoryPeerType.AVAILABLE, peerID);
+  addToList(NanoFactoryPeerType.AVAILABLE, peerID, data["username"], data["deviceName"]);
 }
 async function handleHandshakeRequest(peerID) {
   sendData(peerID, { "status": (await db.printer.toArray())[0].state.status }, ConnectionLabels.handshakeResponse);
@@ -6531,6 +6555,7 @@ async function handleSocketMessage(message) {
       });
       break;
     case socketEventTypes.HISTORY:
+      OctoPrint.socket.decreaseRate();
       break;
     case socketEventTypes.CURRENT:
       if (currentJobID && "job" in message.data)
@@ -6543,7 +6568,9 @@ async function handleSocketMessage(message) {
               "completion": parseFloat(message.data["progress"]["completion"]).toFixed(1)
             },
             "estimatedFilamentUsage": (_b = (_a2 = message.data.job.filament) == null ? void 0 : _a2.tool0) != null ? _b : { "length": 0, "volume": 0 },
-            "actualFilamentUsage": { "length": 0, "volume": 0 }
+            "actualFilamentUsage": { "length": 0, "volume": 0 },
+            "estimatedPrintTime": message.data.job.estimatedPrintTime,
+            "printTime": message.data.progress.printTime
           }
         };
         if (payload.data.progress.completion) {
@@ -14128,7 +14155,6 @@ let jobProgressConnections = {};
 let temperatureStreamConnections = {};
 let terminalConnections = {};
 let positionChangedConnections = {};
-let filamentUpdateConnections = {};
 const CONTINUOUS_CONNECTION_LABELS = [ConnectionLabels.positionChanged];
 const RETRY_CONNECTION_TIMEOUT = 15;
 const BASEURL = "http://localhost:5000/";
@@ -14161,8 +14187,6 @@ loadDatabase().then(async () => {
   networking.save({ apiKey: networking.apiKey });
   networking.masterPeerID = params.get("masterPeerID");
   networking.save({ masterPeerID: networking.masterPeerID });
-  if (networking.masterPeerID)
-    addToList(NanoFactoryPeerType.WHITELISTED, networking.masterPeerID);
   if (networking.peerID.length > 0) {
     startupFunctions();
   }
@@ -14176,7 +14200,6 @@ async function startupFunctions() {
   await saveConnectionOptions();
   await updatePrinterStateAndTemperature();
   await OctoPrint.socket.connect();
-  OctoPrint.socket.increaseRate();
   OctoPrint.socket.onMessage("*", (socketMessage) => handleSocketMessage(socketMessage));
 }
 function callbackFunctionsForPeer() {

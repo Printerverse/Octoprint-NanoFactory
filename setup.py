@@ -89,9 +89,9 @@ try:
     import platform
     import subprocess
 
-    if platform.system() != "Windows":
+    if platform.system() == "Linux":
         print("Checking for chromium-browser")
-        if not os.path.isfile("/usr/bin/chromium-browser"):
+        if not os.path.isfile("/usr/bin/chromium-browser") and not os.path.isfile("/usr/bin/chromium"):
 
             print("chromium-browser not found. Installing...")
 
@@ -104,7 +104,7 @@ try:
 
             print("chromium-browser found. Not installing")
     else:
-        print("OS is windows. Please ensure you have chrome installed to run NanoFactory")
+        print("Please ensure you have chrome installed to run NanoFactory")
 
 except Exception as e:
     sys.exit(-1)
@@ -133,4 +133,4 @@ if len(additional_setup_parameters):
     setup_parameters = dict_merge(
         setup_parameters, additional_setup_parameters)
 
-setup(**setup_parameters)
+# setup(**setup_parameters)
