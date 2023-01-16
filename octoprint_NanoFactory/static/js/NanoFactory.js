@@ -323,9 +323,10 @@ $(function () {
         }
 
 
-        self.handleMasterPeerIDEdit = function () {
+        self.handleMasterPeerIDClear = function () {
             let inputField = document.getElementById("master-peer-id")
             inputField.disabled = false
+            inputField.value = ""
             inputField.focus()
         }
     }
