@@ -13,6 +13,7 @@ $(function () {
         self.peerIDMessage = ko.observable("")
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
+        self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
         self.browserStatus = ko.observable("Not Alive")
         self.browserStatusColor = ko.observable("red")
 
@@ -39,6 +40,7 @@ $(function () {
 
                     if (data["masterPeerID"].length > 0) {
                         document.getElementById("master-peer-id").disabled = true
+                        self.nanoFactoryActionButtonText("Go to NanoFactory")
                     } else {
                         document.getElementById("master-peer-id").disabled = false
                     }
@@ -314,6 +316,7 @@ $(function () {
 
         self.handleMasterPeerIDSubmit = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "saveMasterPeerID", { "masterPeerID": self.masterPeerID() }).done(function (response) {
+                nanoFactoryActionButtonText("Go to NanoFactory")
                 new PNotify({
                     title: "Save Successful",
                     text: 'Master Device ID saved successfully',
@@ -323,9 +326,11 @@ $(function () {
         }
 
 
-        self.handleMasterPeerIDEdit = function () {
+        self.handleMasterPeerIDClear = function () {
             let inputField = document.getElementById("master-peer-id")
             inputField.disabled = false
+            self.masterPeerID("")
+            inputField.value = ""
             inputField.focus()
         }
     }
