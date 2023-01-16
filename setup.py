@@ -71,7 +71,6 @@ additional_setup_parameters = {"python_requires": ">=3,<4"}
 
 
 try:
-    print("Hello from NanoFactory")
     import octoprint_setuptools
 except:
     print(
@@ -84,7 +83,7 @@ except:
 
 
 try:
-    # print("Hello from NanoFactory")
+    print("Hello from NanoFactory")
 
     import os
     import platform
