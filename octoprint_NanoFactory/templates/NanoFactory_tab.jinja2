@@ -8,7 +8,7 @@
 <div>
     <button style="width: 12rem; text-decoration:none; height:2rem; vertical-align:middle"
         data-bind="click: goToNanoFactoryURL" class="btn btn-primary">
-        <span> Add to NanoFactory</span>
+        <span data-bind="text: nanoFactoryActionButtonText"></span>
         <span> <img src="plugin/NanoFactory/static/img/NewTab.png" width="25" height="25" /></span>
     </button>
     <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: copyNanoFactoryURL"
