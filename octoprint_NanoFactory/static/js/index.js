@@ -54,7 +54,6 @@ var ConnectionLabels = /* @__PURE__ */ ((ConnectionLabels2) => {
   ConnectionLabels2[ConnectionLabels2["positionChangedRequest"] = 53] = "positionChangedRequest";
   ConnectionLabels2[ConnectionLabels2["cameraStreamRequest"] = 5] = "cameraStreamRequest";
   ConnectionLabels2[ConnectionLabels2["cameraStreamResponse"] = 34] = "cameraStreamResponse";
-  ConnectionLabels2[ConnectionLabels2["cameraStreamStop"] = 44] = "cameraStreamStop";
   ConnectionLabels2[ConnectionLabels2["temperatureStreamRequest"] = 6] = "temperatureStreamRequest";
   ConnectionLabels2[ConnectionLabels2["temperatureStreamResponse"] = 35] = "temperatureStreamResponse";
   ConnectionLabels2[ConnectionLabels2["bedLevelingRequest"] = 7] = "bedLevelingRequest";
@@ -6266,6 +6265,8 @@ let checkX = false;
 let checkY = false;
 let checkZ = false;
 let positionAbsolute = true;
+let extruderAbsolute = true;
+let extruderPosition = 0;
 function handleDataFromLogs(logLines) {
   let positionChanged = false;
   logLines.forEach((logLine) => {
@@ -6294,10 +6295,11 @@ function handleDataFromLogs(logLines) {
     } else if (logLine.match(patternPositionRelative)) {
       positionAbsolute = false;
     }
-    if (logLine.match(patternExtruderAbsolute))
-      ;
-    else if (logLine.match(patternExtruderRelative))
-      ;
+    if (logLine.match(patternExtruderAbsolute)) {
+      extruderAbsolute = true;
+    } else if (logLine.match(patternExtruderRelative)) {
+      extruderAbsolute = false;
+    }
     if (logLine.includes("G0") || logLine.includes("G1")) {
       if (logLine.match(patternX)) {
         printer.position.x = positionAbsolute ? parseFloat(logLine.match(patternX)[0].substring(1)) : printer.position.x + parseFloat(logLine.match(patternX)[0].substring(1));
@@ -6312,7 +6314,12 @@ function handleDataFromLogs(logLines) {
         positionChanged = true;
       }
       if (logLine.match(patternE)) {
-        parseFloat(logLine.match(patternE)[0].substring(1));
+        let extrudeLength = parseFloat(logLine.match(patternE)[0].substring(1));
+        if (!extruderAbsolute) {
+          extruderPosition += extrudeLength;
+        } else {
+          extruderPosition = extrudeLength;
+        }
       }
       if (positionChanged) {
         printer.save({ position: printer.position });
@@ -6321,6 +6328,62 @@ function handleDataFromLogs(logLines) {
         }
       }
     }
+  });
+}
+let snapshotUrl;
+let streamUrl;
+let numberOfRestarts = 0;
+const MAX_RESTARTS_COUNT = 10;
+const FPS = 24;
+async function initializeCameraStream() {
+  snapshotUrl = (await OctoPrint.settings.get())["webcam"]["snapshotUrl"];
+  streamUrl = (await OctoPrint.settings.get())["webcam"]["streamUrl"];
+  initializeWorker();
+}
+function initializeWorker() {
+  if (snapshotUrl) {
+    let worker = new Worker("./workers/camera.js");
+    worker.postMessage([snapshotUrl, FPS]);
+    worker.onmessage = (e) => {
+      if (typeof e.data === "string") {
+        switch (e.data) {
+          case "openStream":
+            window.open(streamUrl, "_blank");
+            break;
+          case "restartWorker":
+            worker.terminate();
+            if (numberOfRestarts < MAX_RESTARTS_COUNT) {
+              initializeWorker();
+              numberOfRestarts += 1;
+            }
+            break;
+        }
+      } else {
+        for (let peerID in cameraStreamConnections) {
+          cameraStreamConnections[peerID].send(e.data);
+        }
+      }
+    };
+  } else {
+    console.log("Snapshot url not setup. Not streaming camera");
+  }
+}
+async function handleCameraStreamRequest(peerID) {
+  const options = {
+    label: ConnectionLabels.cameraStreamResponse.toString(),
+    metadata: peerID,
+    serialization: "binary"
+  };
+  let cameraStreamConnection = peer.connect(peerID, options);
+  cameraStreamConnection.on("open", function () {
+    console.log("camera stream connection is open " + peerID);
+    cameraStreamConnections[peerID] = cameraStreamConnection;
+  });
+  cameraStreamConnection.on("close", function () {
+    delete cameraStreamConnections[peerID];
+  });
+  cameraStreamConnection.on("error", function () {
+    delete cameraStreamConnections[peerID];
   });
 }
 var socketEventTypes = /* @__PURE__ */ ((socketEventTypes2) => {
@@ -6369,6 +6432,26 @@ async function handleFilament(data, peerID, label, _metadata) {
       break;
   }
 }
+let extruderAtLastUpdate = 0;
+const FILAMENT_UPDATE_GAP = 10;
+function updateFilamentUsage() {
+  setInterval(async () => {
+    let extruderPositionCopy = extruderPosition;
+    let extrudeLengthForCurrentInterval = extruderPositionCopy - extruderAtLastUpdate;
+    extruderAtLastUpdate = extruderPositionCopy;
+    if (extrudeLengthForCurrentInterval == 0)
+      return;
+    let filament = (await db.filaments.toArray())[0];
+    let extrudeWeight = await calculateFilamentWeightFromLength(extrudeLengthForCurrentInterval, filament.density, filament.diameter);
+    filament.weightPrinted += extrudeWeight;
+    filament.save({ weightPrinted: filament.weightPrinted });
+    if (filament.weightRemaining < filament.filamentDepletedCutoff)
+      handleFilamentDepletion();
+    for (let peerID in filamentUpdateConnections) {
+      filamentUpdateConnections[peerID].send(JSON.stringify(filament));
+    }
+  }, FILAMENT_UPDATE_GAP * 1e3);
+}
 function sendFilamentUpdates(peerID) {
   const options = {
     label: ConnectionLabels.filamentModifiedResponse.toString(),
@@ -6377,11 +6460,24 @@ function sendFilamentUpdates(peerID) {
   };
   let filamentUpdateConnection = peer.connect(peerID, options);
   filamentUpdateConnection.on("open", function () {
+    filamentUpdateConnections[peerID] = filamentUpdateConnection;
   });
   filamentUpdateConnection.on("close", function () {
+    delete filamentUpdateConnections[peerID];
   });
   filamentUpdateConnection.on("error", function () {
+    delete filamentUpdateConnections[peerID];
   });
+}
+async function calculateFilamentWeightFromLength(length, density, diameter) {
+  return density * (Math.PI * diameter * diameter * length / 4e3);
+}
+function handleFilamentDepletion() {
+  pauseJob();
+  printer.isQueuePaused = true;
+  printer.queuePausedReason = QueuePausedReason.depletedFilament;
+  printer.save({ isQueuePaused: printer.isQueuePaused, queuePausedReason: printer.queuePausedReason });
+  sendDataToAllAvailablePeers({ "data": printer.queuePausedReason }, ConnectionLabels.queuePaused);
 }
 async function handleAction(data, _peerID, label, metadata, fileContent) {
   switch (label) {
@@ -6478,8 +6574,7 @@ async function handleIncomingData(data, peerID, label, metadata) {
         handleHandshakeRequest(peerID);
         break;
       case ConnectionLabels.cameraStreamRequest:
-        break;
-      case ConnectionLabels.cameraStreamStop:
+        handleCameraStreamRequest(peerID);
         break;
     }
   } else if (isIdInList(peerID, NanoFactoryPeerType.BLACKLISTED)) {
@@ -14155,6 +14250,8 @@ let jobProgressConnections = {};
 let temperatureStreamConnections = {};
 let terminalConnections = {};
 let positionChangedConnections = {};
+let filamentUpdateConnections = {};
+let cameraStreamConnections = {};
 const CONTINUOUS_CONNECTION_LABELS = [ConnectionLabels.positionChanged];
 const RETRY_CONNECTION_TIMEOUT = 15;
 const BASEURL = "http://localhost:5000/";
@@ -14199,6 +14296,8 @@ async function startupFunctions() {
   printer = (await db.printer.toArray())[0];
   await saveConnectionOptions();
   await updatePrinterStateAndTemperature();
+  initializeCameraStream();
+  updateFilamentUsage();
   await OctoPrint.socket.connect();
   OctoPrint.socket.onMessage("*", (socketMessage) => handleSocketMessage(socketMessage));
 }
