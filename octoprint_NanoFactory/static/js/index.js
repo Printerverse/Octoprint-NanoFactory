@@ -5452,6 +5452,12 @@ var QueuePausedReason = /* @__PURE__ */ ((QueuePausedReason2) => {
   QueuePausedReason2["queueNotPaused"] = "";
   return QueuePausedReason2;
 })(QueuePausedReason || {});
+var CameraType = /* @__PURE__ */ ((CameraType2) => {
+  CameraType2["snapshots"] = "Snapshots";
+  CameraType2["nanofactoryServerCam"] = "NanoFactoryServerCamera";
+  CameraType2["nanofactoryPWACam"] = "NanoFactoryPWACamera";
+  return CameraType2;
+})(CameraType || {});
 class Printer {
   constructor(id) {
     __publicField(this, "id");
@@ -5522,6 +5528,7 @@ class Printer {
     this.isQueuePaused = true;
     this.queuePausedReason = "Printer has not been assigned a job";
     this.videoConfiguration = {
+      cameraType: "",
       rotate: 0,
       flipH: false,
       flipV: false
@@ -5926,6 +5933,12 @@ async function sendFileToAllAvailablePeers(fileContent, metadata, label) {
     sendFile(peerID, fileContent, metadata, label);
   });
 }
+async function streamToPeers(peerID, stream2, label) {
+  const options = {
+    metadata: label
+  };
+  peer.call(peerID, stream2, options);
+}
 let currentJobID = "";
 async function handleJob(data, peerID, label, metadata, fileContent) {
   switch (label) {
@@ -6032,6 +6045,114 @@ function pauseJob() {
 function resetCurrentJobID() {
   currentJobID = "";
 }
+let snapshotUrl;
+let streamUrl;
+let numberOfRestarts = 0;
+const MAX_RESTARTS_COUNT = 10;
+let cameraStreamAlive = false;
+let aliveCameraStreamType = null;
+const FPS = 24;
+let streamWindow;
+let stream;
+let worker;
+async function initializeStreamUrls() {
+  snapshotUrl = (await OctoPrint.settings.get())["webcam"]["snapshotUrl"];
+  streamUrl = (await OctoPrint.settings.get())["webcam"]["streamUrl"];
+}
+function initializeSnapShotStreamWorker() {
+  if (snapshotUrl) {
+    cameraStreamAlive = true;
+    aliveCameraStreamType = CameraType.snapshots;
+    worker = new Worker("./workers/camera.js");
+    worker.postMessage([snapshotUrl, FPS]);
+    worker.onmessage = (e) => {
+      if (typeof e.data === "string") {
+        switch (e.data) {
+          case "openStream":
+            if (streamWindow)
+              streamWindow.close();
+            streamWindow = window.open(streamUrl, "_blank");
+            break;
+          case "restartWorker":
+            stopSnapShotStreamWorker();
+            if (numberOfRestarts < MAX_RESTARTS_COUNT) {
+              initializeSnapShotStreamWorker();
+              numberOfRestarts += 1;
+            }
+            break;
+        }
+      } else {
+        for (let peerID in cameraStreamConnections) {
+          cameraStreamConnections[peerID].send(e.data);
+        }
+      }
+    };
+  } else {
+    console.log("Snapshot url not setup. Not streaming camera");
+  }
+}
+function stopSnapShotStreamWorker() {
+  worker == null ? void 0 : worker.terminate();
+  cameraStreamAlive = false;
+  aliveCameraStreamType = null;
+}
+function initializeSnapshotStream(peerID) {
+  const options = {
+    label: ConnectionLabels.cameraStreamResponse.toString(),
+    metadata: peerID,
+    serialization: "binary"
+  };
+  let cameraStreamConnection = peer.connect(peerID, options);
+  cameraStreamConnection.on("open", function () {
+    console.log("camera stream connection is open " + peerID);
+    cameraStreamConnections[peerID] = cameraStreamConnection;
+  });
+  cameraStreamConnection.on("close", function () {
+    delete cameraStreamConnections[peerID];
+  });
+  cameraStreamConnection.on("error", function () {
+    delete cameraStreamConnections[peerID];
+  });
+}
+function stopStreamFromWebcam() {
+  stream == null ? void 0 : stream.getTracks().forEach(function (track) {
+    track.stop();
+  });
+  cameraStreamAlive = false;
+  aliveCameraStreamType = null;
+}
+async function initializeStreamFromWebcam() {
+  cameraStreamAlive = true;
+  aliveCameraStreamType = CameraType.nanofactoryServerCam;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: 640,
+        height: 480,
+        facingMode: "environment"
+      }
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+function stopCameraStream() {
+  if (aliveCameraStreamType === CameraType.nanofactoryServerCam)
+    stopStreamFromWebcam();
+  else if (aliveCameraStreamType === CameraType.snapshots)
+    stopSnapShotStreamWorker();
+}
+async function handleCameraStreamRequest(data, peerID) {
+  if (data.cameraType === CameraType.snapshots) {
+    if (!cameraStreamAlive)
+      initializeSnapShotStreamWorker();
+    initializeSnapshotStream(peerID);
+  } else if (data.cameraType === CameraType.nanofactoryServerCam) {
+    if (!cameraStreamAlive)
+      await initializeStreamFromWebcam();
+    streamToPeers(peerID, stream, ConnectionLabels.cameraStreamResponse);
+  }
+}
 let bedLevelingRequests = [];
 const BED_LEVELLING_TIMEOUT = 60;
 const BED_LEVELLING_RESPONSE_INTERVAL = 10;
@@ -6082,6 +6203,13 @@ async function handlePrinter(data, peerID, label, _metadata) {
       while (length--) {
         let key = Object.keys(data)[length];
         printer[key] = data[key];
+        if (key.includes("videoConfiguration.cameraType")) {
+          if (data[key] !== aliveCameraStreamType) {
+            stopCameraStream();
+          }
+        }
+        if (key.includes("."))
+          key = key.substring(0, key.indexOf("."));
         if (PRINTER_PROFILE_CHANGES_TO_IGNORE.includes(key))
           delete data[key];
       }
@@ -6201,8 +6329,8 @@ async function connectPrinter(port, baudrate, autoconnect, save) {
   if (!(port == null ? void 0 : port.toLowerCase().includes("auto"))) {
     payload.port = port;
   }
-  if (!(baudrate == null ? void 0 : baudrate.toLowerCase().includes("auto"))) {
-    payload.baudrate = parseInt(baudrate);
+  if (typeof baudrate === "number") {
+    payload.baudrate = baudrate;
   }
   OctoPrint.connection.connect(payload);
 }
@@ -6330,62 +6458,6 @@ function handleDataFromLogs(logLines) {
     }
   });
 }
-let snapshotUrl;
-let streamUrl;
-let numberOfRestarts = 0;
-const MAX_RESTARTS_COUNT = 10;
-const FPS = 24;
-async function initializeCameraStream() {
-  snapshotUrl = (await OctoPrint.settings.get())["webcam"]["snapshotUrl"];
-  streamUrl = (await OctoPrint.settings.get())["webcam"]["streamUrl"];
-  initializeWorker();
-}
-function initializeWorker() {
-  if (snapshotUrl) {
-    let worker = new Worker("./workers/camera.js");
-    worker.postMessage([snapshotUrl, FPS]);
-    worker.onmessage = (e) => {
-      if (typeof e.data === "string") {
-        switch (e.data) {
-          case "openStream":
-            window.open(streamUrl, "_blank");
-            break;
-          case "restartWorker":
-            worker.terminate();
-            if (numberOfRestarts < MAX_RESTARTS_COUNT) {
-              initializeWorker();
-              numberOfRestarts += 1;
-            }
-            break;
-        }
-      } else {
-        for (let peerID in cameraStreamConnections) {
-          cameraStreamConnections[peerID].send(e.data);
-        }
-      }
-    };
-  } else {
-    console.log("Snapshot url not setup. Not streaming camera");
-  }
-}
-async function handleCameraStreamRequest(peerID) {
-  const options = {
-    label: ConnectionLabels.cameraStreamResponse.toString(),
-    metadata: peerID,
-    serialization: "binary"
-  };
-  let cameraStreamConnection = peer.connect(peerID, options);
-  cameraStreamConnection.on("open", function () {
-    console.log("camera stream connection is open " + peerID);
-    cameraStreamConnections[peerID] = cameraStreamConnection;
-  });
-  cameraStreamConnection.on("close", function () {
-    delete cameraStreamConnections[peerID];
-  });
-  cameraStreamConnection.on("error", function () {
-    delete cameraStreamConnections[peerID];
-  });
-}
 var socketEventTypes = /* @__PURE__ */ ((socketEventTypes2) => {
   socketEventTypes2["CONNECTED"] = "connected";
   socketEventTypes2["CURRENT"] = "current";
@@ -6511,12 +6583,13 @@ async function handleAction(data, _peerID, label, metadata, fileContent) {
   }
 }
 const FILE_LABELS = [ConnectionLabels.jobCreated, ConnectionLabels.actionCreated, ConnectionLabels.actionModified];
-async function handleIncomingData(data, peerID, label, metadata) {
+async function handleIncomingData(strData, peerID, label, metadata) {
   let fileContent = "";
+  let data = {};
   if (FILE_LABELS.includes(label)) {
     fileContent = new TextDecoder("utf-8").decode(data);
   } else {
-    data = JSON.parse(data);
+    data = JSON.parse(strData);
   }
   metadata = JSON.parse(metadata);
   if (isIdInList(peerID, NanoFactoryPeerType.WHITELISTED)) {
@@ -6574,7 +6647,7 @@ async function handleIncomingData(data, peerID, label, metadata) {
         handleHandshakeRequest(peerID);
         break;
       case ConnectionLabels.cameraStreamRequest:
-        handleCameraStreamRequest(peerID);
+        handleCameraStreamRequest(data, peerID);
         break;
     }
   } else if (isIdInList(peerID, NanoFactoryPeerType.BLACKLISTED)) {
@@ -7635,14 +7708,14 @@ function shimGetUserMedia$3(window2, browserDetails) {
   if (navigator2.mediaDevices.getUserMedia) {
     const origGetUserMedia = navigator2.mediaDevices.getUserMedia.bind(navigator2.mediaDevices);
     navigator2.mediaDevices.getUserMedia = function (cs) {
-      return shimConstraints_(cs, (c) => origGetUserMedia(c).then((stream) => {
-        if (c.audio && !stream.getAudioTracks().length || c.video && !stream.getVideoTracks().length) {
-          stream.getTracks().forEach((track) => {
+      return shimConstraints_(cs, (c) => origGetUserMedia(c).then((stream2) => {
+        if (c.audio && !stream2.getAudioTracks().length || c.video && !stream2.getVideoTracks().length) {
+          stream2.getTracks().forEach((track) => {
             track.stop();
           });
           throw new DOMException("", "NotFoundError");
         }
-        return stream;
+        return stream2;
       }, (e) => Promise.reject(shimError_(e))));
     };
   }
@@ -7772,7 +7845,7 @@ function shimGetSendersWithDtmf(window2) {
         return this._senders.slice();
       };
       const origAddTrack = window2.RTCPeerConnection.prototype.addTrack;
-      window2.RTCPeerConnection.prototype.addTrack = function addTrack(track, stream) {
+      window2.RTCPeerConnection.prototype.addTrack = function addTrack(track, stream2) {
         let sender = origAddTrack.apply(this, arguments);
         if (!sender) {
           sender = shimSenderWithDtmf(this, track);
@@ -7790,18 +7863,18 @@ function shimGetSendersWithDtmf(window2) {
       };
     }
     const origAddStream = window2.RTCPeerConnection.prototype.addStream;
-    window2.RTCPeerConnection.prototype.addStream = function addStream(stream) {
+    window2.RTCPeerConnection.prototype.addStream = function addStream(stream2) {
       this._senders = this._senders || [];
-      origAddStream.apply(this, [stream]);
-      stream.getTracks().forEach((track) => {
+      origAddStream.apply(this, [stream2]);
+      stream2.getTracks().forEach((track) => {
         this._senders.push(shimSenderWithDtmf(this, track));
       });
     };
     const origRemoveStream = window2.RTCPeerConnection.prototype.removeStream;
-    window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream) {
+    window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream2) {
       this._senders = this._senders || [];
-      origRemoveStream.apply(this, [stream]);
-      stream.getTracks().forEach((track) => {
+      origRemoveStream.apply(this, [stream2]);
+      stream2.getTracks().forEach((track) => {
         const sender = this._senders.find((s) => s.track === track);
         if (sender) {
           this._senders.splice(this._senders.indexOf(sender), 1);
@@ -7980,23 +8053,23 @@ function shimAddTrackRemoveTrackWithNative(window2) {
     return Object.keys(this._shimmedLocalStreams).map((streamId) => this._shimmedLocalStreams[streamId][0]);
   };
   const origAddTrack = window2.RTCPeerConnection.prototype.addTrack;
-  window2.RTCPeerConnection.prototype.addTrack = function addTrack(track, stream) {
-    if (!stream) {
+  window2.RTCPeerConnection.prototype.addTrack = function addTrack(track, stream2) {
+    if (!stream2) {
       return origAddTrack.apply(this, arguments);
     }
     this._shimmedLocalStreams = this._shimmedLocalStreams || {};
     const sender = origAddTrack.apply(this, arguments);
-    if (!this._shimmedLocalStreams[stream.id]) {
-      this._shimmedLocalStreams[stream.id] = [stream, sender];
-    } else if (this._shimmedLocalStreams[stream.id].indexOf(sender) === -1) {
-      this._shimmedLocalStreams[stream.id].push(sender);
+    if (!this._shimmedLocalStreams[stream2.id]) {
+      this._shimmedLocalStreams[stream2.id] = [stream2, sender];
+    } else if (this._shimmedLocalStreams[stream2.id].indexOf(sender) === -1) {
+      this._shimmedLocalStreams[stream2.id].push(sender);
     }
     return sender;
   };
   const origAddStream = window2.RTCPeerConnection.prototype.addStream;
-  window2.RTCPeerConnection.prototype.addStream = function addStream(stream) {
+  window2.RTCPeerConnection.prototype.addStream = function addStream(stream2) {
     this._shimmedLocalStreams = this._shimmedLocalStreams || {};
-    stream.getTracks().forEach((track) => {
+    stream2.getTracks().forEach((track) => {
       const alreadyExists = this.getSenders().find((s) => s.track === track);
       if (alreadyExists) {
         throw new DOMException(
@@ -8008,12 +8081,12 @@ function shimAddTrackRemoveTrackWithNative(window2) {
     const existingSenders = this.getSenders();
     origAddStream.apply(this, arguments);
     const newSenders = this.getSenders().filter((newSender) => existingSenders.indexOf(newSender) === -1);
-    this._shimmedLocalStreams[stream.id] = [stream].concat(newSenders);
+    this._shimmedLocalStreams[stream2.id] = [stream2].concat(newSenders);
   };
   const origRemoveStream = window2.RTCPeerConnection.prototype.removeStream;
-  window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream) {
+  window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream2) {
     this._shimmedLocalStreams = this._shimmedLocalStreams || {};
-    delete this._shimmedLocalStreams[stream.id];
+    delete this._shimmedLocalStreams[stream2.id];
     return origRemoveStream.apply(this, arguments);
   };
   const origRemoveTrack = window2.RTCPeerConnection.prototype.removeTrack;
@@ -8044,13 +8117,13 @@ function shimAddTrackRemoveTrack(window2, browserDetails) {
   window2.RTCPeerConnection.prototype.getLocalStreams = function getLocalStreams() {
     const nativeStreams = origGetLocalStreams.apply(this);
     this._reverseStreams = this._reverseStreams || {};
-    return nativeStreams.map((stream) => this._reverseStreams[stream.id]);
+    return nativeStreams.map((stream2) => this._reverseStreams[stream2.id]);
   };
   const origAddStream = window2.RTCPeerConnection.prototype.addStream;
-  window2.RTCPeerConnection.prototype.addStream = function addStream(stream) {
+  window2.RTCPeerConnection.prototype.addStream = function addStream(stream2) {
     this._streams = this._streams || {};
     this._reverseStreams = this._reverseStreams || {};
-    stream.getTracks().forEach((track) => {
+    stream2.getTracks().forEach((track) => {
       const alreadyExists = this.getSenders().find((s) => s.track === track);
       if (alreadyExists) {
         throw new DOMException(
@@ -8059,23 +8132,23 @@ function shimAddTrackRemoveTrack(window2, browserDetails) {
         );
       }
     });
-    if (!this._reverseStreams[stream.id]) {
-      const newStream = new window2.MediaStream(stream.getTracks());
-      this._streams[stream.id] = newStream;
-      this._reverseStreams[newStream.id] = stream;
-      stream = newStream;
+    if (!this._reverseStreams[stream2.id]) {
+      const newStream = new window2.MediaStream(stream2.getTracks());
+      this._streams[stream2.id] = newStream;
+      this._reverseStreams[newStream.id] = stream2;
+      stream2 = newStream;
     }
-    origAddStream.apply(this, [stream]);
+    origAddStream.apply(this, [stream2]);
   };
   const origRemoveStream = window2.RTCPeerConnection.prototype.removeStream;
-  window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream) {
+  window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream2) {
     this._streams = this._streams || {};
     this._reverseStreams = this._reverseStreams || {};
-    origRemoveStream.apply(this, [this._streams[stream.id] || stream]);
-    delete this._reverseStreams[this._streams[stream.id] ? this._streams[stream.id].id : stream.id];
-    delete this._streams[stream.id];
+    origRemoveStream.apply(this, [this._streams[stream2.id] || stream2]);
+    delete this._reverseStreams[this._streams[stream2.id] ? this._streams[stream2.id].id : stream2.id];
+    delete this._streams[stream2.id];
   };
-  window2.RTCPeerConnection.prototype.addTrack = function addTrack(track, stream) {
+  window2.RTCPeerConnection.prototype.addTrack = function addTrack(track, stream2) {
     if (this.signalingState === "closed") {
       throw new DOMException(
         "The RTCPeerConnection's signalingState is 'closed'.",
@@ -8098,7 +8171,7 @@ function shimAddTrackRemoveTrack(window2, browserDetails) {
     }
     this._streams = this._streams || {};
     this._reverseStreams = this._reverseStreams || {};
-    const oldStream = this._streams[stream.id];
+    const oldStream = this._streams[stream2.id];
     if (oldStream) {
       oldStream.addTrack(track);
       Promise.resolve().then(() => {
@@ -8106,8 +8179,8 @@ function shimAddTrackRemoveTrack(window2, browserDetails) {
       });
     } else {
       const newStream = new window2.MediaStream([track]);
-      this._streams[stream.id] = newStream;
-      this._reverseStreams[newStream.id] = stream;
+      this._streams[stream2.id] = newStream;
+      this._reverseStreams[newStream.id] = stream2;
       this.addStream(newStream);
     }
     return this.getSenders().find((s) => s.track === track);
@@ -8210,18 +8283,18 @@ function shimAddTrackRemoveTrack(window2, browserDetails) {
       );
     }
     this._streams = this._streams || {};
-    let stream;
+    let stream2;
     Object.keys(this._streams).forEach((streamid) => {
       const hasTrack = this._streams[streamid].getTracks().find((track) => sender.track === track);
       if (hasTrack) {
-        stream = this._streams[streamid];
+        stream2 = this._streams[streamid];
       }
     });
-    if (stream) {
-      if (stream.getTracks().length === 1) {
-        this.removeStream(this._reverseStreams[stream.id]);
+    if (stream2) {
+      if (stream2.getTracks().length === 1) {
+        this.removeStream(this._reverseStreams[stream2.id]);
       } else {
-        stream.removeTrack(sender.track);
+        stream2.removeTrack(sender.track);
       }
       this.dispatchEvent(new Event("negotiationneeded"));
     }
@@ -8824,7 +8897,7 @@ var sdp = { exports: {} };
     var user = sessUser || "thisisadapterortc";
     return "v=0\r\no=" + user + " " + sessionId + " " + version + " IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n";
   };
-  SDPUtils2.writeMediaSection = function (transceiver, caps, type2, stream) {
+  SDPUtils2.writeMediaSection = function (transceiver, caps, type2, stream2) {
     var sdp2 = SDPUtils2.writeRtpDescription(transceiver.kind, caps);
     sdp2 += SDPUtils2.writeIceParameters(
       transceiver.iceGatherer.getLocalParameters()
@@ -8846,7 +8919,7 @@ var sdp = { exports: {} };
       sdp2 += "a=inactive\r\n";
     }
     if (transceiver.rtpSender) {
-      var msid = "msid:" + stream.id + " " + transceiver.rtpSender.track.id + "\r\n";
+      var msid = "msid:" + stream2.id + " " + transceiver.rtpSender.track.id + "\r\n";
       sdp2 += "a=" + msid;
       sdp2 += "a=ssrc:" + transceiver.sendEncodingParameters[0].ssrc + " " + msid;
       if (transceiver.sendEncodingParameters[0].rtx) {
@@ -8933,7 +9006,7 @@ function fixStatsType(stat) {
     remotecandidate: "remote-candidate"
   }[stat.type] || stat.type;
 }
-function writeMediaSection(transceiver, caps, type2, stream, dtlsRole) {
+function writeMediaSection(transceiver, caps, type2, stream2, dtlsRole) {
   var sdp2 = SDPUtils.writeRtpDescription(transceiver.kind, caps);
   sdp2 += SDPUtils.writeIceParameters(
     transceiver.iceGatherer.getLocalParameters()
@@ -8955,7 +9028,7 @@ function writeMediaSection(transceiver, caps, type2, stream, dtlsRole) {
   if (transceiver.rtpSender) {
     var trackId = transceiver.rtpSender._initialTrackId || transceiver.rtpSender.track.id;
     transceiver.rtpSender._initialTrackId = trackId;
-    var msid = "msid:" + (stream ? stream.id : "-") + " " + trackId + "\r\n";
+    var msid = "msid:" + (stream2 ? stream2.id : "-") + " " + trackId + "\r\n";
     sdp2 += "a=" + msid;
     sdp2 += "a=ssrc:" + transceiver.sendEncodingParameters[0].ssrc + " " + msid;
     if (transceiver.sendEncodingParameters[0].rtx) {
@@ -9092,16 +9165,16 @@ function makeError(name, description) {
   return e;
 }
 var rtcpeerconnection = function (window2, edgeVersion) {
-  function addTrackToStreamAndFireEvent(track, stream) {
-    stream.addTrack(track);
-    stream.dispatchEvent(new window2.MediaStreamTrackEvent(
+  function addTrackToStreamAndFireEvent(track, stream2) {
+    stream2.addTrack(track);
+    stream2.dispatchEvent(new window2.MediaStreamTrackEvent(
       "addtrack",
       { track }
     ));
   }
-  function removeTrackFromStreamAndFireEvent(track, stream) {
-    stream.removeTrack(track);
-    stream.dispatchEvent(new window2.MediaStreamTrackEvent(
+  function removeTrackFromStreamAndFireEvent(track, stream2) {
+    stream2.removeTrack(track);
+    stream2.dispatchEvent(new window2.MediaStreamTrackEvent(
       "removetrack",
       { track }
     ));
@@ -9254,7 +9327,7 @@ var rtcpeerconnection = function (window2, edgeVersion) {
     }
     return transceiver;
   };
-  RTCPeerConnection2.prototype.addTrack = function (track, stream) {
+  RTCPeerConnection2.prototype.addTrack = function (track, stream2) {
     if (this._isClosed) {
       throw makeError(
         "InvalidStateError",
@@ -9277,26 +9350,26 @@ var rtcpeerconnection = function (window2, edgeVersion) {
       transceiver = this._createTransceiver(track.kind);
     }
     this._maybeFireNegotiationNeeded();
-    if (this.localStreams.indexOf(stream) === -1) {
-      this.localStreams.push(stream);
+    if (this.localStreams.indexOf(stream2) === -1) {
+      this.localStreams.push(stream2);
     }
     transceiver.track = track;
-    transceiver.stream = stream;
+    transceiver.stream = stream2;
     transceiver.rtpSender = new window2.RTCRtpSender(
       track,
       transceiver.dtlsTransport
     );
     return transceiver.rtpSender;
   };
-  RTCPeerConnection2.prototype.addStream = function (stream) {
+  RTCPeerConnection2.prototype.addStream = function (stream2) {
     var pc = this;
     if (edgeVersion >= 15025) {
-      stream.getTracks().forEach(function (track) {
-        pc.addTrack(track, stream);
+      stream2.getTracks().forEach(function (track) {
+        pc.addTrack(track, stream2);
       });
     } else {
-      var clonedStream = stream.clone();
-      stream.getTracks().forEach(function (track, idx) {
+      var clonedStream = stream2.clone();
+      stream2.getTracks().forEach(function (track, idx) {
         var clonedTrack = clonedStream.getTracks()[idx];
         track.addEventListener("enabled", function (event) {
           clonedTrack.enabled = event.enabled;
@@ -9326,7 +9399,7 @@ var rtcpeerconnection = function (window2, edgeVersion) {
         "Sender was not created by this connection."
       );
     }
-    var stream = transceiver.stream;
+    var stream2 = transceiver.stream;
     transceiver.rtpSender.stop();
     transceiver.rtpSender = null;
     transceiver.track = null;
@@ -9334,14 +9407,14 @@ var rtcpeerconnection = function (window2, edgeVersion) {
     var localStreams = this.transceivers.map(function (t) {
       return t.stream;
     });
-    if (localStreams.indexOf(stream) === -1 && this.localStreams.indexOf(stream) > -1) {
-      this.localStreams.splice(this.localStreams.indexOf(stream), 1);
+    if (localStreams.indexOf(stream2) === -1 && this.localStreams.indexOf(stream2) > -1) {
+      this.localStreams.splice(this.localStreams.indexOf(stream2), 1);
     }
     this._maybeFireNegotiationNeeded();
   };
-  RTCPeerConnection2.prototype.removeStream = function (stream) {
+  RTCPeerConnection2.prototype.removeStream = function (stream2) {
     var pc = this;
-    stream.getTracks().forEach(function (track) {
+    stream2.getTracks().forEach(function (track) {
       var sender = pc.getSenders().find(function (s) {
         return s.track === track;
       });
@@ -9661,8 +9734,8 @@ var rtcpeerconnection = function (window2, edgeVersion) {
       ));
     }
     var streams = {};
-    pc.remoteStreams.forEach(function (stream) {
-      streams[stream.id] = stream;
+    pc.remoteStreams.forEach(function (stream2) {
+      streams[stream2.id] = stream2;
     });
     var receiverList = [];
     var sections = SDPUtils.splitSections(description.sdp);
@@ -9790,7 +9863,7 @@ var rtcpeerconnection = function (window2, edgeVersion) {
           isNewTrack = !transceiver.rtpReceiver;
           rtpReceiver = transceiver.rtpReceiver || new window2.RTCRtpReceiver(transceiver.dtlsTransport, kind);
           if (isNewTrack) {
-            var stream;
+            var stream2;
             track = rtpReceiver.track;
             if (remoteMsid && remoteMsid.stream === "-")
               ;
@@ -9808,18 +9881,18 @@ var rtcpeerconnection = function (window2, edgeVersion) {
                   return remoteMsid.track;
                 }
               });
-              stream = streams[remoteMsid.stream];
+              stream2 = streams[remoteMsid.stream];
             } else {
               if (!streams.default) {
                 streams.default = new window2.MediaStream();
               }
-              stream = streams.default;
+              stream2 = streams.default;
             }
-            if (stream) {
-              addTrackToStreamAndFireEvent(track, stream);
-              transceiver.associatedRemoteMediaStreams.push(stream);
+            if (stream2) {
+              addTrackToStreamAndFireEvent(track, stream2);
+              transceiver.associatedRemoteMediaStreams.push(stream2);
             }
-            receiverList.push([track, rtpReceiver, stream]);
+            receiverList.push([track, rtpReceiver, stream2]);
           }
         } else if (transceiver.rtpReceiver && transceiver.rtpReceiver.track) {
           transceiver.associatedRemoteMediaStreams.forEach(function (s) {
@@ -9923,12 +9996,12 @@ var rtcpeerconnection = function (window2, edgeVersion) {
       pc._updateSignalingState("stable");
     }
     Object.keys(streams).forEach(function (sid) {
-      var stream = streams[sid];
-      if (stream.getTracks().length) {
-        if (pc.remoteStreams.indexOf(stream) === -1) {
-          pc.remoteStreams.push(stream);
+      var stream2 = streams[sid];
+      if (stream2.getTracks().length) {
+        if (pc.remoteStreams.indexOf(stream2) === -1) {
+          pc.remoteStreams.push(stream2);
           var event = new Event("addstream");
-          event.stream = stream;
+          event.stream = stream2;
           window2.setTimeout(function () {
             pc._dispatchEvent("addstream", event);
           });
@@ -9936,10 +10009,10 @@ var rtcpeerconnection = function (window2, edgeVersion) {
         receiverList.forEach(function (item) {
           var track = item[0];
           var receiver = item[1];
-          if (stream.id !== item[2].id) {
+          if (stream2.id !== item[2].id) {
             return;
           }
-          fireAddTrack(pc, track, receiver, [stream]);
+          fireAddTrack(pc, track, receiver, [stream2]);
         });
       }
     });
@@ -10787,10 +10860,10 @@ function shimRemoveStream(window2) {
   if (!window2.RTCPeerConnection || "removeStream" in window2.RTCPeerConnection.prototype) {
     return;
   }
-  window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream) {
+  window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream2) {
     deprecated("removeStream", "removeTrack");
     this.getSenders().forEach((sender) => {
-      if (sender.track && stream.getTracks().includes(sender.track)) {
+      if (sender.track && stream2.getTracks().includes(sender.track)) {
         this.removeTrack(sender);
       }
     });
@@ -10927,31 +11000,31 @@ function shimLocalStreamsAPI(window2) {
   }
   if (!("addStream" in window2.RTCPeerConnection.prototype)) {
     const _addTrack = window2.RTCPeerConnection.prototype.addTrack;
-    window2.RTCPeerConnection.prototype.addStream = function addStream(stream) {
+    window2.RTCPeerConnection.prototype.addStream = function addStream(stream2) {
       if (!this._localStreams) {
         this._localStreams = [];
       }
-      if (!this._localStreams.includes(stream)) {
-        this._localStreams.push(stream);
+      if (!this._localStreams.includes(stream2)) {
+        this._localStreams.push(stream2);
       }
-      stream.getAudioTracks().forEach((track) => _addTrack.call(
+      stream2.getAudioTracks().forEach((track) => _addTrack.call(
         this,
         track,
-        stream
+        stream2
       ));
-      stream.getVideoTracks().forEach((track) => _addTrack.call(
+      stream2.getVideoTracks().forEach((track) => _addTrack.call(
         this,
         track,
-        stream
+        stream2
       ));
     };
     window2.RTCPeerConnection.prototype.addTrack = function addTrack(track, ...streams) {
       if (streams) {
-        streams.forEach((stream) => {
+        streams.forEach((stream2) => {
           if (!this._localStreams) {
-            this._localStreams = [stream];
-          } else if (!this._localStreams.includes(stream)) {
-            this._localStreams.push(stream);
+            this._localStreams = [stream2];
+          } else if (!this._localStreams.includes(stream2)) {
+            this._localStreams.push(stream2);
           }
         });
       }
@@ -10959,16 +11032,16 @@ function shimLocalStreamsAPI(window2) {
     };
   }
   if (!("removeStream" in window2.RTCPeerConnection.prototype)) {
-    window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream) {
+    window2.RTCPeerConnection.prototype.removeStream = function removeStream(stream2) {
       if (!this._localStreams) {
         this._localStreams = [];
       }
-      const index = this._localStreams.indexOf(stream);
+      const index = this._localStreams.indexOf(stream2);
       if (index === -1) {
         return;
       }
       this._localStreams.splice(index, 1);
-      const tracks = stream.getTracks();
+      const tracks = stream2.getTracks();
       this.getSenders().forEach((sender) => {
         if (tracks.includes(sender.track)) {
           this.removeTrack(sender);
@@ -10998,16 +11071,16 @@ function shimRemoteStreamsAPI(window2) {
         }
         this.addEventListener("addstream", this._onaddstream = f);
         this.addEventListener("track", this._onaddstreampoly = (e) => {
-          e.streams.forEach((stream) => {
+          e.streams.forEach((stream2) => {
             if (!this._remoteStreams) {
               this._remoteStreams = [];
             }
-            if (this._remoteStreams.includes(stream)) {
+            if (this._remoteStreams.includes(stream2)) {
               return;
             }
-            this._remoteStreams.push(stream);
+            this._remoteStreams.push(stream2);
             const event = new Event("addstream");
-            event.stream = stream;
+            event.stream = stream2;
             this.dispatchEvent(event);
           });
         });
@@ -11018,16 +11091,16 @@ function shimRemoteStreamsAPI(window2) {
       const pc = this;
       if (!this._onaddstreampoly) {
         this.addEventListener("track", this._onaddstreampoly = function (e) {
-          e.streams.forEach((stream) => {
+          e.streams.forEach((stream2) => {
             if (!pc._remoteStreams) {
               pc._remoteStreams = [];
             }
-            if (pc._remoteStreams.indexOf(stream) >= 0) {
+            if (pc._remoteStreams.indexOf(stream2) >= 0) {
               return;
             }
-            pc._remoteStreams.push(stream);
+            pc._remoteStreams.push(stream2);
             const event = new Event("addstream");
-            event.stream = stream;
+            event.stream = stream2;
             pc.dispatchEvent(event);
           });
         });
@@ -12568,11 +12641,11 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
     $1615705ecc6adca3$exports.default.log("Listening for remote stream");
     peerConnection.ontrack = function (evt) {
       $1615705ecc6adca3$exports.default.log("Received remote stream");
-      var stream = evt.streams[0];
+      var stream2 = evt.streams[0];
       var connection = provider.getConnection(peerId, connectionId);
       if (connection.type === $60fadef21a2daafc$export$3157d57b4135e3bc.Media) {
         var mediaConnection = connection;
-        _this._addStreamToMediaConnection(stream, mediaConnection);
+        _this._addStreamToMediaConnection(stream2, mediaConnection);
       }
     };
   };
@@ -12883,17 +12956,17 @@ var $77f14d3e81888156$export$89e6bb5ad64bf4a = function () {
       });
     });
   };
-  $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._addTracksToConnection = function (stream, peerConnection) {
-    $1615705ecc6adca3$exports.default.log("add tracks from stream ".concat(stream.id, " to peer connection"));
+  $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._addTracksToConnection = function (stream2, peerConnection) {
+    $1615705ecc6adca3$exports.default.log("add tracks from stream ".concat(stream2.id, " to peer connection"));
     if (!peerConnection.addTrack)
       return $1615705ecc6adca3$exports.default.error("Your browser does't support RTCPeerConnection#addTrack. Ignored.");
-    stream.getTracks().forEach(function (track) {
-      peerConnection.addTrack(track, stream);
+    stream2.getTracks().forEach(function (track) {
+      peerConnection.addTrack(track, stream2);
     });
   };
-  $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._addStreamToMediaConnection = function (stream, mediaConnection) {
-    $1615705ecc6adca3$exports.default.log("add stream ".concat(stream.id, " to media connection ").concat(mediaConnection.connectionId));
-    mediaConnection.addStream(stream);
+  $77f14d3e81888156$export$89e6bb5ad64bf4a2.prototype._addStreamToMediaConnection = function (stream2, mediaConnection) {
+    $1615705ecc6adca3$exports.default.log("add stream ".concat(stream2.id, " to media connection ").concat(mediaConnection.connectionId));
+    mediaConnection.addStream(stream2);
   };
   return $77f14d3e81888156$export$89e6bb5ad64bf4a2;
 }();
@@ -13050,7 +13123,7 @@ var $353dee38f9ab557b$export$4a84e95a2324ac29 = function (_super) {
         break;
     }
   };
-  $353dee38f9ab557b$export$4a84e95a2324ac292.prototype.answer = function (stream, options) {
+  $353dee38f9ab557b$export$4a84e95a2324ac292.prototype.answer = function (stream2, options) {
     var e_1, _a2;
     if (options === void 0)
       options = {};
@@ -13058,11 +13131,11 @@ var $353dee38f9ab557b$export$4a84e95a2324ac29 = function (_super) {
       $1615705ecc6adca3$exports.default.warn("Local stream already exists on this MediaConnection. Are you answering a call twice?");
       return;
     }
-    this._localStream = stream;
+    this._localStream = stream2;
     if (options && options.sdpTransform)
       this.options.sdpTransform = options.sdpTransform;
     this._negotiator.startConnection($353dee38f9ab557b$var$__assign($353dee38f9ab557b$var$__assign({}, this.options._payload), {
-      _stream: stream
+      _stream: stream2
     }));
     var messages = this.provider._getMessages(this.connectionId);
     try {
@@ -14064,7 +14137,7 @@ var $26088d7da5b03f69$export$ecd1fc136c422448 = function (_super) {
     this._addConnection(peer2, dataConnection);
     return dataConnection;
   };
-  $26088d7da5b03f69$export$ecd1fc136c4224482.prototype.call = function (peer2, stream, options) {
+  $26088d7da5b03f69$export$ecd1fc136c4224482.prototype.call = function (peer2, stream2, options) {
     if (options === void 0)
       options = {};
     if (this.disconnected) {
@@ -14072,12 +14145,12 @@ var $26088d7da5b03f69$export$ecd1fc136c422448 = function (_super) {
       this.emitError($60fadef21a2daafc$export$9547aaa2e39030ff.Disconnected, "Cannot connect to new Peer after disconnecting from server.");
       return;
     }
-    if (!stream) {
+    if (!stream2) {
       $1615705ecc6adca3$exports.default.error("To call a peer, you must provide a stream from your browser's `getUserMedia`.");
       return;
     }
     var mediaConnection = new $353dee38f9ab557b$exports.MediaConnection(peer2, this, $26088d7da5b03f69$var$__assign($26088d7da5b03f69$var$__assign({}, options), {
-      _stream: stream
+      _stream: stream2
     }));
     this._addConnection(peer2, mediaConnection);
     return mediaConnection;
@@ -14296,8 +14369,8 @@ async function startupFunctions() {
   printer = (await db.printer.toArray())[0];
   await saveConnectionOptions();
   await updatePrinterStateAndTemperature();
-  initializeCameraStream();
   updateFilamentUsage();
+  initializeStreamUrls();
   await OctoPrint.socket.connect();
   OctoPrint.socket.onMessage("*", (socketMessage) => handleSocketMessage(socketMessage));
 }

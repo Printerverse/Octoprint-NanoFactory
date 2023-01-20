@@ -13,7 +13,8 @@ function getCameraStream(snapshotUrl, FPS) {
     let numberOfTries = 0
     let streamOpened = false
     const ERROR_NAMES = ["AbortError", "TypeError"]
-    const MAX_TRIES = 15
+    const MAX_TRIES = 20
+    const MAX_ERRORS_BEFORE_OPENING_STREAM = 5
 
     cameraStream = setInterval(() => {
 
@@ -35,7 +36,7 @@ function getCameraStream(snapshotUrl, FPS) {
         }).catch((error) => {
             console.error(error)
             numberOfTries += 1
-            if (ERROR_NAMES.includes(error.name) && !streamOpened) {
+            if (ERROR_NAMES.includes(error.name) && numberOfTries > MAX_ERRORS_BEFORE_OPENING_STREAM && !streamOpened) {
                 postMessage("openStream")
                 streamOpened = true
             }
