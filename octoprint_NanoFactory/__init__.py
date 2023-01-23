@@ -349,7 +349,7 @@ class NanofactoryPlugin(
         if self.os == "Windows":
             try:
                 chrome_path = r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-                process = psutil.Popen([chrome_path, url] + "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\".split(" "), stdin=subprocess.PIPE,
+                process = psutil.Popen([chrome_path, url] + "--headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\".split(" "), stdin=subprocess.PIPE,
                                        stdout=FNULL,  stderr=subprocess.PIPE)
                 self._logger.info(process)
                 self.pid = process.as_dict()["pid"]
@@ -359,7 +359,7 @@ class NanofactoryPlugin(
                     "Error while opening chrome using chrome path. Starting chrome using an alternative method.")
                 self._logger.warning(e, exc_info=True)
                 subprocess.run(
-                    f"start chrome {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\", shell=True
+                    f"start chrome {url} --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\", shell=True
                 )
         if self.os == "Linux":
             try:
@@ -369,7 +369,7 @@ class NanofactoryPlugin(
                     chrome_path = "/usr/bin/chromium"
 
                 user_data_directory_flag = f"--user-data-dir=/home/{getpass.getuser()}/chrome-data"
-                process = psutil.Popen([chrome_path, url, user_data_directory_flag] + f" --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
+                process = psutil.Popen([chrome_path, url, user_data_directory_flag] + f"--headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
                                        stdout=FNULL,  stderr=subprocess.PIPE)
                 self._logger.info(process)
                 self.pid = process.as_dict()["pid"]
@@ -378,7 +378,7 @@ class NanofactoryPlugin(
                 self._logger.warning(
                     "Error while opening chromium_browser using psutil. Trying with subprocess.")
                 subprocess.run(
-                    f"/usr/bin/chromium-browser {url} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data", shell=True
+                    f"/usr/bin/chromium-browser {url} --headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{getpass.getuser()}/chrome-data", shell=True
                 )
 
     def close_browser(self):
