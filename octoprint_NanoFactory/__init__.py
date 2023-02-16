@@ -60,7 +60,8 @@ class NanofactoryPlugin(
             "restartNanoFactoryApp": [],
             "checkBrowser": [],
             "deleteNanoFactoryDatabase": [],
-            "getCors": []
+            "getCors": [],
+            "giveupSnapshotCameraStream": [],
         }
 
     def on_api_command(self, command, data):
@@ -106,6 +107,12 @@ class NanofactoryPlugin(
             self._plugin_manager.send_plugin_message(
                 self._identifier, {
                     "deleteDatabase": "deleteNanoFactoryDatabase"}
+            )
+
+        elif command == "giveupSnapshotCameraStream":
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {
+                    "releaseSnapshotStream": "releaseSnapshotStream"}
             )
 
         elif command == "getCors":

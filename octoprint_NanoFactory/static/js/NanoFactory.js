@@ -232,6 +232,22 @@ $(function () {
             });
         }
 
+        self.giveupSnapshotCameraStream = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "giveupSnapshotCameraStream").done(function (response) {
+                new PNotify({
+                    title: "Snapshot stream released successfully",
+                    type: "success"
+                });
+            }).catch(error => {
+                console.log(error)
+                new PNotify({
+                    title: "Failed to release the stream",
+                    text: "Reason: " + err.message,
+                    type: "error"
+                });
+            });
+        }
+
 
         self.startAuthFlow = async function () {
             console.log("startAuthFlow called")
