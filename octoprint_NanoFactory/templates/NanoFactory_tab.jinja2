@@ -6,13 +6,11 @@
 <br />
 
 <div>
-    <button style="width: 12rem; text-decoration:none; height:2rem; vertical-align:middle"
-        data-bind="click: goToNanoFactoryURL" class="btn btn-primary">
+    <button class="basic-button half-width" style="text-decoration:none;" data-bind="click: goToNanoFactoryURL">
         <span data-bind="text: nanoFactoryActionButtonText"></span>
         <span> <img src="plugin/NanoFactory/static/img/NewTab.png" width="25" height="25" /></span>
     </button>
-    <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: copyNanoFactoryURL"
-        class="btn btn-primary">Share
+    <button class="basic-button half-width" data-bind="click: copyNanoFactoryURL">Share
         Printer</button>
 </div>
 
@@ -20,13 +18,10 @@
 
 <div>
     <h5>API Key for NanoFactory:</h5>
-    <input type="text" id="api-key" placeholder="Please enter the API Key for NanoFactory"
-        style="width: 23rem; height:2rem" data-bind="value: APIKEY" />
+    <input type="text" id="api-key" placeholder="Please enter the API Key for NanoFactory" data-bind="value: APIKEY" />
     <br />
-    <button style="width: 12rem; height:2re; vertical-align:middlem" data-bind="click: handleAPIKeyEdit"
-        class="btn btn-primary">Edit</button>
-    <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: handleAPIKeySubmit"
-        class="btn btn-primary">Submit</button>
+    <button class="basic-button half-width" data-bind="click: handleAPIKeyEdit">Edit</button>
+    <button class="basic-button half-width" data-bind="click: handleAPIKeySubmit">Submit</button>
 </div>
 
 <br />
@@ -34,39 +29,29 @@
 <div>
     <h5>Master Device ID:</h5>
     <input type="text" id="master-peer-id" placeholder="Please enter the Master Device ID for this printer"
-        style="width: 23rem; height:2rem" data-bind="value: masterPeerID" />
+        data-bind="value: masterPeerID" />
     <br />
-    <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: handleMasterPeerIDClear"
-        class="btn btn-primary">Clear</button>
-    <button style="width: 12rem; height:2rem; vertical-align:middle" data-bind="click: handleMasterPeerIDSubmit"
-        class="btn btn-primary">Submit</button>
+    <button class="basic-button half-width" data-bind="click: handleMasterPeerIDClear">Clear</button>
+    <button class="basic-button half-width" data-bind="click: handleMasterPeerIDSubmit">Submit</button>
 </div>
 
 <br />
 
 <div>
-    <button style="width: 24rem; height:2rem; vertical-align:middle" data-bind="click: restartNanoFactoryApp"
-        class="btn btn-primary">Restart
+    <button class="basic-button full-width" data-bind="click: restartNanoFactoryApp">Restart
         NanoFactory</button>
 </div>
 
 <br />
 
 <div>
-    <button style="width: 24rem; height:2rem; vertical-align:middle" data-bind="click: deleteNanoFactoryDatabase"
-        class="btn btn-primary">Clear NanoFactory Database</button>
+    <button class="basic-button full-width" data-bind="click: giveupSnapshotCameraStream">Give
+        up snapshot camera stream</button>
 </div>
 
 <br />
 
 <div>
-    <button style="width: 24rem; height:2rem; vertical-align:middle" data-bind="click: giveupSnapshotCameraStream"
-        class="btn btn-primary">Give up snapshot camera stream</button>
-</div>
-
-<br />
-
-<div>
-    <span>Browser Status: </span>
-    <span data-bind="text: browserStatus; style: {color: browserStatusColor()}"></span>
+    <button class="basic-button full-width" data-bind="click: deleteNanoFactoryDatabase">Clear
+        NanoFactory Database</button>
 </div>

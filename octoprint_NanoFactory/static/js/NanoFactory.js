@@ -14,8 +14,6 @@ $(function () {
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
         self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
-        self.browserStatus = ko.observable("Not Alive")
-        self.browserStatusColor = ko.observable("red")
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -78,12 +76,6 @@ $(function () {
                     self.startAuthFlow()
                 }
 
-                if (data["browser_status"]) {
-                    console.log(data["browser_status"])
-                    if (Boolean(data["browser_status"]))
-                        self.browserStatus(new Date().toString())
-                }
-
                 if (data["cors_error"]) {
                     new PNotify({
                         title: "CORS Access Needed",
@@ -102,13 +94,6 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
         }
-
-        self.onAfterBinding = function () {
-            setInterval(() => {
-                OctoPrint.simpleApiCommand("NanoFactory", "checkBrowser").done(function (response) { }).catch(error => { console.log(error) });
-            }, 5000)
-        }
-
 
         self.onStartupComplete = function () {
             setTimeout(() => {

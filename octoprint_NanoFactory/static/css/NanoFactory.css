@@ -1,0 +1,19 @@
+.basic-button {
+    height: 2rem;
+    vertical-align: middle
+}
+
+
+.half-width {
+    width: 12rem
+}
+
+.full-width {
+    width: 24rem
+}
+
+
+input {
+    width: 23rem;
+    height: 2rem
+}

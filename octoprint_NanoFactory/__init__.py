@@ -58,7 +58,6 @@ class NanofactoryPlugin(
             "getMasterPeerID": [],
             "saveMasterPeerID": ["masterPeerID"],
             "restartNanoFactoryApp": [],
-            "checkBrowser": [],
             "deleteNanoFactoryDatabase": [],
             "getCors": [],
             "giveupSnapshotCameraStream": [],
@@ -99,9 +98,6 @@ class NanofactoryPlugin(
 
         elif command == "restartNanoFactoryApp":
             self.restart_browser()
-
-        elif command == "checkBrowser":
-            self.check_pid()
 
         elif command == "deleteNanoFactoryDatabase":
             self._plugin_manager.send_plugin_message(
@@ -189,31 +185,6 @@ class NanofactoryPlugin(
             self._logger.error(message)
 
         return "Success"
-
-    def check_pid(self):
-        """ Check For the existence of a unix pid. """
-        alive = False
-
-        if self.pid:
-            if self.os == "Windows":
-                out = subprocess.check_output(
-                    ["tasklist", "/fi", f"PID eq {self.pid}"]).strip()
-                # b'INFO: No tasks are running which match the specified criteria.'
-
-                if re.search(b'No tasks', out, re.IGNORECASE):
-                    alive = False
-                else:
-                    alive = True
-            if self.os == "Linux":
-                try:
-                    os.kill(self.pid, 0)
-                    alive = True
-                except Exception:
-                    alive = False
-
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"browser_status": str(alive)}
-        )
 
     def is_blueprint_csrf_protected(self):
         return True
@@ -377,7 +348,7 @@ class NanofactoryPlugin(
             except Exception as e:
                 self._logger.warning("Error while opening chrome.")
                 self._logger.warning(e, exc_info=True)
-                
+
         if self.os == "Linux":
             try:
                 if os.path.isfile("/usr/bin/chromium-browser"):
@@ -418,10 +389,11 @@ class NanofactoryPlugin(
     # ~~ AssetPlugin mixin
 
     def get_assets(self):
-        # Define your plugin's asset files to automatically include in the
-        # core UI here.
+
         return {
             "js": ["js/NanoFactory.js"],
+            "css": ["css/NanoFactory.css"],
+
         }
 
     # ~~ Softwareupdate hook
