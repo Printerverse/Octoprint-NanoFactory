@@ -14,6 +14,8 @@ $(function () {
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
         self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
+        self.apiKeyButtonText = ko.observable("Change")
+        self.masterPeerIDButtonText = ko.observable("Change")
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -28,8 +30,10 @@ $(function () {
 
                     if (data["api_key"].length > 0) {
                         document.getElementById("api-key").disabled = true
+                        self.apiKeyButtonText("Change")
                     } else {
                         document.getElementById("api-key").disabled = false
+                        self.apiKeyButtonText("Submit")
                     }
                 }
 
@@ -38,9 +42,11 @@ $(function () {
 
                     if (data["masterPeerID"].length > 0) {
                         document.getElementById("master-peer-id").disabled = true
+                        self.masterPeerIDButtonText("Change")
                         self.nanoFactoryActionButtonText("Go to NanoFactory")
                     } else {
                         document.getElementById("master-peer-id").disabled = false
+                        self.masterPeerIDButtonText("Submit")
                     }
                 }
 
@@ -102,6 +108,7 @@ $(function () {
                 if (!(apiKey.length > 0)) {
                     console.log("apiKey not found. Calling startAuthFlow")
                     self.startAuthFlow()
+                    self.apiKeyButtonText("Submit")
                 }
 
             }, 1000)
@@ -113,73 +120,14 @@ $(function () {
             window.open(self.nanoFactoryURL(), "_blank")
         }
 
-        self.copyNanoFactoryURL = function () {
-            self.copyToClipboard(self.nanoFactoryURL())
-        }
-
-        self.copyToClipboard = function (text) {
-            if (!navigator.clipboard) {
-                self.fallbackCopyTextToClipboard(text);
-                return; a
-            }
-            navigator.clipboard.writeText(text).then(function () {
-
-                new PNotify({
-                    title: "Copied successfully",
-                    text: text + ' copied successfully',
-                    type: "success"
-                });
-            }, function (err) {
-                console.error('Async: Could not copy text: ', err);
-                new PNotify({
-                    title: "Failed to copy",
-                    text: "Failed to Copy " + text + ". Reason: " + err.message,
-                    type: "error"
-                });
-            });
-        }
-
-        self.fallbackCopyTextToClipboard = function (text) {
-            var textArea = document.createElement("textarea");
-            textArea.value = text;
-
-            // Avoid scrolling to bottom
-            textArea.style.top = "0";
-            textArea.style.left = "0";
-            textArea.style.position = "fixed";
-
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-
-            try {
-                var successful = document.execCommand('copy');
-                var msg = successful ? 'successful' : 'unsuccessful';
-                console.log('Fallback: Copying text command was ' + msg + ' for ' + text);
-
-                if (msg === "successful") {
-                    new PNotify({
-                        title: "Copied successfully",
-                        text: text + ' copied successfully',
-                        type: "success"
-                    });
-                } else {
-                    new PNotify({
-                        title: "Failed to copy",
-                        text: "Failed to Copy " + text,
-                        type: "error"
-                    });
-                }
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-                new PNotify({
-                    title: "Failed to copy",
-                    text: "Failed to Copy " + text + ". Reason: " + err.message,
-                    type: "error"
-                });
+        self.sharePrinter = function () {
+            let shareData = {
+                title: 'Share NanoFactory Printer',
+                text: 'Share your NanoFactory Printer with your friends',
+                url: self.nanoFactoryURL()
             }
 
-            document.body.removeChild(textArea);
+            navigator.share(shareData).catch((err) => console.log(err))
         }
 
 
@@ -220,7 +168,7 @@ $(function () {
         self.giveupSnapshotCameraStream = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "giveupSnapshotCameraStream").done(function (response) {
                 new PNotify({
-                    title: "Snapshot stream released successfully",
+                    title: "Snapshot stream reloaded successfully",
                     type: "success"
                 });
             }).catch(error => {
@@ -295,6 +243,28 @@ $(function () {
                     }
 
                 }, 1000)
+            }
+        }
+
+        self.handleAPIKeyButtonClick = function () {
+            if (self.apiKeyButtonText() === "Change") {
+                self.handleAPIKeyEdit()
+                self.apiKeyButtonText("Submit")
+            }
+            else {
+                self.handleAPIKeySubmit()
+                self.apiKeyButtonText("Change")
+            }
+        }
+
+        self.handleMasterPeerIDButtonClick = function () {
+            if (self.masterPeerIDButtonText() === "Change") {
+                self.handleMasterPeerIDClear()
+                self.masterPeerIDButtonText("Submit")
+            }
+            else {
+                self.handleMasterPeerIDSubmit()
+                self.masterPeerIDButtonText("Change")
             }
         }
 

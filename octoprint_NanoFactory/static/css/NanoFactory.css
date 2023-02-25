@@ -1,9 +1,3 @@
-.basic-button {
-    height: 2rem;
-    vertical-align: middle
-}
-
-
 .half-width {
     width: 12rem
 }
@@ -12,8 +6,44 @@
     width: 24rem
 }
 
+.success-button {
+    background-color: #32509D;
+}
+
+.success-button:hover {
+    background-color: #2a4381;
+}
+
+.danger-button {
+    background-color: #D32F2F;
+}
+
+.danger-button:hover {
+    background-color: #b71c1c;
+}
+
+.combined-container {
+    display: flex;
+    flex-direction: row;
+}
+
+button {
+    height: 2rem;
+    /* vertical-align: middle; */
+    border-radius: 12px;
+    border: 1px solid #777777;
+    transition: background-color 0.2s ease-in-out;
+    color: white;
+}
 
 input {
-    width: 23rem;
-    height: 2rem
+    width: 11rem;
+    height: 2rem;
+    /* vertical-align: middle; */
+    border-radius: 12px;
+    border: 1px solid #777777;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 1%;
 }
