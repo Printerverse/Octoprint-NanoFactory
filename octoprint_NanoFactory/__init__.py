@@ -252,6 +252,7 @@ class NanofactoryPlugin(
             self.restart_browser()
 
     def save_bed_levelling_data(self, data):
+        self._logger.info("Saving bed levelling data")
         try:
             with open(os.path.join(self.get_plugin_data_folder(), "bed_levelling_data.json"), "w+") as f:
                 json.dump(data, f)
