@@ -275,7 +275,7 @@ $(function () {
 
         self.handleMasterPeerIDSubmit = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "saveMasterPeerID", { "masterPeerID": self.masterPeerID() }).done(function (response) {
-                nanoFactoryActionButtonText("Go to NanoFactory")
+                self.nanoFactoryActionButtonText("Go to NanoFactory")
                 new PNotify({
                     title: "Save Successful",
                     text: 'Master Device ID saved successfully',
