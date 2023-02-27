@@ -14,8 +14,12 @@ $(function () {
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
         self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
-        self.apiKeyButtonText = ko.observable("Change")
-        self.masterPeerIDButtonText = ko.observable("Change")
+
+        self.showAPIKeyEditButton = ko.observable(true)
+        self.showAPIKeySubmitButton = ko.observable(false)
+        self.showMasterPeerIDEditButton = ko.observable(true)
+        self.showMasterPeerIDSubmitButton = ko.observable(false)
+
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -30,10 +34,10 @@ $(function () {
 
                     if (data["api_key"].length > 0) {
                         document.getElementById("api-key").disabled = true
-                        self.apiKeyButtonText("Change")
+                        self.handleShowAPIKeyEditButton()()
                     } else {
                         document.getElementById("api-key").disabled = false
-                        self.apiKeyButtonText("Submit")
+                        self.handleShowAPIKeySubmitButton()
                     }
                 }
 
@@ -42,11 +46,14 @@ $(function () {
 
                     if (data["masterPeerID"].length > 0) {
                         document.getElementById("master-peer-id").disabled = true
-                        self.masterPeerIDButtonText("Change")
                         self.nanoFactoryActionButtonText("Go to NanoFactory")
+
+                        self.handleShowMasterPeerIDEditButton()
                     } else {
                         document.getElementById("master-peer-id").disabled = false
-                        self.masterPeerIDButtonText("Submit")
+                        self.masterDeviceIDIconPath = ko.observable(self.submitIconPath)
+
+                        self.handleShowMasterPeerIDSubmitButton()
                     }
                 }
 
@@ -108,12 +115,12 @@ $(function () {
                 if (!(apiKey.length > 0)) {
                     console.log("apiKey not found. Calling startAuthFlow")
                     self.startAuthFlow()
-                    self.apiKeyButtonText("Submit")
+                    self.handleShowAPIKeySubmitButton()
+                    // self.apiKeyIconPath = ko.observable(self.submitIconPath)
                 }
 
             }, 1000)
         }
-
 
 
         self.goToNanoFactoryURL = function () {
@@ -246,28 +253,6 @@ $(function () {
             }
         }
 
-        self.handleAPIKeyButtonClick = function () {
-            if (self.apiKeyButtonText() === "Change") {
-                self.handleAPIKeyEdit()
-                self.apiKeyButtonText("Submit")
-            }
-            else {
-                self.handleAPIKeySubmit()
-                self.apiKeyButtonText("Change")
-            }
-        }
-
-        self.handleMasterPeerIDButtonClick = function () {
-            if (self.masterPeerIDButtonText() === "Change") {
-                self.handleMasterPeerIDClear()
-                self.masterPeerIDButtonText("Submit")
-            }
-            else {
-                self.handleMasterPeerIDSubmit()
-                self.masterPeerIDButtonText("Change")
-            }
-        }
-
         self.handleAPIKeySubmit = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: self.APIKEY() }).done(function (response) {
                 new PNotify({
@@ -276,10 +261,13 @@ $(function () {
                     type: "success"
                 });
             }).catch(error => { console.log(error) });
+
+            self.handleShowAPIKeyEditButton()
         }
 
 
         self.handleAPIKeyEdit = function () {
+            self.handleShowAPIKeySubmitButton()
             let inputField = document.getElementById("api-key")
             inputField.disabled = false
             inputField.focus()
@@ -294,6 +282,8 @@ $(function () {
                     type: "success"
                 });
             }).catch(error => { console.log(error) });
+            self.handleShowMasterPeerIDEditButton()
+
         }
 
 
@@ -303,7 +293,31 @@ $(function () {
             self.masterPeerID("")
             inputField.value = ""
             inputField.focus()
+            self.handleShowMasterPeerIDSubmitButton()
         }
+
+
+        self.handleShowMasterPeerIDEditButton = function () {
+            self.showMasterPeerIDEditButton(true)
+            self.showMasterPeerIDSubmitButton(false)
+        }
+
+        self.handleShowMasterPeerIDSubmitButton = function () {
+            self.showMasterPeerIDEditButton(false)
+            self.showMasterPeerIDSubmitButton(true)
+        }
+
+        self.handleShowAPIKeyEditButton = function () {
+            self.showAPIKeyEditButton(true)
+            self.showAPIKeySubmitButton(false)
+        }
+
+        self.handleShowAPIKeySubmitButton = function () {
+            self.showAPIKeyEditButton(false)
+            self.showAPIKeySubmitButton(true)
+        }
+
+
     }
 
 

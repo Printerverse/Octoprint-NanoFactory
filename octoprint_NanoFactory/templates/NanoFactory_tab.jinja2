@@ -4,12 +4,15 @@
     <br />
 
     <div>
-        <button class="half-width success-button" style="text-decoration:none;" data-bind="click: goToNanoFactoryURL">
+        <button class="nanofactory-button half-width success-button" style="text-decoration:none;"
+            data-bind="click: goToNanoFactoryURL">
             <span data-bind="text: nanoFactoryActionButtonText"></span>
             <span> <img src="plugin/NanoFactory/static/img/NewTab.png" width="25" height="25" /></span>
         </button>
-        <button class="half-width success-button" data-bind="click: sharePrinter">Share
-            Printer</button>
+        <button class="nanofactory-button half-width success-button" data-bind="click: sharePrinter">
+            <span>Share Printer</span>
+            <span> <img src="plugin/NanoFactory/static/img/share-icon.svg" width="20" height="20" /></span>
+        </button>
     </div>
 
     <br />
@@ -17,10 +20,16 @@
     <div>
         <h5>API Key for NanoFactory:</h5>
         <div class="combined-container">
-            <input type="text" id="api-key" placeholder="Please enter the API Key for NanoFactory"
-                data-bind="value: APIKEY" />
-            <button class="change-button success-button"
-                data-bind="click: handleAPIKeyButtonClick, text: apiKeyButtonText"></button>
+            <input class="nanofactory-input-field" type="text" id="api-key"
+                placeholder="Please enter the API Key for NanoFactory" data-bind="value: APIKEY" />
+            <button class="nanofactory-button change-button success-button"
+                data-bind="click: handleAPIKeyEdit, visible: showAPIKeyEditButton">
+                <img src="plugin/NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
+            </button>
+            <button class="nanofactory-button change-button success-button"
+                data-bind="click: handleAPIKeySubmit, visible: showAPIKeySubmitButton">
+                <img src="plugin/NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
+            </button>
         </div>
     </div>
 
@@ -29,27 +38,34 @@
     <div>
         <h5>Master Device ID:</h5>
         <div class="combined-container">
-            <input type="text" id="master-peer-id" placeholder="Please enter the Master Device ID for this printer"
-                data-bind="value: masterPeerID" />
-            <button class="change-button success-button"
-                data-bind="click: handleMasterPeerIDButtonClick, text: masterPeerIDButtonText"></button>
+            <input class="nanofactory-input-field" type="text" id="master-peer-id"
+                placeholder="Please enter the Master Device ID for this printer" data-bind="value: masterPeerID" />
+            <button class="nanofactory-button change-button success-button"
+                data-bind="click: handleMasterPeerIDClear, visible: showMasterPeerIDEditButton">
+                <img src="plugin/NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
+            </button>
+            <button class="nanofactory-button change-button success-button"
+                data-bind="click: handleMasterPeerIDSubmit, visible: showMasterPeerIDSubmitButton">
+                <img src="plugin/NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
+            </button>
         </div>
     </div>
 
     <br />
 
     <div>
-        <button class="half-width success-button" data-bind="click: restartNanoFactoryApp">Restart
+        <button class="nanofactory-button half-width success-button" data-bind="click: restartNanoFactoryApp">Restart
             NanoFactory Server</button>
 
-        <button class="half-width success-button" data-bind="click: giveupSnapshotCameraStream">Reload Camera
+        <button class="nanofactory-button half-width success-button"
+            data-bind="click: giveupSnapshotCameraStream">Reload Camera
             Stream</button>
     </div>
 
     <br />
 
     <div>
-        <button class="full-width danger-button" data-bind="click: deleteNanoFactoryDatabase">Clear
+        <button class="nanofactory-button full-width danger-button" data-bind="click: deleteNanoFactoryDatabase">Clear
             NanoFactory Database</button>
     </div>
 </div>

@@ -24,7 +24,7 @@
 }
 
 .change-button {
-    width: 7rem;
+    width: 3rem;
 }
 
 .success-button {
@@ -48,7 +48,7 @@
     flex-direction: row;
 }
 
-button {
+.nanofactory-button {
     height: 2rem;
     border-radius: 12px;
     border: 1px solid #777777;
@@ -56,11 +56,11 @@ button {
     color: white;
 }
 
-input {
-    width: 16rem;
-    height: 2rem;
-    border-radius: 12px;
-    border: 1px solid #777777;
+.nanofactory-input-field {
+    width: 19rem;
+    border-radius: 12px !important;
+    background-color: #2c2a2a !important;
+    color: #fff !important;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
