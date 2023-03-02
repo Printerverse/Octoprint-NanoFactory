@@ -326,8 +326,6 @@ class NanofactoryPlugin(
         url = 'file:///{}?apiKey={}&peerID={}&masterPeerID={}'.format(
             path, self.api_key, self.peer_ID, self.master_peer_id)
 
-        self._logger.warning(url)
-
         if self.os == "Windows":
             try:
                 if os.path.isfile(r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"):
