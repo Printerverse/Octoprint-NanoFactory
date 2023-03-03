@@ -40,6 +40,7 @@ class NanofactoryPlugin(
         self.pid: str = ""
         self.cors_error = False
         self.os: Literal["Windows", "Darwin", "Linux"] = ""
+        self.browser_installed = False
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -49,7 +50,8 @@ class NanofactoryPlugin(
         self.load_nf_profile()
         check_chrome_data_folder(self.os)
         self.cors_error = check_cors_for_octoprint_api()
-        if self.api_key and self.peer_ID and check_browser_installed():
+        self.browser_installed = check_browser_installed(self.os)
+        if self.api_key and self.peer_ID and self.browser_installed:
             self.pid = start_browser(self.os, self.api_key,
                                      self.peer_ID, self.master_peer_id)
 

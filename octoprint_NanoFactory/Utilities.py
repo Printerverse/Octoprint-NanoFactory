@@ -1,7 +1,9 @@
 import getpass
 import os
+import re
 import subprocess
 import time
+from sys import platform
 
 import psutil
 import yaml
@@ -76,9 +78,17 @@ def check_cors_for_octoprint_api():
     return False
 
 
-def check_browser_installed():
-    # TODO: Check if browser is installed
-    return True
+def check_browser_installed(operating_system: Literal["Windows", "Darwin", "Linux"]):
+    if operating_system == "Windows":
+        chrome_version = get_windows_chrome_version()
+        if chrome_version:
+            return True
+
+    if operating_system == "Linux":
+        if os.path.isfile(linux_chrome_path_1) or os.path.isfile(linux_chrome_path_2):
+            return True
+      
+    return False
 
 
 def restart_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, pid: int):
@@ -183,4 +193,54 @@ def close_browser(pid: int, operating_system: Literal["Windows", "Darwin", "Linu
                 subprocess.run(kill_chromium_command_linux, shell=True)
 
     except Exception as e:
-        plugin._logger.warning(e, exc_ifno=True)
+        plugin._logger.warning(e, exc_info=True)
+
+
+def extract_version_registry(output):
+    try:
+        google_version = ''
+        for letter in output[output.rindex('DisplayVersion    REG_SZ') + 24:]:
+            if letter != '\n':
+                google_version += letter
+            else:
+                break
+        return(google_version.strip())
+    except TypeError:
+        return
+
+def extract_version_folder():
+    # Check if the Chrome folder exists in the x32 or x64 Program Files folders.
+    for i in range(2):
+        path = 'C:\\Program Files' + (' (x86)' if i else '') +'\\Google\\Chrome\\Application'
+        if os.path.isdir(path):
+            paths = [f.path for f in os.scandir(path) if f.is_dir()]
+            for path in paths:
+                filename = os.path.basename(path)
+                pattern = '\d+\.\d+\.\d+\.\d+'
+                match = re.search(pattern, filename)
+                if match and match.group():
+                    # Found a Chrome version.
+                    return match.group(0)
+
+    return None
+
+def get_windows_chrome_version():
+    version = None
+    install_path = None
+
+    try:
+        # Windows...
+        try:
+            # Try registry key.
+            stream = os.popen('reg query "HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Google Chrome"')
+            output = stream.read()
+            version = extract_version_registry(output)
+        except Exception as ex:
+            # Try folder path.
+            version = extract_version_folder()
+    except Exception as ex:
+        print(ex)
+
+    version = os.popen(f"{install_path} --version").read().strip('Google Chrome ').strip() if install_path else version
+
+    return version
