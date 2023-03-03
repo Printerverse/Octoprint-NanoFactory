@@ -1,19 +1,22 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-import getpass
 import json
 import os
 import platform
-import re
-import subprocess
-import time
 from uuid import uuid4
 
-import psutil
 import requests
 import yaml
 from flask import request
+from octoprint_NanoFactory.Utilities import (
+    check_browser_installed,
+    check_chrome_data_folder,
+    check_cors_for_octoprint_api,
+    close_browser,
+    restart_browser,
+    start_browser,
+)
 from typing_extensions import Literal
 
 import octoprint.plugin
@@ -44,10 +47,11 @@ class NanofactoryPlugin(
 
     def on_after_startup(self):
         self.load_nf_profile()
-        self.check_chrome_data_folder()
-        self.check_cors()
-        if self.api_key and self.peer_ID:
-            self.start_browser()
+        check_chrome_data_folder(self.os)
+        self.cors_error = check_cors_for_octoprint_api()
+        if self.api_key and self.peer_ID and check_browser_installed():
+            self.pid = start_browser(self.os, self.api_key,
+                                     self.peer_ID, self.master_peer_id)
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
@@ -77,7 +81,8 @@ class NanofactoryPlugin(
                     json.dump(nf_profile, f)
                     f.truncate()
 
-                self.restart_browser()
+                self.pid = restart_browser(self.os, self.api_key,
+                                           self.peer_ID, self.master_peer_id, self.pid)
 
             except Exception as e:
                 self._logger.warning(e, exc_info=True)
@@ -97,7 +102,8 @@ class NanofactoryPlugin(
             self.save_master_peer_id(data["masterPeerID"], True)
 
         elif command == "restartNanoFactoryApp":
-            self.restart_browser()
+            self.pid = restart_browser(self.os, self.api_key,
+                                       self.peer_ID, self.master_peer_id, self.pid)
 
         elif command == "deleteNanoFactoryDatabase":
             self._plugin_manager.send_plugin_message(
@@ -171,26 +177,11 @@ class NanofactoryPlugin(
             except Exception as e:
                 return {}
 
-    @octoprint.plugin.BlueprintPlugin.route("/add_to_octoprint_log", methods=["POST"])
-    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
-    def add_console_log_to_octoprint_log(self):
-        message_type = request.args.get("message_type", None)
-        message = request.args.get("message", None)
-
-        if message_type == "info" or message_type == "log":
-            self._logger.info(message)
-        elif message_type == "warn":
-            self._logger.warning(message)
-        elif message_type == "error":
-            self._logger.error(message)
-
-        return "Success"
-
     def is_blueprint_csrf_protected(self):
         return True
 
     def on_shutdown(self):
-        self.close_browser()
+        close_browser(self.pid, self.os)
 
     def check_api_key_validity(self, api_key):
         if api_key:
@@ -200,35 +191,6 @@ class NanofactoryPlugin(
                 return True
             else:
                 return False
-
-    def restart_browser(self):
-        self.close_browser()
-        time.sleep(1)
-        self.start_browser()
-
-    def check_cors(self):
-        path = self.get_plugin_data_folder()
-
-        paths = []
-
-        if ("/" in path):
-            paths = path.split("/")
-            config_path = "/".join(paths[:-2])
-        else:
-            paths = path.split("\\")
-            config_path = "\\".join(paths[:-2])
-
-        config = {}
-
-        try:
-            with open(os.path.join(config_path, "config.yaml"), "r") as f:
-                config = yaml.safe_load(f)
-        except Exception as e:
-            self._logger.warning(e)
-
-        if "api" in config:
-            if "allowCrossOrigin" not in config["api"]:
-                self.cors_error = True
 
     def save_master_peer_id(self, master_peer_id: str, restart_browser: bool):
         self.master_peer_id = master_peer_id
@@ -249,7 +211,8 @@ class NanofactoryPlugin(
         self.send_master_peer_id()
 
         if restart_browser:
-            self.restart_browser()
+            self.pid = restart_browser(self.os, self.api_key,
+                                       self.peer_ID, self.master_peer_id, self.pid)
 
     def save_bed_levelling_data(self, data):
         self._logger.info("Saving bed levelling data")
@@ -258,8 +221,7 @@ class NanofactoryPlugin(
                 json.dump(data, f)
 
         except Exception as e:
-            self._logger.warning(
-                "Error while saving bed levelling data: "+e, exc_info=True)
+            self._logger.warning(e, exc_info=True)
 
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
@@ -270,21 +232,6 @@ class NanofactoryPlugin(
         self._plugin_manager.send_plugin_message(
             self._identifier, {"masterPeerID": self.master_peer_id}
         )
-
-    def check_chrome_data_folder(self):
-        if self.os == "Windows":
-            if not os.path.isdir("C:\\temp\\chrome-data"):
-                try:
-                    os.mkdir("C:\\temp")
-                    os.mkdir("C:\\temp\\chrome-data")
-                except Exception as e:
-                    self._logger.warning(e)
-        if self.os == "Linux":
-            if not os.path.isdir("/home/{}/chrome-data".format(getpass.getuser())):
-                try:
-                    os.mkdir("/home/{}/chrome-data".format(getpass.getuser()))
-                except Exception as e:
-                    self._logger.warning(e)
 
     def load_nf_profile(self):
         nf_profile = {}
@@ -309,86 +256,10 @@ class NanofactoryPlugin(
         if self.check_api_key_validity(nf_profile["api_key"]):
             self.api_key = nf_profile["api_key"]
         else:
-            self._logger.warning("NanoFactory API Key not valid")
+            self._logger.warning("API Key not valid for NanoFactory")
 
         self.master_peer_id = nf_profile["master_peer_id"]
 
-    def start_browser(self):
-        path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "static",
-            "js",
-            "index.html",
-        )
-
-        FNULL = open(os.devnull, 'w')
-
-        url = 'file:///{}?apiKey={}&peerID={}&masterPeerID={}'.format(
-            path, self.api_key, self.peer_ID, self.master_peer_id)
-
-        if self.os == "Windows":
-            try:
-                if os.path.isfile(r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"):
-                    chrome_path = r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-
-                elif os.path.isfile(r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"):
-                    chrome_path = r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
-                else:
-                    chrome_path = None
-
-                if chrome_path:
-                    process = psutil.Popen([chrome_path, url] + "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\".split(" "), stdin=subprocess.PIPE,
-                                           stdout=FNULL,  stderr=subprocess.PIPE)
-                    self._logger.info(process)
-                    self.pid = process.as_dict()["pid"]
-
-                else:
-                    subprocess.run(
-                        "start chrome {} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=C:\\temp\\chrome-data\\".format(url), shell=True
-                    )
-
-            except Exception as e:
-                self._logger.warning("Error while opening chrome.")
-                self._logger.warning(e, exc_info=True)
-
-        if self.os == "Linux":
-            try:
-                if os.path.isfile("/usr/bin/chromium-browser"):
-                    chrome_path = "/usr/bin/chromium-browser"
-                else:
-                    chrome_path = "/usr/bin/chromium"
-
-                user_data_directory_flag = "--user-data-dir=/home/{}/chrome-data".format(
-                    getpass.getuser())
-                process = psutil.Popen([chrome_path, url, user_data_directory_flag] + " --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain".split(" "), stdin=subprocess.PIPE,
-                                       stdout=FNULL,  stderr=subprocess.PIPE)
-                self._logger.info(process)
-                self.pid = process.as_dict()["pid"]
-
-            except Exception as e:
-                self._logger.warning(
-                    "Error while opening chromium_browser using psutil. Trying with subprocess.")
-                subprocess.run(
-                    "/usr/bin/chromium-browser {} --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir=/home/{}/chrome-data".format(url, getpass.getuser()), shell=True
-                )
-
-    def close_browser(self):
-        try:
-            if self.pid:
-                if self.os == "Windows":
-                    subprocess.run("taskkill -F /PID " +
-                                   str(self.pid), shell=True)
-                if self.os == "Linux":
-                    subprocess.run("kill -9 " + str(self.pid), shell=True)
-
-            else:
-                if self.os == "Windows":
-                    subprocess.run(
-                        "taskkill -F /IM chrome.exe >nul", shell=True)
-                if self.os == "Linux":
-                    subprocess.run("killall -9 chrome", shell=True)
-        except Exception as e:
-            self._logger.warning(e)
     # ~~ AssetPlugin mixin
 
     def get_assets(self):
