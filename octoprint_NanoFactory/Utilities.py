@@ -3,7 +3,6 @@ import os
 import re
 import subprocess
 import time
-from sys import platform
 
 import psutil
 import yaml
@@ -23,7 +22,7 @@ windows_chrome_path_2 = r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\
 linux_chrome_path_1 = "/usr/bin/chromium-browser"
 linux_chrome_path_2 = "/usr/bin/chromium"
 
-flags = "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain "
+flags = "--allow-pre-commit-input --headless --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain "
 user_data_directory_flag = "--user-data-dir="
 
 kill_pid_command_windows = "taskkill /F /PID "
@@ -87,7 +86,7 @@ def check_browser_installed(operating_system: Literal["Windows", "Darwin", "Linu
     if operating_system == "Linux":
         if os.path.isfile(linux_chrome_path_1) or os.path.isfile(linux_chrome_path_2):
             return True
-      
+
     return False
 
 
@@ -204,14 +203,16 @@ def extract_version_registry(output):
                 google_version += letter
             else:
                 break
-        return(google_version.strip())
+        return (google_version.strip())
     except TypeError:
         return
+
 
 def extract_version_folder():
     # Check if the Chrome folder exists in the x32 or x64 Program Files folders.
     for i in range(2):
-        path = 'C:\\Program Files' + (' (x86)' if i else '') +'\\Google\\Chrome\\Application'
+        path = 'C:\\Program Files' + \
+            (' (x86)' if i else '') + '\\Google\\Chrome\\Application'
         if os.path.isdir(path):
             paths = [f.path for f in os.scandir(path) if f.is_dir()]
             for path in paths:
@@ -224,6 +225,7 @@ def extract_version_folder():
 
     return None
 
+
 def get_windows_chrome_version():
     version = None
     install_path = None
@@ -232,7 +234,8 @@ def get_windows_chrome_version():
         # Windows...
         try:
             # Try registry key.
-            stream = os.popen('reg query "HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Google Chrome"')
+            stream = os.popen(
+                'reg query "HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Google Chrome"')
             output = stream.read()
             version = extract_version_registry(output)
         except Exception as ex:
@@ -241,6 +244,7 @@ def get_windows_chrome_version():
     except Exception as ex:
         print(ex)
 
-    version = os.popen(f"{install_path} --version").read().strip('Google Chrome ').strip() if install_path else version
+    version = os.popen(f"{install_path} --version").read().strip(
+        'Google Chrome ').strip() if install_path else version
 
     return version

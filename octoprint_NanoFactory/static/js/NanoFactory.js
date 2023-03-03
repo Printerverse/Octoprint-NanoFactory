@@ -9,11 +9,32 @@ $(function () {
         var self = this;
 
         self.APIKEY = ko.observable("")
+        self.showSetupInstructions = ko.observable(true)
         self.peerID = ko.observable("")
         self.peerIDMessage = ko.observable("")
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
         self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
+
+        // Detect if the operating system is Windows or Linux
+        self.isWindows = ko.observable(false)
+        self.isLinux = ko.observable(false)
+        self.isMac = ko.observable(false)
+
+        if (navigator.userAgent.indexOf("Win") != -1) {
+            console.log("Windows")
+            self.isWindows(true)
+        } else if (navigator.userAgent.indexOf("Mac") != -1) {
+            console.log("Mac")
+            self.isMac(true)
+        } else if (navigator.userAgent.indexOf("Linux") != -1) {
+            console.log("Linux")
+            self.isLinux(true)
+        }
+
+        self.upgradeLinuxCommand = ko.observable("sudo apt update && sudo apt upgrade -y")
+        self.installChromiumBrowser = ko.observable("sudo apt install chromium-browser -y")
+        self.installChromium = ko.observable("sudo apt install chromium -y")
 
         self.showAPIKeyEditButton = ko.observable(true)
         self.showAPIKeySubmitButton = ko.observable(false)
@@ -97,6 +118,11 @@ $(function () {
                         hide: false
                     });
                 }
+
+                if (data["browser_installed"]) {
+                    console.log("browser installed" + data["browser_installed"])
+                    self.showSetupInstructions(false)
+                }
             }
         }
 
@@ -106,6 +132,7 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
@@ -315,6 +342,29 @@ $(function () {
         self.handleShowAPIKeySubmitButton = function () {
             self.showAPIKeyEditButton(false)
             self.showAPIKeySubmitButton(true)
+        }
+
+
+        self.copyToClipboard = function (text) {
+
+            if (text === "upgradeLinuxCommand")
+                text = self.upgradeLinuxCommand()
+
+            if (text === "installChromiumBrowser")
+                text = self.installChromiumBrowser()
+
+            if (text === "installChromium")
+                text = self.installChromium()
+
+            navigator.clipboard.writeText(text).catch(err => {
+                let dummy = document.createElement("textarea");
+                document.body.appendChild(dummy);
+                dummy.value = text;
+                dummy.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummy);
+
+            });
         }
 
 

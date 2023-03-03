@@ -66,6 +66,7 @@ class NanofactoryPlugin(
             "restartNanoFactoryApp": [],
             "deleteNanoFactoryDatabase": [],
             "getCors": [],
+            "getBrowserInstalled": [],
             "giveupSnapshotCameraStream": [],
         }
 
@@ -125,6 +126,12 @@ class NanofactoryPlugin(
                     self._identifier, {
                         "cors_error": "Please enable CORS to allow NanoFactory to work properly. \n Go to Settings > API and check 'Allow Cross Origin Resource Sharing (CORS)'"}
                 )
+
+        elif command == "getBrowserInstalled":
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {
+                    "browser_installed": self.browser_installed}
+            )
 
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
