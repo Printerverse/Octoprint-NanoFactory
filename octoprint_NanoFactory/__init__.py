@@ -68,6 +68,7 @@ class NanofactoryPlugin(
             "getCors": [],
             "getBrowserInstalled": [],
             "giveupSnapshotCameraStream": [],
+            "startNanoFactoryPostSetup": [],
         }
 
     def on_api_command(self, command, data):
@@ -92,6 +93,18 @@ class NanofactoryPlugin(
 
         elif command == "getAPIKey":
             self.send_api_key()
+
+        elif command == "startNanoFactoryPostSetup":
+            self.browser_installed = check_browser_installed(self.os)
+
+            if self.browser_installed:
+                self.pid = start_browser(self.os, self.api_key,
+                                         self.peer_ID, self.master_peer_id)
+
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {
+                    "browser_installed": self.browser_installed}
+            )
 
         elif command == "getPeerID":
             self._plugin_manager.send_plugin_message(

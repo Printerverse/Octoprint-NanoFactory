@@ -119,9 +119,19 @@ $(function () {
                     });
                 }
 
-                if (data["browser_installed"]) {
-                    console.log("browser installed" + data["browser_installed"])
-                    self.showSetupInstructions(false)
+                // check for the key browser_installed in the data
+
+                if ("browser_installed" in data) {
+                    if (data["browser_installed"]) {
+                        self.showSetupInstructions(false)
+                    } else {
+                        self.showSetupInstructions(true)
+                        new PNotify({
+                            title: "Browser Not Installed",
+                            text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
+                            type: "notice",
+                        });
+                    }
                 }
             }
         }
@@ -147,6 +157,11 @@ $(function () {
                 }
 
             }, 1000)
+        }
+
+        self.startNanoFactoryPostSetup = function () {
+
+            OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
         }
 
 
