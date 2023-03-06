@@ -125,11 +125,11 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
                 return process.as_dict()["pid"]
 
             else:
-                if "chrome" in browser_path:
+                if get_windows_chrome_version():
                     subprocess.run(
                         "start chrome {} {}".format(url, flags), shell=True
                     )
-                elif "msedge" in browser_path:
+                else:
                     subprocess.run(
                         "start msedge {} {}".format(url, flags), shell=True
                     )
