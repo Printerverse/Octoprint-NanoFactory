@@ -212,7 +212,7 @@ class NanofactoryPlugin(
             else:
                 return False
 
-    def save_master_peer_id(self, master_peer_id: str, restart_browser: bool):
+    def save_master_peer_id(self, master_peer_id: str, restart: bool):
         self.master_peer_id = master_peer_id
         try:
             with open(
@@ -230,7 +230,7 @@ class NanofactoryPlugin(
 
         self.send_master_peer_id()
 
-        if restart_browser:
+        if restart:
             self.pid = restart_browser(self.os, self.api_key,
                                        self.peer_ID, self.master_peer_id, self.pid)
 
