@@ -10,9 +10,8 @@ import requests
 import yaml
 from flask import request
 from octoprint_NanoFactory.Utilities import (
-    check_browser_installed,
-    check_chrome_data_folder,
     check_cors_for_octoprint_api,
+    check_if_browser_is_installed,
     close_browser,
     restart_browser,
     start_browser,
@@ -48,9 +47,8 @@ class NanofactoryPlugin(
 
     def on_after_startup(self):
         self.load_nf_profile()
-        check_chrome_data_folder(self.os)
         self.cors_error = check_cors_for_octoprint_api()
-        self.browser_installed = check_browser_installed(self.os)
+        self.browser_installed = check_if_browser_is_installed(self.os)
         if self.api_key and self.peer_ID and self.browser_installed:
             self.pid = start_browser(self.os, self.api_key,
                                      self.peer_ID, self.master_peer_id)
@@ -95,7 +93,7 @@ class NanofactoryPlugin(
             self.send_api_key()
 
         elif command == "startNanoFactoryPostSetup":
-            self.browser_installed = check_browser_installed(self.os)
+            self.browser_installed = check_if_browser_is_installed(self.os)
 
             if self.browser_installed:
                 self.pid = start_browser(self.os, self.api_key,

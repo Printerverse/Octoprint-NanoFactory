@@ -15,37 +15,20 @@ index_html_file_path = os.path.join(
     "js",
     "index.html",
 )
-windows_data_folder = "C:\\temp\\chrome-data"
-linux_data_folder = "/home/{}/chrome-data".format(getpass.getuser())
 windows_chrome_path_1 = r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
 windows_chrome_path_2 = r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+windows_edge_path = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
 linux_chrome_path_1 = "/usr/bin/chromium-browser"
 linux_chrome_path_2 = "/usr/bin/chromium"
 
 flags = "--allow-pre-commit-input --headless --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain "
-user_data_directory_flag = "--user-data-dir="
 
 kill_pid_command_windows = "taskkill /F /PID "
 kill_pid_command_linux = "kill -9 "
 kill_chrome_command_windows = "taskkill /F /IM chrome.exe >nul"
+kill_msedge_command_windows = "taskkill /F /IM msedge.exe >nul"
 kill_chromium_browser_command_linux = "killall chromium-browser"
 kill_chromium_command_linux = "killall chromium"
-
-
-def check_chrome_data_folder(operating_system: Literal["Windows", "Darwin", "Linux"]):
-    try:
-        if operating_system == "Windows":
-            if not os.path.isdir(windows_data_folder):
-                os.mkdir("C:\\temp")
-                os.mkdir(windows_data_folder)
-
-        if operating_system == "Linux":
-            if not os.path.isdir(linux_data_folder):
-                os.mkdir(linux_data_folder)
-
-    except Exception as e:
-        from . import __plugin_implementation__ as plugin
-        plugin._logger.warning(e, exc_info=True)
 
 
 def check_cors_for_octoprint_api():
@@ -77,10 +60,15 @@ def check_cors_for_octoprint_api():
     return False
 
 
-def check_browser_installed(operating_system: Literal["Windows", "Darwin", "Linux"]):
+def check_if_browser_is_installed(operating_system: Literal["Windows", "Darwin", "Linux"]):
     if operating_system == "Windows":
         chrome_version = get_windows_chrome_version()
         if chrome_version:
+            return True
+        edge_version = get_windows_edge_version()
+        if edge_version:
+            return True
+        if os.path.isfile(windows_chrome_path_1) or os.path.isfile(windows_chrome_path_2) or os.path.isfile(windows_edge_path):
             return True
 
     if operating_system == "Linux":
@@ -103,6 +91,10 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
 
         elif os.path.isfile(windows_chrome_path_2):
             return windows_chrome_path_2
+
+        elif os.path.isfile(windows_edge_path):
+            return windows_edge_path
+
         else:
             return None
 
@@ -117,8 +109,6 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
 
 def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str):
 
-    # FNULL = open(os.devnull, 'w')
-
     url = 'file:///{}?apiKey={}&peerID={}&masterPeerID={}'.format(
         index_html_file_path, api_key, peer_ID, master_peer_id)
 
@@ -126,35 +116,40 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
 
     if operating_system == "Windows":
         try:
-            chrome_path = get_browser_path(operating_system)
+            browser_path = get_browser_path(operating_system)
 
-            if chrome_path:
-                process = psutil.Popen([chrome_path, url] + (flags+user_data_directory_flag+windows_data_folder).split(" "), stdin=subprocess.PIPE,
+            if browser_path:
+                process = psutil.Popen([browser_path, url] + flags.split(" "), stdin=subprocess.PIPE,
                                        stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
 
                 return process.as_dict()["pid"]
 
             else:
-                subprocess.run(
-                    "start chrome {} {}{}{}".format(url, flags, user_data_directory_flag, windows_data_folder), shell=True
-                )
+                if "chrome.exe" in browser_path:
+                    subprocess.run(
+                        "start chrome {} {}".format(url, flags), shell=True
+                    )
+                elif "msedge.exe" in browser_path:
+                    subprocess.run(
+                        "start msedge {} {}".format(url, flags), shell=True
+                    )
 
         except Exception as e:
             from . import __plugin_implementation__ as plugin
-            plugin._logger.error("Error while opening chrome.")
+            plugin._logger.error("Error while opening browser.")
             plugin._logger.error(e, exc_info=True)
 
     if operating_system == "Linux":
         try:
-            chrome_path = get_browser_path(operating_system)
+            browser_path = get_browser_path(operating_system)
 
-            if not chrome_path:
+            if not browser_path:
                 from . import __plugin_implementation__ as plugin
                 plugin._logger.error(
                     linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found.")
                 return
 
-            process = psutil.Popen([chrome_path, url] + (flags + user_data_directory_flag + linux_data_folder).split(" "), stdin=subprocess.PIPE,
+            process = psutil.Popen([browser_path, url] + (flags).split(" "), stdin=subprocess.PIPE,
                                    stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
 
             return process.as_dict()["pid"]
@@ -163,7 +158,7 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
 
             try:
                 subprocess.run(
-                    "{} {} {}{}{}".format(chrome_path, url, flags, user_data_directory_flag, linux_data_folder), shell=True
+                    "{} {} {}".format(browser_path, url, flags), shell=True
                 )
             except Exception as e:
                 from . import __plugin_implementation__ as plugin
@@ -176,7 +171,6 @@ def close_browser(pid: int, operating_system: Literal["Windows", "Darwin", "Linu
 
     try:
         if pid:
-
             if operating_system == "Windows":
                 subprocess.run(kill_pid_command_windows +
                                str(pid), shell=True)
@@ -185,8 +179,14 @@ def close_browser(pid: int, operating_system: Literal["Windows", "Darwin", "Linu
 
         else:
             if operating_system == "Windows":
-                subprocess.run(
-                    kill_chrome_command_windows, shell=True)
+                browser_path = get_browser_path(operating_system)
+                if "chrome.exe" in browser_path:
+                    subprocess.run(
+                        kill_chrome_command_windows, shell=True)
+                elif "msedge.exe" in browser_path:
+                    subprocess.run(
+                        kill_msedge_command_windows, shell=True)
+
             if operating_system == "Linux":
                 subprocess.run(kill_chromium_browser_command_linux, shell=True)
                 subprocess.run(kill_chromium_command_linux, shell=True)
@@ -226,12 +226,29 @@ def extract_version_folder():
     return None
 
 
+def get_windows_edge_version():
+    version = None
+
+    try:
+        stream = os.popen(
+            'powershell.exe "(Get-AppxPackage Microsoft.MicrosoftEdge).Version"')
+        output = stream.read()
+        if output:
+            version = output.strip()
+
+    except Exception as e:
+        from . import __plugin_implementation__ as plugin
+        plugin._logger.warning(
+            "Error while getting ms-edge version.", exc_info=True)
+
+    return version
+
+
 def get_windows_chrome_version():
     version = None
     install_path = None
 
     try:
-        # Windows...
         try:
             # Try registry key.
             stream = os.popen(
