@@ -55,7 +55,7 @@ $(function () {
 
                     if (data["api_key"].length > 0) {
                         document.getElementById("api-key").disabled = true
-                        self.handleShowAPIKeyEditButton()()
+                        self.handleShowAPIKeyEditButton()
                     } else {
                         document.getElementById("api-key").disabled = false
                         self.handleShowAPIKeySubmitButton()
