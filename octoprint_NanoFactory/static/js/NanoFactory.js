@@ -41,6 +41,8 @@ $(function () {
         self.showMasterPeerIDEditButton = ko.observable(true)
         self.showMasterPeerIDSubmitButton = ko.observable(false)
 
+        self.showClearNanoFactoryDatabaseModal = ko.observable(false)
+
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -198,6 +200,8 @@ $(function () {
         }
 
         self.deleteNanoFactoryDatabase = function () {
+            self.toggleClearNanoFactoryDatabaseModal()
+            
             OctoPrint.simpleApiCommand("NanoFactory", "deleteNanoFactoryDatabase").done(function (response) {
                 new PNotify({
                     title: "Delete successful",
@@ -212,6 +216,10 @@ $(function () {
                     type: "error"
                 });
             });
+        }
+
+        self.toggleClearNanoFactoryDatabaseModal = function () {
+            self.showClearNanoFactoryDatabaseModal(!self.showClearNanoFactoryDatabaseModal())
         }
 
         self.giveupSnapshotCameraStream = function () {

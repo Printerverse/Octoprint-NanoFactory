@@ -79,14 +79,15 @@
 
             <br />
 
-            <button class="nanofactory-button full-width success-button" data-bind="click: startNanoFactoryPostSetup">Start NanoFactory
+            <button class="nanofactory-button full-width success-button"
+                data-bind="click: startNanoFactoryPostSetup">Start NanoFactory
                 Server</button>
 
         </div>
 
         <div class="nanofactory-tab-container-body" data-bind="hidden: showSetupInstructions">
 
-            <div>
+            <div class="combined-container-parent combined-buttons-container">
                 <button class="nanofactory-button half-width success-button" style="text-decoration:none;"
                     data-bind="click: goToNanoFactoryURL">
                     <span data-bind="text: nanoFactoryActionButtonText"></span>
@@ -137,7 +138,7 @@
 
             <br />
 
-            <div>
+            <div class="combined-container-parent combined-buttons-container">
                 <button class="nanofactory-button half-width success-button"
                     data-bind="click: restartNanoFactoryApp">Restart
                     NanoFactory Server</button>
@@ -149,20 +150,51 @@
 
             <br />
 
-            <div>
+            <div class="full-width">
                 <button class="nanofactory-button full-width danger-button"
-                    data-bind="click: deleteNanoFactoryDatabase">Clear
+                    data-bind="click: toggleClearNanoFactoryDatabaseModal">Clear
                     NanoFactory Database</button>
             </div>
+
+
+            <div class="nanofactory-modal" data-bind="visible: showClearNanoFactoryDatabaseModal">
+                <div class="nanofactory-modal-content">
+                    <div class="nanofactory-modal-header">
+                        Clear NanoFactory Database
+
+                        <div data-bind="click: toggleClearNanoFactoryDatabaseModal"
+                            class="nanofactory-modal-close-icon">
+                            <img src="plugin/NanoFactory/static/img/close-icon.svg" />
+                        </div>
+                    </div>
+
+                    <div class="nanofactory-modal-body">
+                        <div>
+                            Are you sure you want to clear the NanoFactory database? Doing so will delete all the data
+                            about your printer, filaments, files, printjobs associated with NanoFactory and all approved
+                            devices will also lose access to your printer.
+                        </div>
+                        <br />
+                        <div>
+                            <b> This action cannot be undone. </b>
+                        </div>
+                    </div>
+
+                    <div class="nanofactory-modal-footer">
+                        <button class="nanofactory-button neutral-button"
+                            data-bind="click: toggleClearNanoFactoryDatabaseModal">No</button>
+                        <button class="nanofactory-button danger-button"
+                            data-bind="click: deleteNanoFactoryDatabase">Yes</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div data-bind="visible: isMac">
+                <img src="plugin/NanoFactory/static/img/MacMeme.jpg" />
+                <br />
+                <h4 style="text-align: center">
+                    NanoFactory Server will not be supported on Mac OS. Please use Windows or Linux
+                </h4>
+            </div>
         </div>
-
-    </div>
-
-    <div data-bind="visible: isMac">
-        <img src="plugin/NanoFactory/static/img/MacMeme.jpg" />
-        <br />
-        <h4 style="text-align: center">
-            NanoFactory Server will not be supported on Mac OS. Please use Windows or Linux
-        </h4>
-    </div>
-</div>
