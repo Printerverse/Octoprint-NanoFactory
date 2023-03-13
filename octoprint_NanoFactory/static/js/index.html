@@ -2,13 +2,13 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script type="text/javascript" src="./jquery.min.js"></script>
-  <script type="text/javascript" src="./lodash.min.js"></script>
-  <script type="text/javascript" src="./sockjs.min.js"></script>
-  <script type="text/javascript" src="./packed_client.js"></script>
-  <title>NanoFactory</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="text/javascript" src="./jquery.min.js"></script>
+    <script type="text/javascript" src="./lodash.min.js"></script>
+    <script type="text/javascript" src="./sockjs.min.js"></script>
+    <script type="text/javascript" src="./packed_client.js"></script>
+    <title>NanoFactory</title>
 </head>
 
 
@@ -16,15 +16,64 @@
 
 
 <script>
-  onerror = (event, source, lineno, colno, error) => {
+    onerror = (event, source, lineno, colno, error) => {
 
-    if (event === "Uncaught ReferenceError: OctoPrint is not defined") {
-      setTimeout(() => {
-        location.reload()
-      }, 1000)
+        if (event === "Uncaught ReferenceError: OctoPrint is not defined") {
+            setTimeout(() => {
+                location.reload()
+            }, 1000)
+        }
+    };
+
+</script>
+
+
+<script id="worker1" type="javascript/worker">
+    let cameraStream;
+
+    onmessage = (e) => {
+
+        if (cameraStream)
+            clearInterval(cameraStream)
+
+        getCameraStream(e.data[0], e.data[1])
     }
-  };
 
+
+    function getCameraStream(snapshotUrl, FPS) {
+        let numberOfTries = 0
+        let streamOpened = false
+        const ERROR_NAMES = ["AbortError", "TypeError"]
+        const MAX_TRIES = 20
+        const MAX_ERRORS_BEFORE_OPENING_STREAM = 5
+
+        cameraStream = setInterval(() => {
+
+            if (numberOfTries > MAX_TRIES) {
+                clearInterval(cameraStream)
+                postMessage("restartWorker")
+                return
+            }
+
+            fetch(snapshotUrl).then((response) => {
+                if (response.ok) {
+                    numberOfTries = 0
+                    response.arrayBuffer().then((buffer) => {
+                        postMessage(buffer)
+                    })
+                } else {
+                    numberOfTries += 1
+                }
+            }).catch((error) => {
+                console.error(error)
+                numberOfTries += 1
+                if (ERROR_NAMES.includes(error.name) && numberOfTries > MAX_ERRORS_BEFORE_OPENING_STREAM && !streamOpened) {
+                    postMessage("openStream")
+                    streamOpened = true
+                }
+            })
+        }, 1000 / FPS)
+    }
 </script>
 
 </html>
