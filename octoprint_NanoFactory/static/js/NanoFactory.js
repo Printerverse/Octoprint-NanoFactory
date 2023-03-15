@@ -133,11 +133,6 @@ $(function () {
                     } else if (data["operating_system"] == "Darwin") {
                         self.isMac(true)
                     }
-
-                    console.log("Operating System: ", data["operating_system"])
-                    console.log("isWindows: ", self.isWindows())
-                    console.log("isLinux: ", self.isLinux())
-                    console.log("isMac: ", self.isMac())
                 }
             }
         }
