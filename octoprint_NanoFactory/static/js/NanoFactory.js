@@ -379,17 +379,31 @@ $(function () {
             if (text === "installChromium")
                 text = self.installChromium()
 
-            navigator.clipboard.writeText(text).catch(err => {
+            if (navigator.clipboard)
+                navigator.clipboard.writeText(text).catch(err => {
+                    self.fallbackCopyToClipboard(text)
+                });
+            else
+                self.fallbackCopyToClipboard(text)
+
+        }
+
+        self.fallbackCopyToClipboard = function (text) {
+            try {
                 let dummy = document.createElement("textarea");
                 document.body.appendChild(dummy);
                 dummy.value = text;
                 dummy.select();
                 document.execCommand("copy");
                 document.body.removeChild(dummy);
-
-            });
+            } catch (error) {
+                new PNotify({
+                    title: "Failed to copy to clipboard",
+                    text: "Reason: " + error.message,
+                    type: "error"
+                });
+            }
         }
-
 
     }
 
