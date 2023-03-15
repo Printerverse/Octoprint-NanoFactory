@@ -67,6 +67,7 @@ class NanofactoryPlugin(
             "getBrowserInstalled": [],
             "giveupSnapshotCameraStream": [],
             "startNanoFactoryPostSetup": [],
+            "getOperatingSystem": [],
         }
 
     def on_api_command(self, command, data):
@@ -142,6 +143,12 @@ class NanofactoryPlugin(
             self._plugin_manager.send_plugin_message(
                 self._identifier, {
                     "browser_installed": self.browser_installed}
+            )
+
+        elif command == "getOperatingSystem":
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {
+                    "operating_system": self.os}
             )
 
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])

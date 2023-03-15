@@ -16,21 +16,9 @@ $(function () {
         self.nanoFactoryURL = ko.observable("")
         self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
 
-        // Detect if the operating system is Windows or Linux
         self.isWindows = ko.observable(false)
         self.isLinux = ko.observable(false)
         self.isMac = ko.observable(false)
-
-        if (navigator.userAgent.indexOf("Win") != -1) {
-            console.log("Windows")
-            self.isWindows(true)
-        } else if (navigator.userAgent.indexOf("Mac") != -1) {
-            console.log("Mac")
-            self.isMac(true)
-        } else if (navigator.userAgent.indexOf("Linux") != -1) {
-            console.log("Linux")
-            self.isLinux(true)
-        }
 
         self.upgradeLinuxCommand = ko.observable("sudo apt update && sudo apt upgrade -y")
         self.installChromiumBrowser = ko.observable("sudo apt install chromium-browser -y")
@@ -132,8 +120,24 @@ $(function () {
                             title: "Browser Not Installed",
                             text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
                             type: "notice",
+                            hide: false
                         });
                     }
+                }
+
+                if (data["operating_system"]) {
+                    if (data["operating_system"] == "Windows") {
+                        self.isWindows(true)
+                    } else if (data["operating_system"] == "Linux") {
+                        self.isLinux(true)
+                    } else if (data["operating_system"] == "Darwin") {
+                        self.isMac(true)
+                    }
+
+                    console.log("Operating System: ", data["operating_system"])
+                    console.log("isWindows: ", self.isWindows())
+                    console.log("isLinux: ", self.isLinux())
+                    console.log("isMac: ", self.isMac())
                 }
             }
         }
@@ -145,6 +149,7 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
@@ -201,7 +206,7 @@ $(function () {
 
         self.deleteNanoFactoryDatabase = function () {
             self.toggleClearNanoFactoryDatabaseModal()
-            
+
             OctoPrint.simpleApiCommand("NanoFactory", "deleteNanoFactoryDatabase").done(function (response) {
                 new PNotify({
                     title: "Delete successful",
