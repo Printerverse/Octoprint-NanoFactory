@@ -178,7 +178,13 @@ $(function () {
                 url: self.nanoFactoryURL()
             }
 
-            navigator.share(shareData).catch((err) => console.log(err))
+
+            // check for availability of navigator.share
+            if (navigator.share)
+
+                navigator.share(shareData).catch((err) => console.log(err))
+            else
+                self.copyToClipboard(self.nanoFactoryURL())
         }
 
 
@@ -382,7 +388,13 @@ $(function () {
             if (navigator.clipboard)
                 navigator.clipboard.writeText(text).catch(err => {
                     self.fallbackCopyToClipboard(text)
-                });
+                }).then(() => {
+                    new PNotify({
+                        title: "Copied to clipboard",
+                        text: text + ' copied successfully',
+                        type: "success"
+                    });
+                })
             else
                 self.fallbackCopyToClipboard(text)
 
