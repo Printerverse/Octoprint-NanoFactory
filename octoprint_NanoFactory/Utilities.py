@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import time
+from pathlib import Path
 
 import psutil
 import yaml
@@ -21,7 +22,8 @@ windows_edge_path = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\mse
 linux_chrome_path_1 = "/usr/bin/chromium-browser"
 linux_chrome_path_2 = "/usr/bin/chromium"
 
-flags = "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain"
+user_data_directory_path = ""
+flags = "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
 
 kill_pid_command_windows = "taskkill /F /PID "
 kill_pid_command_linux = "kill -9 "
@@ -29,6 +31,21 @@ kill_chrome_command_windows = "taskkill /F /IM chrome.exe >nul"
 kill_msedge_command_windows = "taskkill /F /IM msedge.exe >nul"
 kill_chromium_browser_command_linux = "killall chromium-browser"
 kill_chromium_command_linux = "killall chromium"
+
+
+def get_browser_flags():
+    return flags + user_data_directory_path
+
+
+def initialize_user_data_directory(operating_system: Literal["Windows", "Darwin", "Linux"]):
+    global user_data_directory_path
+    if operating_system == "Windows":
+        user_data_directory_path = r"C:\NanoFactory"
+    elif operating_system == "Linux":
+        user_data_directory_path = r"/home/{}/NanoFactory".format(
+            getpass.getuser())
+    if not os.path.isdir(user_data_directory_path):
+        os.mkdir(user_data_directory_path)
 
 
 def check_cors_for_octoprint_api():
@@ -119,7 +136,7 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
             browser_path = get_browser_path(operating_system)
 
             if browser_path:
-                process = psutil.Popen([browser_path, url] + flags.split(" "), stdin=subprocess.PIPE,
+                process = psutil.Popen([browser_path, url] + get_browser_flags().split(" "), stdin=subprocess.PIPE,
                                        stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
 
                 return process.as_dict()["pid"]
@@ -127,11 +144,11 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
             else:
                 if get_windows_chrome_version():
                     subprocess.run(
-                        "start chrome {} {}".format(url, flags), shell=True
+                        "start chrome {} {}".format(url, get_browser_flags()), shell=True
                     )
                 else:
                     subprocess.run(
-                        "start msedge {} {}".format(url, flags), shell=True
+                        "start msedge {} {}".format(url, get_browser_flags()), shell=True
                     )
 
         except Exception as e:
@@ -149,7 +166,7 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
                     linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found.")
                 return
 
-            process = psutil.Popen([browser_path, url] + (flags).split(" "), stdin=subprocess.PIPE,
+            process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
                                    stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
 
             return process.as_dict()["pid"]
@@ -158,7 +175,7 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
 
             try:
                 subprocess.run(
-                    "{} {} {}".format(browser_path, url, flags), shell=True
+                    "{} {} {}".format(browser_path, url, get_browser_flags()), shell=True
                 )
             except Exception as e:
                 from . import __plugin_implementation__ as plugin
