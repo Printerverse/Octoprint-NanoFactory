@@ -4,7 +4,9 @@
 
 ## Setup
 
-Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
-or manually using this URL:
+Make sure you have [Octoprint](https://octoprint.org/) set up properly.
+
+Install NanoFactory Plugin [manually](https://plugins.octoprint.org/help/installation/) using this URL:
 
     https://github.com/Printerverse/Octoprint-NanoFactory/archive/main.zip
+
