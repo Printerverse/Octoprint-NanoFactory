@@ -90,16 +90,6 @@ $(function () {
                     });
                 }
 
-                if (data["start_auth_flow"]) {
-                    new PNotify({
-                        title: "API Key Invalid",
-                        text: "API key for NanoFactory is invalid. Initiating API Key generation flow!",
-                        type: "error"
-                    });
-
-                    self.startAuthFlow()
-                }
-
                 if (data["cors_error"]) {
                     new PNotify({
                         title: "CORS Access Needed",
@@ -244,12 +234,36 @@ $(function () {
             });
         }
 
+        self.checkForExistingAPIKey = async function (baseUrl) {
+
+            let response = await fetch(baseUrl + "/api/plugin/appkeys")
+            if (response.ok) {
+                let data = await response.json()
+                for (let object of data.keys) {
+                    if (object.app_id == "NanoFactory") {
+                        return object.api_key
+                    }
+                }
+            }
+
+            return false
+        }
+
 
         self.startAuthFlow = async function () {
             console.log("startAuthFlow called")
             let baseUrl = document.URL
             baseUrl = baseUrl.split("/")[2]
             baseUrl = "http://" + baseUrl
+
+            let apiKey = await self.checkForExistingAPIKey(baseUrl)
+
+            if (apiKey) {
+                self.APIKEY(apiKey)
+                OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: apiKey }).done(function (response) { }).catch(error => { console.log(error) });
+                return
+            }
+
             let response = await fetch(baseUrl + "/plugin/appkeys/request", {
                 method: "POST",
                 headers: {
