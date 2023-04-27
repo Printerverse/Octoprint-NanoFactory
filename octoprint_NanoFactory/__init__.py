@@ -277,7 +277,7 @@ class NanofactoryPlugin(
                 # This will be true if the plugin is in a docker container
                 if os.path.isfile(os.path.join(self.get_plugin_data_folder(), "apiKey.txt")):
                     with open(os.path.join(self.get_plugin_data_folder(), "apiKey.txt"), "r") as f:
-                        api_key = f.read()
+                        api_key = f.read().strip()
                 with open(
                     os.path.join(self.get_plugin_data_folder(),
                                  "nf_profile.json"), "w"
