@@ -42,7 +42,7 @@ def initialize_user_data_directory(operating_system: Literal["Windows", "Darwin"
     if operating_system == "Windows":
         user_data_directory_path = r"C:\NanoFactory"
     elif operating_system == "Linux":
-        if getpass().getuser() == "root":
+        if getpass.getuser() == "root":
             user_data_directory_path = r"/root/NanoFactory"
         else:
             user_data_directory_path = r"/home/{}/NanoFactory".format(
