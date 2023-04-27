@@ -278,7 +278,7 @@ class NanofactoryPlugin(
                                  "nf_profile.json"), "w"
                 ) as f:
                     nf_profile = {"peer_ID": str(
-                        uuid4()), "api_key": "", "master_peer_id": ""}
+                        uuid4()), "api_key": "", "master_peer_id": os.environ.get("MASTER_PEER_ID", "")}
                     json.dump(nf_profile, f)
 
         self.peer_ID = nf_profile["peer_ID"]
