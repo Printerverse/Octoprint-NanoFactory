@@ -24,7 +24,8 @@ Overall, NanoFactory is an indispensable tool for anyone who wants to get the mo
 
 # Setup
 
-Make sure you have [Octoprint](https://octoprint.org/) set up properly. Make sure the device has a web browser installed. Install NanoFactory Plugin [manually](https://plugins.octoprint.org/help/installation/) using this URL:
+Make sure you have [Octoprint](https://octoprint.org/) set up properly. Make sure the device has a web browser installed. 
+Install NanoFactory Plugin [manually](https://plugins.octoprint.org/help/installation/) using this URL:
 
     https://github.com/Printerverse/Octoprint-NanoFactory/archive/main.zip
 
