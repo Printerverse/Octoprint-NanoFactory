@@ -4,7 +4,7 @@ NanoFactory is a versatile and comprehensive plugin that enhances the functional
 
 This plugin offers a wide range of features that make 3D printing more efficient, user-friendly, and customizable. Here are some of the key features:
 
-1. **Assisted Bed Leveling:** ABL or not, NanoFactory ensures you have the perfect level for every print job. This ensures that your prints adhere properly to the bed and are of high quality.
+1. **Assisted Bed Leveling:** Manual or Probed, NanoFactory will assist you to achieve true level for every print job. This ensures that your prints adhere properly to the bed and are of high quality.
 
 2. **Easy Unlimited Camera Stream:** Don't have a good camera? No problem, we got you covered. Mount any smartphone on your 3D Printer to use it as both a camera and a printer interface. Ofcourse, we also support octoprint default cameras and any other camera connected to your printer server.
 
