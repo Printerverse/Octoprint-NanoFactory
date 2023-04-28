@@ -36,7 +36,7 @@ Setting up NanoFactory on a Printer Farm? Contact sales@printerverse.net for a r
 
 # **Upcoming Features**
 
-But wait, there's more! Before you go, we've got some great upcoming features that will *BLOW YOUR MIND*. Join today and be first in line to get access to advanced features like:
+But wait, there's more! Before you go, we've got some great upcoming features that will *BLOW YOUR MIND*🤯. Join today and be first in line to get access to advanced features like:
 
 1. **Predictive Maintenance:** Don't be late to the party, fix problems before they happen. NanoFactory AI will be able to monitor your printer's performance and alert you to any potential issues before they become major problems. This will help you to keep your printer running smoothly and prevent downtime.
 
