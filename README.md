@@ -46,7 +46,9 @@ But wait, there's more! We've got some great upcoming features that'll blow your
 
 4. **Workflow Integrations:** CAD integrations for direct job queuing from Fusion360, Community integrations for role-based access control and team notifications to Slack, Social Integrations for showing off your work to your twitter followers, 3D Model Repository integrations for start a print right from Thingiverse, Google Shopping Integration to market and sell your products directly from NanoFactory. We have so much more planned!
  
-###We're Hiring!
+### We're Hiring!
+
 Does all of this sound like your definition of fun?
 We're hiring Developers of all kinds here at Printerverse.
+
 Join our [Discord](https://discord.com/channels/976201939400396842/1100007712219218001) to know more.
