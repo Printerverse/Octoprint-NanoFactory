@@ -24,7 +24,7 @@ Overall, NanoFactory is an indispensable tool for anyone who wants to get the mo
 
 ### **Upcoming Features:**
 
-Good things come to those who wait. Join today and be first in line to get access to advanced features like:
+But wait, there's more! We've got some great upcoming features that'll blow your mind. Join today and be first in line to get access to advanced features like:
 
 1. **Predictive Maintenance:** Don't be late to the party, fix problems before they happen. NanoFactory AI will be able to monitor your printer's performance and alert you to any potential issues before they become major problems. This will help you to keep your printer running smoothly and prevent downtime.
 
