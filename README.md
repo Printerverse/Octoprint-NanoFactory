@@ -22,7 +22,15 @@ This plugin offers a wide range of features that make 3D printing more efficient
 
 Overall, NanoFactory is an indispensable tool for anyone who wants to get the most out of their 3D printer. Its extensive feature set and user-friendly interface make it a must-have for both beginners and experienced 3D printing enthusiasts.
 
-### **Upcoming Features:**
+# Setup
+
+Make sure you have [Octoprint](https://octoprint.org/) set up properly.
+
+Install NanoFactory Plugin [manually](https://plugins.octoprint.org/help/installation/) using this URL:
+
+    https://github.com/Printerverse/Octoprint-NanoFactory/archive/main.zip
+
+# **Upcoming Features:**
 
 But wait, there's more! We've got some great upcoming features that'll blow your mind. Join today and be first in line to get access to advanced features like:
 
@@ -34,12 +42,3 @@ But wait, there's more! We've got some great upcoming features that'll blow your
 
 4. **Workflow Integrations:** CAD integrations for direct job queuing from Fusion360, Community integrations for role-based access control and team notifications to Slack, Social Integrations for showing off your work to your twitter followers, 3D Model Repository integrations for start a print right from Thingiverse, Google Shopping Integration to market and sell your products directly from NanoFactory. We have so much more planned!
  
-
-# Setup
-
-Make sure you have [Octoprint](https://octoprint.org/) set up properly.
-
-Install NanoFactory Plugin [manually](https://plugins.octoprint.org/help/installation/) using this URL:
-
-    https://github.com/Printerverse/Octoprint-NanoFactory/archive/main.zip
-
