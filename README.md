@@ -25,6 +25,7 @@ Overall, NanoFactory is an indispensable tool for anyone who wants to get the mo
 # Setup
 
 Make sure you have [Octoprint](https://octoprint.org/) set up properly. Make sure the device has a web browser installed. 
+
 Install NanoFactory Plugin [manually](https://plugins.octoprint.org/help/installation/) using this URL:
 
     https://github.com/Printerverse/Octoprint-NanoFactory/archive/main.zip
@@ -33,7 +34,7 @@ WIP: NanoFactoryOS as a Raspberry Pi image for a configuration-less setup
 
 Setting up NanoFactory on a Printer Farm? Contact sales@printerverse.net for a rapid automated setup across your entire farm with step-by-step guidance and support.
 
-# **Upcoming Features:**
+# **Upcoming Features**
 
 But wait, there's more! We've got some great upcoming features that'll blow your mind. Join today and be first in line to get access to advanced features like:
 
