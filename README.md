@@ -37,9 +37,9 @@ But wait, there's more! We've got some great upcoming features that'll blow your
 
 # Setup
 
-1. Make sure you have [Octoprint](https://octoprint.org/) set up properly.
+Make sure you have [Octoprint](https://octoprint.org/) set up properly.
 
-2. Install NanoFactory Plugin [manually](https://plugins.octoprint.org/help/installation/) using this URL:
+Install NanoFactory Plugin [manually](https://plugins.octoprint.org/help/installation/) using this URL:
 
     https://github.com/Printerverse/Octoprint-NanoFactory/archive/main.zip
 
