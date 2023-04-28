@@ -1,4 +1,4 @@
-# Octoprint-NanoFactory
+# NanoFactory Plugin For OctoPrint
 
 NanoFactory is a versatile and comprehensive plugin that enhances the functionality of your 3D printer by integrating seamlessly with OctoPrint, the popular open-source software for controlling and monitoring 3D printers.
 
