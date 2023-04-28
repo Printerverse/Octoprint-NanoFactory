@@ -18,7 +18,7 @@ This plugin offers a wide range of features that make 3D printing more efficient
 
 7. **Filament Usage Tracking:** Never run out of filament mid-print ever again! NanoFactory allows you to track the amount of filament used for each print, helping you to plan and optimize your filament usage. Automatically order a new spool such that it arrives as soon as you need it.
 
-8. **Secure Multi-Device Connection:** Easily and securely share access to your printers and files with your team and your own devices for seamless collaboration. The encryption on this bad boi is stronger than what they have on nukes.
+8. **Secure Multi-Device Connection:** Easily and securely share access to your printers and files with your team and your own devices for seamless collaboration. Whether it's your desktop, phone, smartwatch, a smart fridge or even your car, the NanoFactory App runs everywhere that has a web browser.The encryption on this bad boi is stronger than what they have on nukes.
 
 Overall, NanoFactory is an indispensable tool for anyone who wants to get the most out of their 3D printer. Its extensive feature set and user-friendly interface make it a must-have for both beginners and experienced 3D printing enthusiasts.
 
