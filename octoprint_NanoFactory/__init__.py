@@ -50,8 +50,6 @@ class NanofactoryPlugin(
         if (host == "::"):
             host = "localhost"
         self.base_url = f"http://{host}:{port}"
-        self._logger.warning(
-            f"The base url is {self.base_url}")
 
     def on_after_startup(self):
         self.load_nf_profile()
