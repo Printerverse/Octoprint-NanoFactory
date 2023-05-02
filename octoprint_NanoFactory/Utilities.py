@@ -10,6 +10,8 @@ import psutil
 import yaml
 from typing_extensions import Literal
 
+from octoprint.server import settings
+
 # CONSTANTS:
 index_html_file_path = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -24,7 +26,7 @@ linux_chrome_path_1 = "/usr/bin/chromium-browser"
 linux_chrome_path_2 = "/usr/bin/chromium"
 
 user_data_directory_path = ""
-flags = "--headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
+flags = "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
 
 kill_pid_command_windows = "taskkill /F /PID "
 kill_pid_command_linux = "kill -9 "
@@ -53,32 +55,8 @@ def initialize_user_data_directory(operating_system: Literal["Windows", "Darwin"
 
 
 def check_cors_for_octoprint_api():
-    from . import __plugin_implementation__ as plugin
-    plugin_data_folder = plugin.get_plugin_data_folder()
-
-    paths = []
-
-    if ("/" in plugin_data_folder):
-        paths = plugin_data_folder.split("/")
-        config_path = "/".join(paths[:-2])
-    else:
-        paths = plugin_data_folder.split("\\")
-        config_path = "\\".join(paths[:-2])
-
-    config = {}
-
-    try:
-        with open(os.path.join(config_path, "config.yaml"), "r") as f:
-            config = yaml.safe_load(f)
-    except Exception as e:
-        plugin._logger.warning(e, exc_info=True)
-        return True
-
-    if "api" in config:
-        if "allowCrossOrigin" not in config["api"]:
-            return True
-
-    return False
+    cors_enabled = settings().get(["api", "allowCrossOrigin"])
+    return not cors_enabled
 
 
 def check_if_browser_is_installed(operating_system: Literal["Windows", "Darwin", "Linux"]):
