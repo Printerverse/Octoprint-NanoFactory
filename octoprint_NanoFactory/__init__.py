@@ -20,6 +20,7 @@ from octoprint_NanoFactory.Utilities import (
 from typing_extensions import Literal
 
 import octoprint.plugin
+from octoprint.server import settings
 
 from .BedLevelling import process_gcode
 
@@ -45,6 +46,7 @@ class NanofactoryPlugin(
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
         self.os = platform.system()
+        self._logger.warning(f"The host is {host} and the port is {port}")
 
     def on_after_startup(self):
         self.load_nf_profile()
