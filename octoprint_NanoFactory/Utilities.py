@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import time
+import urllib.parse
 from pathlib import Path
 
 import psutil
@@ -98,10 +99,10 @@ def check_if_browser_is_installed(operating_system: Literal["Windows", "Darwin",
     return False
 
 
-def restart_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, pid: int):
+def restart_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, pid: int, base_url: str):
     close_browser(pid, operating_system)
     time.sleep(1)
-    return start_browser(operating_system, api_key, peer_ID, master_peer_id)
+    return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
@@ -127,10 +128,10 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
             return None
 
 
-def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str):
+def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, base_url: str):
 
-    url = 'file:///{}?apiKey={}&peerID={}&masterPeerID={}'.format(
-        index_html_file_path, api_key, peer_ID, master_peer_id)
+    url = 'file:///{}?baseURL={}&apiKey={}&peerID={}&masterPeerID={}'.format(
+        index_html_file_path, urllib.parse.quote(base_url, safe=""), api_key, peer_ID, master_peer_id)
 
     from . import __plugin_implementation__ as plugin
 

@@ -37,6 +37,7 @@ class NanofactoryPlugin(
     def initialize(self):
         self.peer_ID = ""
         self.api_key: str = ""
+        self.base_url: str = ""
         self.master_peer_id: str = ""
         self.pid: str = ""
         self.cors_error = False
@@ -46,7 +47,11 @@ class NanofactoryPlugin(
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
         self.os = platform.system()
-        self._logger.warning(f"The host is {host} and the port is {port}")
+        if (host == "::"):
+            host = "localhost"
+        self.base_url = f"http://{host}:{port}"
+        self._logger.warning(
+            f"The base url is {self.base_url}")
 
     def on_after_startup(self):
         self.load_nf_profile()
@@ -56,7 +61,7 @@ class NanofactoryPlugin(
         initialize_user_data_directory(self.os)
         if self.api_key and self.peer_ID and self.browser_installed:
             self.pid = start_browser(self.os, self.api_key,
-                                     self.peer_ID, self.master_peer_id)
+                                     self.peer_ID, self.master_peer_id, self.base_url)
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
@@ -90,7 +95,7 @@ class NanofactoryPlugin(
                     f.truncate()
 
                 self.pid = restart_browser(self.os, self.api_key,
-                                           self.peer_ID, self.master_peer_id, self.pid)
+                                           self.peer_ID, self.master_peer_id, self.pid, self.base_url)
 
             except Exception as e:
                 self._logger.warning(e, exc_info=True)
@@ -103,7 +108,7 @@ class NanofactoryPlugin(
 
             if self.browser_installed:
                 self.pid = start_browser(self.os, self.api_key,
-                                         self.peer_ID, self.master_peer_id)
+                                         self.peer_ID, self.master_peer_id, self.base_url)
 
             self._plugin_manager.send_plugin_message(
                 self._identifier, {
@@ -123,7 +128,7 @@ class NanofactoryPlugin(
 
         elif command == "restartNanoFactoryApp":
             self.pid = restart_browser(self.os, self.api_key,
-                                       self.peer_ID, self.master_peer_id, self.pid)
+                                       self.peer_ID, self.master_peer_id, self.pid, self.base_url)
 
         elif command == "deleteNanoFactoryDatabase":
             self._plugin_manager.send_plugin_message(
@@ -218,7 +223,7 @@ class NanofactoryPlugin(
     def check_api_key_validity(self, api_key):
         if api_key:
             response = requests.get(
-                "http://localhost:5000/api/plugin/appkeys", headers={"X-API-KEY": api_key})
+                f"{self.base_url}/api/plugin/appkeys", headers={"X-API-KEY": api_key})
             if response.ok:
                 return True
             else:
@@ -244,7 +249,7 @@ class NanofactoryPlugin(
 
         if restart:
             self.pid = restart_browser(self.os, self.api_key,
-                                       self.peer_ID, self.master_peer_id, self.pid)
+                                       self.peer_ID, self.master_peer_id, self.pid, self.base_url)
 
     def save_bed_levelling_data(self, data):
         self._logger.info("Saving bed levelling data")
