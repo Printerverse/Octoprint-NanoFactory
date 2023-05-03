@@ -266,6 +266,8 @@ $(function () {
 
                 clearInterval(interval)
 
+                console.log("Base URL: ", self.baseUrl())
+
                 let apiKey = await self.checkForExistingAPIKey()
 
                 if (apiKey) {
