@@ -15,6 +15,7 @@ $(function () {
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
         self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
+        self.baseUrl = ko.observable("")
 
         self.isWindows = ko.observable(false)
         self.isLinux = ko.observable(false)
@@ -66,6 +67,10 @@ $(function () {
 
                         self.handleShowMasterPeerIDSubmitButton()
                     }
+                }
+
+                if (data["base_url"]) {
+                    self.baseUrl(data["base_url"])
                 }
 
                 if (data["peerID"]) {
@@ -129,6 +134,7 @@ $(function () {
 
 
         self.onBeforeBinding = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "getBaseUrl").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
@@ -234,9 +240,9 @@ $(function () {
             });
         }
 
-        self.checkForExistingAPIKey = async function (baseUrl) {
+        self.checkForExistingAPIKey = async function () {
 
-            let response = await fetch(baseUrl + "/api/plugin/appkeys")
+            let response = await fetch(self.baseUrl() + "/api/plugin/appkeys")
             if (response.ok) {
                 let data = await response.json()
                 for (let object of data.keys) {
@@ -250,35 +256,40 @@ $(function () {
         }
 
 
-        self.startAuthFlow = async function () {
+        self.startAuthFlow = function () {
             console.log("startAuthFlow called")
-            let baseUrl = document.URL
-            baseUrl = baseUrl.split("/")[2]
-            baseUrl = "http://" + baseUrl
 
-            let apiKey = await self.checkForExistingAPIKey(baseUrl)
+            let interval = setInterval(async () => {
 
-            if (apiKey) {
-                self.APIKEY(apiKey)
-                OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: apiKey }).done(function (response) { }).catch(error => { console.log(error) });
-                return
-            }
+                if (!self.baseUrl())
+                    return
 
-            let response = await fetch(baseUrl + "/plugin/appkeys/request", {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    "app": "NanoFactory",
+                clearInterval(interval)
+
+                let apiKey = await self.checkForExistingAPIKey()
+
+                if (apiKey) {
+                    self.APIKEY(apiKey)
+                    OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: apiKey }).done(function (response) { }).catch(error => { console.log(error) });
+                    return
+                }
+
+                let response = await fetch(self.baseUrl() + "/plugin/appkeys/request", {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "app": "NanoFactory",
+                    })
                 })
+                if (response.ok) {
+                    self.pollForVerification(response.headers.get("Location"))
+
+                }
+
             })
-            if (response.ok) {
-                self.pollForVerification(response.headers.get("Location"))
-
-            }
-
         }
 
 

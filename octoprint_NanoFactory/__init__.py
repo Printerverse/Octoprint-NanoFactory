@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import json
 import os
 import platform
+import time
 from uuid import uuid4
 
 import requests
@@ -76,6 +77,7 @@ class NanofactoryPlugin(
             "giveupSnapshotCameraStream": [],
             "startNanoFactoryPostSetup": [],
             "getOperatingSystem": [],
+            "getBaseUrl": [],
         }
 
     def on_api_command(self, command, data):
@@ -157,6 +159,15 @@ class NanofactoryPlugin(
             self._plugin_manager.send_plugin_message(
                 self._identifier, {
                     "operating_system": self.os}
+            )
+
+        elif command == "getBaseUrl":
+            while not len(self.base_url) > 0:
+                time.sleep(1)
+
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {
+                    "base_url": self.base_url}
             )
 
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
