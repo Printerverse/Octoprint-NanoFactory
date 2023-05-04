@@ -165,8 +165,8 @@ class NanofactoryPlugin(
 
         elif command == "startAuthFlow":
             self._logger.warning("Starting auth flow received")
-            restart_browser(self.os, self.api_key, self.peer_ID,
-                            self.master_peer_id, self.pid, self.base_url, True)
+            # restart_browser(self.os, self.api_key, self.peer_ID,
+            #                 self.master_peer_id, self.pid, self.base_url, True)
 
     def check_for_existing_api_key(self):
         # make a request to base url to check if api key is valid
