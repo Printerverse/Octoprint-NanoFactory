@@ -120,6 +120,9 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
         url = '{}&apiKey={}&peerID={}&masterPeerID={}'.format(
             base_url, api_key, peer_ID, master_peer_id)
 
+    plugin._logger.info("Opening browser with url: {}".format(url))
+    return
+
     if operating_system == "Windows":
         try:
             browser_path = get_browser_path(operating_system)
