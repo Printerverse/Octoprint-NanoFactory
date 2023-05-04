@@ -107,6 +107,9 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
 
 
 def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, octoprint_base_url: str, start_api_key_flow=False):
+    from . import __plugin_implementation__ as plugin
+
+    plugin._logger.info("Starting browser...")
 
     base_url = 'file:///{}?baseURL={}'.format(
         index_html_file_path, urllib.parse.quote(octoprint_base_url, safe=""))
@@ -116,8 +119,6 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
     else:
         url = '{}&apiKey={}&peerID={}&masterPeerID={}'.format(
             base_url, api_key, peer_ID, master_peer_id)
-
-    from . import __plugin_implementation__ as plugin
 
     if operating_system == "Windows":
         try:
@@ -170,10 +171,12 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
                 plugin._logger.error("Error while opening chromium.")
                 plugin._logger.error(e, exc_info=True)
 
+    plugin._logger.warning("Browser start function over")
+
 
 def close_browser(pid: int, operating_system: Literal["Windows", "Darwin", "Linux"]):
     from . import __plugin_implementation__ as plugin
-
+    plugin._logger.warning("Close browser called")
     try:
         if pid:
             if operating_system == "Windows":

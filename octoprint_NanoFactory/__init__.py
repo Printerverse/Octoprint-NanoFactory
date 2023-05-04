@@ -164,6 +164,7 @@ class NanofactoryPlugin(
             )
 
         elif command == "startAuthFlow":
+            self._logger.warning("Starting auth flow received")
             restart_browser(self.os, self.api_key, self.peer_ID,
                             self.master_peer_id, self.pid, self.base_url, True)
 
