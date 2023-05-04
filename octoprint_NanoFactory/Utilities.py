@@ -158,6 +158,8 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
             process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
                                    stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
 
+            plugin._logger.warning(
+                "Browser start function over" + process.as_dict()["pid"])
             return process.as_dict()["pid"]
 
         except Exception as e:
