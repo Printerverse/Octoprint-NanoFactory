@@ -77,10 +77,10 @@ def check_if_browser_is_installed(operating_system: Literal["Windows", "Darwin",
     return False
 
 
-def restart_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, pid: int, base_url: str):
+def restart_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, pid: int, base_url: str, start_api_key_flow=False):
     close_browser(pid, operating_system)
     time.sleep(1)
-    return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
+    return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url, start_api_key_flow)
 
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
@@ -106,10 +106,16 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
             return None
 
 
-def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, base_url: str):
+def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, octoprint_base_url: str, start_api_key_flow=False):
 
-    url = 'file:///{}?baseURL={}&apiKey={}&peerID={}&masterPeerID={}'.format(
-        index_html_file_path, urllib.parse.quote(base_url, safe=""), api_key, peer_ID, master_peer_id)
+    base_url = 'file:///{}?baseURL={}'.format(
+        index_html_file_path, urllib.parse.quote(octoprint_base_url, safe=""))
+
+    if start_api_key_flow:
+        url = '{}&startOctoPrintAPIKeyFlow=true'.format(base_url)
+    else:
+        url = '{}&apiKey={}&peerID={}&masterPeerID={}'.format(
+            base_url, api_key, peer_ID, master_peer_id)
 
     from . import __plugin_implementation__ as plugin
 

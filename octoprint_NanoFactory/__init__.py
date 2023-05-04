@@ -21,7 +21,9 @@ from octoprint_NanoFactory.Utilities import (
 from typing_extensions import Literal
 
 import octoprint.plugin
-from octoprint.server import settings
+from octoprint.plugins.appkeys import (
+    __plugin_implementation__ as appkeys_implementation,
+)
 
 from .BedLevelling import process_gcode
 
@@ -60,14 +62,13 @@ class NanofactoryPlugin(
         initialize_user_data_directory(self.os)
         if self.api_key and self.peer_ID and self.browser_installed:
             self.pid = start_browser(self.os, self.api_key,
-                                     self.peer_ID, self.master_peer_id, self.base_url)
+                                     self.peer_ID, self.master_peer_id, self.base_url, False)
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
         return {
             "getPeerID": [],
             "getAPIKey": [],
-            "saveAPIKEY": ["api_key"],
             "getMasterPeerID": [],
             "saveMasterPeerID": ["masterPeerID"],
             "restartNanoFactoryApp": [],
@@ -77,30 +78,31 @@ class NanofactoryPlugin(
             "giveupSnapshotCameraStream": [],
             "startNanoFactoryPostSetup": [],
             "getOperatingSystem": [],
-            "getBaseUrl": [],
+            "startAuthFlow": [],
         }
 
-    def on_api_command(self, command, data):
-        if command == "saveAPIKEY":
-            self.api_key = data["api_key"]
-            try:
-                with open(
-                    os.path.join(self.get_plugin_data_folder(),
-                                 "nf_profile.json"), "r+"
-                ) as f:
-                    nf_profile = json.loads(f.read())
-                    nf_profile["api_key"] = self.api_key
-                    f.seek(0)
-                    json.dump(nf_profile, f)
-                    f.truncate()
+    def save_api_key(self, restart_browser_after_save=False):
+        try:
+            with open(
+                os.path.join(self.get_plugin_data_folder(),
+                             "nf_profile.json"), "r+"
+            ) as f:
+                nf_profile = json.loads(f.read())
+                nf_profile["api_key"] = self.api_key
+                f.seek(0)
+                json.dump(nf_profile, f)
+                f.truncate()
 
+            self.send_api_key()
+            if restart_browser_after_save:
                 self.pid = restart_browser(self.os, self.api_key,
                                            self.peer_ID, self.master_peer_id, self.pid, self.base_url)
 
-            except Exception as e:
-                self._logger.warning(e, exc_info=True)
+        except Exception as e:
+            self._logger.warning(e, exc_info=True)
 
-        elif command == "getAPIKey":
+    def on_api_command(self, command, data):
+        if command == "getAPIKey":
             self.send_api_key()
 
         elif command == "startNanoFactoryPostSetup":
@@ -161,25 +163,38 @@ class NanofactoryPlugin(
                     "operating_system": self.os}
             )
 
-        elif command == "getBaseUrl":
-            while not len(self.base_url) > 0:
-                time.sleep(1)
+        elif command == "startAuthFlow":
+            restart_browser(self.os, self.api_key, self.peer_ID,
+                            self.master_peer_id, self.pid, self.base_url, True)
 
-            self._plugin_manager.send_plugin_message(
-                self._identifier, {
-                    "base_url": self.base_url}
-            )
+    def check_for_existing_api_key(self):
+        # make a request to base url to check if api key is valid
+        # if valid, save api key and peer id
+        self._logger.warning("Checking for existing API key")
+        for user in appkeys_implementation._keys:
+            for key in appkeys_implementation._keys[user]:
+                if key.app_id == "NanoFactory":
+                    return key.api_key
 
-    @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
-    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    @ octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
+    @ octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def save_master_peer_id_endpoint(self):
         master_peer_id = request.args.get("master_peer_id", None)
         if master_peer_id:
             self.save_master_peer_id(master_peer_id, False)
         return "Success"
 
-    @octoprint.plugin.BlueprintPlugin.route("/peer_connection_error", methods=["GET"])
-    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    @ octoprint.plugin.BlueprintPlugin.route("/api_key_response", methods=["POST"])
+    @ octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def save_api_key_response(self):
+        apiKey = request.args.get("apiKey", None)
+        if apiKey:
+            self.api_key = apiKey
+            self.save_api_key(True)
+        return "Success"
+
+    @ octoprint.plugin.BlueprintPlugin.route("/peer_connection_error", methods=["GET"])
+    @ octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def send_peer_error_message_to_frontend(self):
         retry_connection_timeout = request.args.get("timeout", 15)
         self._plugin_manager.send_plugin_message(
@@ -188,8 +203,8 @@ class NanofactoryPlugin(
         )
         return "Success"
 
-    @octoprint.plugin.BlueprintPlugin.route("/peer_connection_success", methods=["GET"])
-    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    @ octoprint.plugin.BlueprintPlugin.route("/peer_connection_success", methods=["GET"])
+    @ octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def send_peer_success_message_to_frontend(self):
         self._plugin_manager.send_plugin_message(
             self._identifier, {
@@ -197,8 +212,8 @@ class NanofactoryPlugin(
         )
         return "Success"
 
-    @octoprint.plugin.BlueprintPlugin.route("/initiate_bed_levelling", methods=["GET"])
-    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    @ octoprint.plugin.BlueprintPlugin.route("/initiate_bed_levelling", methods=["GET"])
+    @ octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def start_bed_levelling(self):
         if not BedLevelling.processing:
             BedLevelling.mesh = []
@@ -210,8 +225,8 @@ class NanofactoryPlugin(
 
         return "Success"
 
-    @octoprint.plugin.BlueprintPlugin.route("/get_bed_levelling", methods=["GET"])
-    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    @ octoprint.plugin.BlueprintPlugin.route("/get_bed_levelling", methods=["GET"])
+    @ octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def get_bed_levelling_data(self):
         if BedLevelling.processing:
             return {}
@@ -289,17 +304,20 @@ class NanofactoryPlugin(
                 nf_profile = json.loads(f.read())
         except IOError as e:
             if e.errno == 2:
-                api_key = ""
-                # This will be true if the plugin is in a docker container
-                if os.path.isfile(os.path.join(self.get_plugin_data_folder(), "apiKey.txt")):
-                    with open(os.path.join(self.get_plugin_data_folder(), "apiKey.txt"), "r") as f:
-                        api_key = f.read().strip()
+                existing_api_key = self.check_for_existing_api_key()
+                if existing_api_key:
+                    self.api_key = existing_api_key
+                    self._logger.warning(
+                        "Using existing API key " + self.api_key)
+                else:
+                    existing_api_key = ""
+
                 with open(
                     os.path.join(self.get_plugin_data_folder(),
                                  "nf_profile.json"), "w"
                 ) as f:
                     nf_profile = {"peer_ID": str(
-                        uuid4()), "api_key": api_key, "master_peer_id": os.environ.get("MASTER_PEER_ID", "")}
+                        uuid4()), "api_key": existing_api_key, "master_peer_id": os.environ.get("MASTER_PEER_ID", "")}
                     json.dump(nf_profile, f)
 
         self.peer_ID = nf_profile["peer_ID"]

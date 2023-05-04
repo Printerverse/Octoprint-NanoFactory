@@ -149,9 +149,8 @@ $(function () {
                 console.log("current apiKey: ", apiKey)
                 if (!(apiKey.length > 0)) {
                     console.log("apiKey not found. Calling startAuthFlow")
-                    self.startAuthFlow()
+                    OctoPrint.simpleApiCommand("NanoFactory", "startAuthFlow").done(function (response) { }).catch(error => { console.log(error) });
                     self.handleShowAPIKeySubmitButton()
-                    // self.apiKeyIconPath = ko.observable(self.submitIconPath)
                 }
 
             }, 1000)
@@ -238,102 +237,6 @@ $(function () {
                     type: "error"
                 });
             });
-        }
-
-        self.checkForExistingAPIKey = async function () {
-
-            let response = await fetch(self.baseUrl() + "/api/plugin/appkeys")
-            if (response.ok) {
-                let data = await response.json()
-                for (let object of data.keys) {
-                    if (object.app_id == "NanoFactory") {
-                        return object.api_key
-                    }
-                }
-            }
-
-            return false
-        }
-
-
-        self.startAuthFlow = function () {
-            console.log("startAuthFlow called")
-
-            let interval = setInterval(async () => {
-
-                if (!self.baseUrl())
-                    return
-
-                clearInterval(interval)
-
-                console.log("Base URL: ", self.baseUrl())
-
-                let apiKey = await self.checkForExistingAPIKey()
-
-                if (apiKey) {
-                    self.APIKEY(apiKey)
-                    OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: apiKey }).done(function (response) { }).catch(error => { console.log(error) });
-                    return
-                }
-
-                let response = await fetch(self.baseUrl() + "/plugin/appkeys/request", {
-                    method: "POST",
-                    headers: {
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        "app": "NanoFactory",
-                    })
-                })
-                if (response.ok) {
-                    self.pollForVerification(response.headers.get("Location"))
-
-                }
-
-            })
-        }
-
-
-        self.pollForVerification = function (pollURL) {
-            if (pollURL) {
-                let pollingInterval = setInterval(async () => {
-
-                    let response = await fetch(pollURL, {
-                        method: "GET",
-                    })
-
-                    if (response.status === 200) {
-                        clearInterval(pollingInterval)
-
-
-                        let responseBody = await response.json()
-
-                        self.APIKEY(responseBody["api_key"])
-
-                        OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: responseBody["api_key"] }).done(function (response) { }).catch(error => { console.log(error) });
-
-                        document.getElementById("master-peer-id").disabled = true
-
-
-                        new PNotify({
-                            title: "APIKey generation success",
-                            text: "APIKey successfully generated for NanoFactory",
-                            type: "success"
-                        });
-
-                    } else if (response.status === 404) {
-                        clearInterval(pollingInterval)
-
-                        new PNotify({
-                            title: "APIKey generation failed",
-                            text: "Failed to generate APIKey for NanoFactory. Please generate an APIKey and add it to NanoFactory settings",
-                            type: "error"
-                        });
-                    }
-
-                }, 1000)
-            }
         }
 
         self.handleAPIKeySubmit = function () {
