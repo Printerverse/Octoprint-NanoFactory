@@ -69,10 +69,6 @@ $(function () {
                     }
                 }
 
-                if (data["base_url"]) {
-                    self.baseUrl(data["base_url"])
-                }
-
                 if (data["peerID"]) {
                     self.peerID(data["peerID"])
                     self.peerIDMessage("Your Peer ID: " + data["peerID"])
@@ -134,7 +130,6 @@ $(function () {
 
 
         self.onBeforeBinding = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "getBaseUrl").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
