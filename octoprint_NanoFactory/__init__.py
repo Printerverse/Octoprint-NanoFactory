@@ -279,16 +279,20 @@ class NanofactoryPlugin(
         except IOError as e:
             if e.errno == 2:
                 api_key = ""
-                # This will be true if the plugin is in a docker container
+                master_peer_id = ""
+                # This will be true if the plugin is created using octoprint_deploy
                 if os.path.isfile(os.path.join(self.get_plugin_data_folder(), "apiKey.txt")):
                     with open(os.path.join(self.get_plugin_data_folder(), "apiKey.txt"), "r") as f:
                         api_key = f.read().strip()
+                if os.path.isfile(os.path.join(self.get_plugin_data_folder(), "masterDeviceID.txt")):
+                    with open(os.path.join(self.get_plugin_data_folder(), "masterDeviceID.txt"), "r") as f:
+                        master_peer_id = f.read().strip()
                 with open(
                     os.path.join(self.get_plugin_data_folder(),
                                  "nf_profile.json"), "w"
                 ) as f:
                     nf_profile = {"peer_ID": str(
-                        uuid4()), "api_key": api_key, "master_peer_id": os.environ.get("MASTER_PEER_ID", "")}
+                        uuid4()), "api_key": api_key, "master_peer_id": master_peer_id}
                     json.dump(nf_profile, f)
 
         self.peer_ID = nf_profile["peer_ID"]
