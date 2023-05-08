@@ -283,9 +283,12 @@ class NanofactoryPlugin(
                 # This will be true if the plugin is created using octoprint_deploy
                 if os.path.isfile(os.path.join(self.get_plugin_data_folder(), "apiKey.txt")):
                     with open(os.path.join(self.get_plugin_data_folder(), "apiKey.txt"), "r") as f:
+                        self._logger.info("Loading API key from apiKey.txt")
                         api_key = f.read().strip()
                 if os.path.isfile(os.path.join(self.get_plugin_data_folder(), "masterDeviceID.txt")):
                     with open(os.path.join(self.get_plugin_data_folder(), "masterDeviceID.txt"), "r") as f:
+                        self._logger.info(
+                            "Loading master peer ID from masterDeviceID.txt")
                         master_peer_id = f.read().strip()
                 with open(
                     os.path.join(self.get_plugin_data_folder(),
