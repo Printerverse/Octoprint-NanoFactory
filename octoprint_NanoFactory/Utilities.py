@@ -108,7 +108,7 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
 
 def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, base_url: str):
 
-    url = '"file:///{}?baseURL={}&apiKey={}&peerID={}&masterPeerID={}"'.format(
+    url = 'file:///{}?baseURL={}&apiKey={}&peerID={}&masterPeerID={}'.format(
         index_html_file_path, urllib.parse.quote(base_url, safe=""), api_key, peer_ID, master_peer_id)
 
     from . import __plugin_implementation__ as plugin
@@ -139,6 +139,7 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
             plugin._logger.error(e, exc_info=True)
 
     if operating_system == "Linux":
+        url = f'"{url}"'
         try:
             browser_path = get_browser_path(operating_system)
 
