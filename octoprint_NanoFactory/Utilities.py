@@ -163,6 +163,8 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
                 "Error while opening browser using psutil.", exc_info=True)
 
             try:
+                plugin._logger.info("{} {} {}".format(
+                    browser_path, url, get_browser_flags()))
                 subprocess.run(
                     "{} {} {}".format(browser_path, url, get_browser_flags()), shell=True
                 )
