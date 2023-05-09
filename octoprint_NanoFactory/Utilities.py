@@ -150,7 +150,10 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
                 return
 
             process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
-                                   stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
+                                   stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+            output, error = process.communicate()
+            plugin._logger.info(f"output: {output}")
+            plugin._logger.info(f"error: {error}")
             plugin._logger.info(
                 "NanoFactory browser started with PID: " + str(process.as_dict()["pid"]))
             return process.as_dict()["pid"]
