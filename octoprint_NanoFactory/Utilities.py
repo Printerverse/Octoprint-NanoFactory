@@ -152,18 +152,23 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
             process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
             output, error = process.communicate()
-            plugin._logger.info(f"output: {output}")
-            plugin._logger.info(f"error: {error}")
+            plugin._logger.info(f"output: {output.decode('utf-8')}")
+            plugin._logger.info(f"error: {error.decode('utf-8')}")
             plugin._logger.info(
                 "NanoFactory browser started with PID: " + str(process.as_dict()["pid"]))
             return process.as_dict()["pid"]
 
         except Exception as e:
+            plugin._logger.warning(
+                "Error while opening browser using psutil.", exc_info=True)
 
             try:
                 subprocess.run(
                     "{} {} {}".format(browser_path, url, get_browser_flags()), shell=True
                 )
+                plugin._logger.info(
+                    "NanoFactory browser started using subprocess.")
+
             except Exception as e:
                 from . import __plugin_implementation__ as plugin
                 plugin._logger.error("Error while opening chromium.")
