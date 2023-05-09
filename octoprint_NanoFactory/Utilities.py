@@ -149,6 +149,9 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
                     linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found.")
                 return
 
+            plugin._logger.info("Opening browser with command: " +
+                                [browser_path, url] + (get_browser_flags()).split(" "))
+
             process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
             output, error = process.communicate()
