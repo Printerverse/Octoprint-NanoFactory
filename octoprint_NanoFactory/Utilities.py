@@ -120,7 +120,8 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
             if browser_path:
                 process = psutil.Popen([browser_path, url] + get_browser_flags().split(" "), stdin=subprocess.PIPE,
                                        stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
-
+                plugin._logger.info(
+                    "NanoFactory browser started with PID: " + str(process.as_dict()["pid"]))
                 return process.as_dict()["pid"]
 
             else:
@@ -150,7 +151,8 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
 
             process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
                                    stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
-
+            plugin._logger.info(
+                "NanoFactory browser started with PID: " + str(process.as_dict()["pid"]))
             return process.as_dict()["pid"]
 
         except Exception as e:
