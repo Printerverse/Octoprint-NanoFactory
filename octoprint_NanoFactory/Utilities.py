@@ -142,28 +142,28 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
     if operating_system == "Linux":
         url = f'"{url}"'
         try:
-            process = psutil.Popen(["firefox", url], stdin=subprocess.PIPE,
-                                   stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
-            return process.as_dict()["pid"]
+            # process = psutil.Popen(["firefox", url], stdin=subprocess.PIPE,
+            #                        stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
+            # return process.as_dict()["pid"]
             # browser_path = get_browser_path(operating_system)
 
-            # if not browser_path:
-            #     from . import __plugin_implementation__ as plugin
-            #     plugin._logger.error(
-            #         linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found.")
-            #     return
+            if not browser_path:
+                from . import __plugin_implementation__ as plugin
+                plugin._logger.error(
+                    linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found.")
+                return
 
-            # plugin._logger.info("Opening browser with command: " +
-            #                     str([browser_path, url] + (get_browser_flags()).split(" ")))
+            plugin._logger.info("Opening browser with command: " +
+                                str([browser_path, url] + (get_browser_flags()).split(" ")))
 
-            # process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
-            #                        stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
-            # output, error = process.communicate()
-            # plugin._logger.info(f"output: {output.decode('utf-8')}")
-            # plugin._logger.info(f"error: {error.decode('utf-8')}")
-            # plugin._logger.info(
-            #     "NanoFactory browser started with PID: " + str(process.as_dict()["pid"]))
-            # return process.as_dict()["pid"]
+            process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+            output, error = process.communicate()
+            plugin._logger.info(f"output: {output.decode('utf-8')}")
+            plugin._logger.info(f"error: {error.decode('utf-8')}")
+            plugin._logger.info(
+                "NanoFactory browser started with PID: " + str(process.as_dict()["pid"]))
+            return process.as_dict()["pid"]
 
         except Exception as e:
             plugin._logger.warning(
