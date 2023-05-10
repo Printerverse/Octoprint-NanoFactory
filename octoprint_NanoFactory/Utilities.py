@@ -145,7 +145,8 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
             # process = psutil.Popen(["firefox", url], stdin=subprocess.PIPE,
             #                        stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
             # return process.as_dict()["pid"]
-            # browser_path = get_browser_path(operating_system)
+
+            browser_path = get_browser_path(operating_system)
 
             if not browser_path:
                 from . import __plugin_implementation__ as plugin
