@@ -26,7 +26,7 @@ linux_chrome_path_1 = "/usr/bin/chromium-browser"
 linux_chrome_path_2 = "/usr/bin/chromium"
 
 user_data_directory_path = ""
-flags = "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
+flags = "--headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
 
 kill_pid_command_windows = "taskkill /F /PID "
 kill_pid_command_linux = "kill -9 "
@@ -158,7 +158,7 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
                                 str([browser_path, url] + (get_browser_flags()).split(" ")))
 
             process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+                                   stdout=subprocess.PIPE,  stderr=subprocess.PIPE, start_new_session=True,)
             output, error = process.communicate()
             plugin._logger.info(f"output: {output.decode('utf-8')}")
             plugin._logger.info(f"error: {error.decode('utf-8')}")
