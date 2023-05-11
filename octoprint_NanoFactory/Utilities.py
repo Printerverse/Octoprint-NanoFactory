@@ -189,7 +189,6 @@ def start_browser(
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
-                start_new_session=True,
             )
 
             return process.as_dict()["pid"]
