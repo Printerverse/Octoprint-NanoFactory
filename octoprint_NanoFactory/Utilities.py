@@ -52,7 +52,8 @@ def initialize_user_data_directory(
         if getpass.getuser() == "root":
             user_data_directory_path = r"/root/NanoFactory"
         else:
-            user_data_directory_path = r"/home/{}/NanoFactory".format(getpass.getuser())
+            user_data_directory_path = r"/home/{}/NanoFactory".format(
+                getpass.getuser())
     if not os.path.isdir(user_data_directory_path):
         os.mkdir(user_data_directory_path)
 
@@ -172,7 +173,6 @@ def start_browser(
             plugin._logger.error(e, exc_info=True)
 
     if operating_system == "Linux":
-        url = f'"{url}"'
         try:
             browser_path = get_browser_path(operating_system)
 
@@ -198,6 +198,8 @@ def start_browser(
                 "Error while opening browser. Trying using an alternative method",
                 exc_info=True,
             )
+
+            url = f'"{url}"'
 
             try:
                 subprocess.run(
@@ -240,7 +242,7 @@ def close_browser(pid: int, operating_system: Literal["Windows", "Darwin", "Linu
 def extract_version_registry(output):
     try:
         google_version = ""
-        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24 :]:
+        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24:]:
             if letter != "\n":
                 google_version += letter
             else:
@@ -285,7 +287,8 @@ def get_windows_edge_version():
     except Exception as e:
         from . import __plugin_implementation__ as plugin
 
-        plugin._logger.warning("Error while getting ms-edge version.", exc_info=True)
+        plugin._logger.warning(
+            "Error while getting ms-edge version.", exc_info=True)
 
     return version
 
@@ -309,7 +312,8 @@ def get_windows_chrome_version():
         print(ex)
 
     version = (
-        os.popen(f"{install_path} --version").read().strip("Google Chrome ").strip()
+        os.popen(
+            f"{install_path} --version").read().strip("Google Chrome ").strip()
         if install_path
         else version
     )
