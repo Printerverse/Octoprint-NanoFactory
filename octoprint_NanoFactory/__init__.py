@@ -245,9 +245,9 @@ class NanofactoryPlugin(
 
         self.send_master_peer_id()
 
-        if restart:
-            self.pid = restart_browser(self.os, self.api_key,
-                                       self.peer_ID, self.master_peer_id, self.pid, self.base_url)
+        # if restart:
+        #     self.pid = restart_browser(self.os, self.api_key,
+        #                                self.peer_ID, self.master_peer_id, self.pid, self.base_url)
 
     def save_bed_levelling_data(self, data):
         self._logger.info("Saving bed levelling data")
