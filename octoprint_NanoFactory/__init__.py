@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import json
 import os
 import platform
+import subprocess
 from uuid import uuid4
 from psutil import Popen
 
@@ -44,7 +45,7 @@ class NanofactoryPlugin(
         self.cors_error = False
         self.os: Literal["Windows", "Darwin", "Linux"] = "Linux"
         self.browser_installed = False
-        self.browser_process: Popen | None = None
+        self.browser_process: Popen = Popen([], stdout=subprocess.PIPE)
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
