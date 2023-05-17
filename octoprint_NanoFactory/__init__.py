@@ -45,7 +45,7 @@ class NanofactoryPlugin(
         self.cors_error = False
         self.os: Literal["Windows", "Darwin", "Linux"] = "Linux"
         self.browser_installed = False
-        self.browser_process: Popen = Popen([], stdout=subprocess.PIPE)
+        self.browser_process: Popen = None
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
