@@ -20,7 +20,9 @@ index_html_file_path = os.path.join(
     "index.html",
 )
 windows_chrome_path_1 = r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-windows_chrome_path_2 = r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+windows_chrome_path_2 = (
+    r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+)
 windows_edge_path = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
 linux_chrome_path_1 = "/usr/bin/chromium-browser"
 linux_chrome_path_2 = "/usr/bin/chromium"
@@ -40,7 +42,9 @@ def get_browser_flags():
     return flags + user_data_directory_path
 
 
-def initialize_user_data_directory(operating_system: Literal["Windows", "Darwin", "Linux"]):
+def initialize_user_data_directory(
+    operating_system: Literal["Windows", "Darwin", "Linux"]
+):
     global user_data_directory_path
     if operating_system == "Windows":
         user_data_directory_path = r"C:\NanoFactory"
@@ -48,8 +52,7 @@ def initialize_user_data_directory(operating_system: Literal["Windows", "Darwin"
         if getpass.getuser() == "root":
             user_data_directory_path = r"/root/NanoFactory"
         else:
-            user_data_directory_path = r"/home/{}/NanoFactory".format(
-                getpass.getuser())
+            user_data_directory_path = r"/home/{}/NanoFactory".format(getpass.getuser())
     if not os.path.isdir(user_data_directory_path):
         os.mkdir(user_data_directory_path)
 
@@ -59,7 +62,9 @@ def check_cors_for_octoprint_api():
     return not cors_enabled
 
 
-def check_if_browser_is_installed(operating_system: Literal["Windows", "Darwin", "Linux"]):
+def check_if_browser_is_installed(
+    operating_system: Literal["Windows", "Darwin", "Linux"]
+):
     if operating_system == "Windows":
         chrome_version = get_windows_chrome_version()
         if chrome_version:
@@ -67,7 +72,11 @@ def check_if_browser_is_installed(operating_system: Literal["Windows", "Darwin",
         edge_version = get_windows_edge_version()
         if edge_version:
             return True
-        if os.path.isfile(windows_chrome_path_1) or os.path.isfile(windows_chrome_path_2) or os.path.isfile(windows_edge_path):
+        if (
+            os.path.isfile(windows_chrome_path_1)
+            or os.path.isfile(windows_chrome_path_2)
+            or os.path.isfile(windows_edge_path)
+        ):
             return True
 
     if operating_system == "Linux":
@@ -77,8 +86,16 @@ def check_if_browser_is_installed(operating_system: Literal["Windows", "Darwin",
     return False
 
 
-def restart_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, pid: int, base_url: str):
-    close_browser(pid, operating_system)
+def restart_browser(
+    operating_system: Literal["Windows", "Darwin", "Linux"],
+    api_key: str,
+    peer_ID: str,
+    master_peer_id: str,
+    browser_process: psutil.Popen | None,
+    base_url: str,
+):
+    if browser_process:
+        close_browser(browser_process)
     time.sleep(1)
     return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
@@ -106,10 +123,20 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
             return None
 
 
-def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_key: str, peer_ID: str, master_peer_id: str, base_url: str):
-
-    url = 'file:///{}?apiKey={}&peerID={}&masterPeerID={}&baseURL={}'.format(
-        index_html_file_path, api_key, peer_ID, master_peer_id, urllib.parse.quote(base_url, safe=""))
+def start_browser(
+    operating_system: Literal["Windows", "Darwin", "Linux"],
+    api_key: str,
+    peer_ID: str,
+    master_peer_id: str,
+    base_url: str,
+):
+    url = "file:///{}?apiKey={}&peerID={}&masterPeerID={}&baseURL={}".format(
+        index_html_file_path,
+        api_key,
+        peer_ID,
+        master_peer_id,
+        urllib.parse.quote(base_url, safe=""),
+    )
 
     from . import __plugin_implementation__ as plugin
 
@@ -118,24 +145,33 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
             browser_path = get_browser_path(operating_system)
 
             if browser_path:
-                process = psutil.Popen([browser_path, url] + get_browser_flags().split(" "), stdin=subprocess.PIPE,
-                                       stdout=subprocess.DEVNULL,  stderr=subprocess.PIPE)
+                process = psutil.Popen(
+                    [browser_path, url] + get_browser_flags().split(" "),
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                )
                 plugin._logger.info(
-                    "NanoFactory browser started with PID: " + str(process.as_dict()["pid"]))
-                return process.as_dict()["pid"]
+                    "NanoFactory browser started with PID: "
+                    + str(process.as_dict()["pid"])
+                )
+                return process
 
             else:
                 if get_windows_chrome_version():
                     subprocess.run(
-                        "start chrome {} {}".format(url, get_browser_flags()), shell=True
+                        "start chrome {} {}".format(url, get_browser_flags()),
+                        shell=True,
                     )
                 else:
                     subprocess.run(
-                        "start msedge {} {}".format(url, get_browser_flags()), shell=True
+                        "start msedge {} {}".format(url, get_browser_flags()),
+                        shell=True,
                     )
 
         except Exception as e:
             from . import __plugin_implementation__ as plugin
+
             plugin._logger.error("Error while opening browser.")
             plugin._logger.error(e, exc_info=True)
 
@@ -145,81 +181,70 @@ def start_browser(operating_system: Literal["Windows", "Darwin", "Linux"], api_k
 
             if not browser_path:
                 from . import __plugin_implementation__ as plugin
+
                 plugin._logger.error(
-                    linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found.")
+                    linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found."
+                )
                 return
 
-            plugin._logger.info("Opening browser with command: " +
-                                str([browser_path, url] + (get_browser_flags()).split(" ")))
+            plugin._logger.info(
+                "Opening browser with command: "
+                + str([browser_path, url] + (get_browser_flags()).split(" "))
+            )
 
-            process = psutil.Popen([browser_path, url] + (get_browser_flags()).split(" "), stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,  stderr=subprocess.PIPE, start_new_session=True,)
+            process = psutil.Popen(
+                [browser_path, url] + (get_browser_flags()).split(" "),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                start_new_session=True,
+            )
             output, error = process.communicate()
             plugin._logger.info(f"output: {output.decode('utf-8')}")
             plugin._logger.info(f"error: {error.decode('utf-8')}")
             plugin._logger.info(
-                "NanoFactory browser started with PID: " + str(process.as_dict()["pid"]))
-            return process.as_dict()["pid"]
+                "NanoFactory browser started with PID: " + str(process.as_dict()["pid"])
+            )
+            return process
 
         except Exception as e:
-            plugin._logger.warning(
-                "Error while opening browser using psutil.")
+            plugin._logger.warning("Error while opening browser using psutil.")
             plugin._logger.warning(e, exc_info=True)
-            url = f'"{url}"'
-
-            # try:
-            #     plugin._logger.info("{} {} {}".format(
-            #         browser_path, url, get_browser_flags()))
-            #     subprocess.run(
-            #         "{} {} {}".format(browser_path, url, get_browser_flags()), shell=True
-            #     )
-            #     plugin._logger.info(
-            #         "NanoFactory browser started using subprocess.")
-
-            # except Exception as e:
-            #     from . import __plugin_implementation__ as plugin
-            #     plugin._logger.error("Error while opening chromium.")
-            #     plugin._logger.error(e, exc_info=True)
+            time.sleep(3)
+            plugin._logger.info("Retrying to open browser.")
+            browser_path = get_browser_path(operating_system)
+            process = psutil.Popen(
+                [browser_path, url] + get_browser_flags().split(" "),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            plugin._logger.info(
+                "NanoFactory browser started with PID: " + str(process.as_dict()["pid"])
+            )
+            return process
 
 
-def close_browser(pid: int, operating_system: Literal["Windows", "Darwin", "Linux"]):
+def close_browser(browser_process: psutil.Popen):
     from . import __plugin_implementation__ as plugin
 
     try:
-        if pid:
-            if operating_system == "Windows":
-                subprocess.run(kill_pid_command_windows +
-                               str(pid), shell=True)
-            if operating_system == "Linux":
-                subprocess.run(kill_pid_command_linux + str(pid), shell=True)
-
-        else:
-            if operating_system == "Windows":
-                browser_path = get_browser_path(operating_system)
-                if "chrome.exe" in browser_path:
-                    subprocess.run(
-                        kill_chrome_command_windows, shell=True)
-                elif "msedge.exe" in browser_path:
-                    subprocess.run(
-                        kill_msedge_command_windows, shell=True)
-
-            if operating_system == "Linux":
-                subprocess.run(kill_chromium_browser_command_linux, shell=True)
-                subprocess.run(kill_chromium_command_linux, shell=True)
-
+        browser_process.terminate()
+        browser_process.wait(timeout=3)
+        plugin._logger.info("Browser closed.")
     except Exception as e:
         plugin._logger.warning(e, exc_info=True)
 
 
 def extract_version_registry(output):
     try:
-        google_version = ''
-        for letter in output[output.rindex('DisplayVersion    REG_SZ') + 24:]:
-            if letter != '\n':
+        google_version = ""
+        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24 :]:
+            if letter != "\n":
                 google_version += letter
             else:
                 break
-        return (google_version.strip())
+        return google_version.strip()
     except TypeError:
         return
 
@@ -227,13 +252,16 @@ def extract_version_registry(output):
 def extract_version_folder():
     # Check if the Chrome folder exists in the x32 or x64 Program Files folders.
     for i in range(2):
-        path = 'C:\\Program Files' + \
-            (' (x86)' if i else '') + '\\Google\\Chrome\\Application'
+        path = (
+            "C:\\Program Files"
+            + (" (x86)" if i else "")
+            + "\\Google\\Chrome\\Application"
+        )
         if os.path.isdir(path):
             paths = [f.path for f in os.scandir(path) if f.is_dir()]
             for path in paths:
                 filename = os.path.basename(path)
-                pattern = '\d+\.\d+\.\d+\.\d+'
+                pattern = "\d+\.\d+\.\d+\.\d+"
                 match = re.search(pattern, filename)
                 if match and match.group():
                     # Found a Chrome version.
@@ -247,15 +275,16 @@ def get_windows_edge_version():
 
     try:
         stream = os.popen(
-            'powershell.exe "(Get-AppxPackage Microsoft.MicrosoftEdge).Version"')
+            'powershell.exe "(Get-AppxPackage Microsoft.MicrosoftEdge).Version"'
+        )
         output = stream.read()
         if output:
             version = output.strip()
 
     except Exception as e:
         from . import __plugin_implementation__ as plugin
-        plugin._logger.warning(
-            "Error while getting ms-edge version.", exc_info=True)
+
+        plugin._logger.warning("Error while getting ms-edge version.", exc_info=True)
 
     return version
 
@@ -268,7 +297,8 @@ def get_windows_chrome_version():
         try:
             # Try registry key.
             stream = os.popen(
-                'reg query "HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Google Chrome"')
+                'reg query "HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Google Chrome"'
+            )
             output = stream.read()
             version = extract_version_registry(output)
         except Exception as ex:
@@ -277,7 +307,10 @@ def get_windows_chrome_version():
     except Exception as ex:
         print(ex)
 
-    version = os.popen(f"{install_path} --version").read().strip(
-        'Google Chrome ').strip() if install_path else version
+    version = (
+        os.popen(f"{install_path} --version").read().strip("Google Chrome ").strip()
+        if install_path
+        else version
+    )
 
     return version
