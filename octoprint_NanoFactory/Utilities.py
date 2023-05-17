@@ -96,7 +96,6 @@ def restart_browser(
 ):
     if browser_process:
         close_browser(browser_process)
-    time.sleep(1)
     return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
