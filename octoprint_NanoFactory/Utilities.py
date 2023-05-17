@@ -91,7 +91,7 @@ def restart_browser(
     api_key: str,
     peer_ID: str,
     master_peer_id: str,
-    browser_process: psutil.Popen | None,
+    browser_process: psutil.Popen,
     base_url: str,
 ):
     if browser_process:
