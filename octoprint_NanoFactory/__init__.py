@@ -6,7 +6,6 @@ import os
 import platform
 import subprocess
 from uuid import uuid4
-from psutil import Popen
 
 import requests
 import yaml
@@ -19,6 +18,7 @@ from octoprint_NanoFactory.Utilities import (
     restart_browser,
     start_browser,
 )
+from psutil import Popen
 from typing_extensions import Literal
 
 import octoprint.plugin
@@ -87,7 +87,8 @@ class NanofactoryPlugin(
             self.api_key = data["api_key"]
             try:
                 with open(
-                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r+"
+                    os.path.join(self.get_plugin_data_folder(),
+                                 "nf_profile.json"), "r+"
                 ) as f:
                     nf_profile = json.loads(f.read())
                     nf_profile["api_key"] = self.api_key
@@ -149,12 +150,14 @@ class NanofactoryPlugin(
 
         elif command == "deleteNanoFactoryDatabase":
             self._plugin_manager.send_plugin_message(
-                self._identifier, {"deleteDatabase": "deleteNanoFactoryDatabase"}
+                self._identifier, {
+                    "deleteDatabase": "deleteNanoFactoryDatabase"}
             )
 
         elif command == "giveupSnapshotCameraStream":
             self._plugin_manager.send_plugin_message(
-                self._identifier, {"releaseSnapshotStream": "releaseSnapshotStream"}
+                self._identifier, {
+                    "releaseSnapshotStream": "releaseSnapshotStream"}
             )
 
         elif command == "getCors":
@@ -238,6 +241,21 @@ class NanofactoryPlugin(
             except Exception as e:
                 return {}
 
+    @octoprint.plugin.BlueprintPlugin.route("/add_to_octoprint_log", methods=["POST"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def add_console_log_to_octoprint_log(self):
+        message_type = request.args.get("message_type", None)
+        message = request.args.get("message", None)
+
+        if message_type == "info" or message_type == "log":
+            self._logger.info(message)
+        elif message_type == "warn":
+            self._logger.warning(message)
+        elif message_type == "error":
+            self._logger.error(message)
+
+        return "Success"
+
     def is_blueprint_csrf_protected(self):
         return True
 
@@ -259,7 +277,8 @@ class NanofactoryPlugin(
         self.master_peer_id = master_peer_id
         try:
             with open(
-                os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r+"
+                os.path.join(self.get_plugin_data_folder(),
+                             "nf_profile.json"), "r+"
             ) as f:
                 nf_profile = json.loads(f.read())
                 nf_profile["master_peer_id"] = self.master_peer_id
@@ -280,7 +299,8 @@ class NanofactoryPlugin(
         self._logger.info("Saving bed levelling data")
         try:
             with open(
-                os.path.join(self.get_plugin_data_folder(), "bed_levelling_data.json"),
+                os.path.join(self.get_plugin_data_folder(),
+                             "bed_levelling_data.json"),
                 "w+",
             ) as f:
                 json.dump(data, f)
@@ -302,7 +322,8 @@ class NanofactoryPlugin(
         nf_profile = {}
         try:
             with open(
-                os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r"
+                os.path.join(self.get_plugin_data_folder(),
+                             "nf_profile.json"), "r"
             ) as f:
                 nf_profile = json.loads(f.read())
         except IOError as e:
@@ -314,12 +335,14 @@ class NanofactoryPlugin(
                     os.path.join(self.get_plugin_data_folder(), "apiKey.txt")
                 ):
                     with open(
-                        os.path.join(self.get_plugin_data_folder(), "apiKey.txt"), "r"
+                        os.path.join(self.get_plugin_data_folder(),
+                                     "apiKey.txt"), "r"
                     ) as f:
                         self._logger.info("Loading API key from apiKey.txt")
                         api_key = f.read().strip()
                 if os.path.isfile(
-                    os.path.join(self.get_plugin_data_folder(), "masterDeviceID.txt")
+                    os.path.join(self.get_plugin_data_folder(),
+                                 "masterDeviceID.txt")
                 ):
                     with open(
                         os.path.join(
@@ -332,7 +355,8 @@ class NanofactoryPlugin(
                         )
                         master_peer_id = f.read().strip()
                 with open(
-                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "w"
+                    os.path.join(self.get_plugin_data_folder(),
+                                 "nf_profile.json"), "w"
                 ) as f:
                     nf_profile = {
                         "peer_ID": str(uuid4()),
