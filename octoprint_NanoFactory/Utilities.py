@@ -105,13 +105,8 @@ def restart_browser(
     browser_process: psutil.Popen,
     base_url: str,
 ):
-    if browser_process:
-        try:
-            close_browser(browser_process)
-        except:
-            kill_all_browsers(operating_system)
-    else:
-        kill_all_browsers(operating_system)
+
+    kill_all_browsers(operating_system)
     return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
