@@ -105,6 +105,7 @@ def restart_browser(
     browser_process: psutil.Popen,
     base_url: str,
 ):
+    from . import __plugin_implementation__ as plugin
     plugin._logger.warning("Closing the browser...")
     kill_all_browsers(operating_system)
     plugin._logger.warning("Starting new browser")
