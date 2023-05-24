@@ -36,6 +36,7 @@ kill_chrome_command_windows = "taskkill /F /IM chrome.exe >nul"
 kill_msedge_command_windows = "taskkill /F /IM msedge.exe >nul"
 kill_chromium_browser_command_linux = "killall chromium-browser"
 kill_chromium_command_linux = "killall chromium"
+kill_chrome_command_linux = "killall chrome"
 
 
 def get_browser_flags():
@@ -86,6 +87,16 @@ def check_if_browser_is_installed(
     return False
 
 
+def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"]):
+    if operating_system == "Windows":
+        subprocess.Popen(kill_chrome_command_windows, shell=True)
+        subprocess.Popen(kill_msedge_command_windows, shell=True)
+    else:
+        subprocess.Popen(kill_chromium_browser_command_linux, shell=True)
+        subprocess.Popen(kill_chromium_command_linux, shell=True)
+        subprocess.Popen(kill_chrome_command_linux, shell=True)
+
+
 def restart_browser(
     operating_system: Literal["Windows", "Darwin", "Linux"],
     api_key: str,
@@ -95,7 +106,12 @@ def restart_browser(
     base_url: str,
 ):
     if browser_process:
-        close_browser(browser_process)
+        try:
+            close_browser(browser_process)
+        except:
+            kill_all_browsers(operating_system)
+    else:
+        kill_all_browsers(operating_system)
     return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
