@@ -120,8 +120,12 @@ def restart_browser(
 
     kill_all_browsers(operating_system)
     # Start the browser process in a separate thread
-    browser_thread = threading.Thread(target=start_browser)
+    browser_thread = threading.Thread(
+        target=start_browser,
+        args=(operating_system, api_key, peer_ID, master_peer_id, base_url),
+    )
     browser_thread.start()
+
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
     if operating_system == "Windows":
