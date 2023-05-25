@@ -11,6 +11,7 @@ import yaml
 from typing_extensions import Literal
 
 from octoprint.server import settings
+import threading
 
 # CONSTANTS:
 index_html_file_path = os.path.join(
@@ -118,10 +119,9 @@ def restart_browser(
     from . import __plugin_implementation__ as plugin
 
     kill_all_browsers(operating_system)
-    time.sleep(2)
-    plugin._logger.warning("Starting new browser")
-    return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
-
+    # Start the browser process in a separate thread
+    browser_thread = threading.Thread(target=start_browser)
+    browser_thread.start()
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
     if operating_system == "Windows":
@@ -244,6 +244,7 @@ def start_browser(
                 plugin._logger.warning("Output of pgrep -f chrom:")
                 plugin._logger.warning(result.stdout)
             else:
+                # this is fine, it just means that the browser is not running
                 plugin._logger.warning("pgrep -f chrom failed with return code:")
                 plugin._logger.warning(result.returncode)
 
