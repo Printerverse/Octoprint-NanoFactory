@@ -117,8 +117,7 @@ def restart_browser(
     kill_all_browsers(operating_system)
     time.sleep(2)
     plugin._logger.warning("Starting new browser (jk not really)")
-    # res = start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
-    # return res
+    return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
