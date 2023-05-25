@@ -88,13 +88,19 @@ def check_if_browser_is_installed(
 
 
 def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"]):
+    from . import __plugin_implementation__ as plugin
+
     if operating_system == "Windows":
-        subprocess.Popen(kill_chrome_command_windows, shell=True)
-        subprocess.Popen(kill_msedge_command_windows, shell=True)
+        subprocess.Popen(kill_chrome_command_windows, start_new_session=True)
+        subprocess.Popen(kill_msedge_command_windows, start_new_session=True)
     else:
-        subprocess.Popen(kill_chromium_browser_command_linux, shell=True)
-        subprocess.Popen(kill_chromium_command_linux, shell=True)
-        subprocess.Popen(kill_chrome_command_linux, shell=True)
+        plugin._logger.warning("Killing all chromium-browser instances")
+        subprocess.Popen(kill_chromium_browser_command_linux)
+        plugin._logger.warning("Killing all chromium instances")
+        subprocess.Popen(kill_chromium_command_linux)
+        plugin._logger.warning("Killing all chrome instances")
+        subprocess.Popen(kill_chrome_command_linux)
+        plugin._logger.warning("Done killing")
 
 
 def restart_browser(
@@ -106,10 +112,13 @@ def restart_browser(
     base_url: str,
 ):
     from . import __plugin_implementation__ as plugin
+
     plugin._logger.warning("Closing the browser...")
     kill_all_browsers(operating_system)
-    plugin._logger.warning("Starting new browser")
-    return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
+    time.sleep(2)
+    plugin._logger.warning("Starting new browser (jk not really)")
+    # res = start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
+    # return res
 
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
