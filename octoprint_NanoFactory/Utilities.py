@@ -2,6 +2,7 @@ import getpass
 import os
 import re
 import subprocess
+import threading
 import time
 import urllib.parse
 from pathlib import Path
@@ -11,7 +12,6 @@ import yaml
 from typing_extensions import Literal
 
 from octoprint.server import settings
-import threading
 
 # CONSTANTS:
 index_html_file_path = os.path.join(
@@ -54,7 +54,8 @@ def initialize_user_data_directory(
         if getpass.getuser() == "root":
             user_data_directory_path = r"/root/NanoFactory"
         else:
-            user_data_directory_path = r"/home/{}/NanoFactory".format(getpass.getuser())
+            user_data_directory_path = r"/home/{}/NanoFactory".format(
+                getpass.getuser())
     if not os.path.isdir(user_data_directory_path):
         os.mkdir(user_data_directory_path)
 
@@ -98,28 +99,32 @@ def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"] = 
         subprocess.Popen(kill_msedge_command_windows, start_new_session=True)
     elif operating_system == "Linux":
         command = "pkill -f chrom"
-        print(f"Running command: {command}")
-        result = subprocess.run(command.split(), capture_output=True, text=True)
+        plugin._logger.info(f"Running command: {command}")
+        result = subprocess.run(
+            command.split(), capture_output=True, text=True)
         if result.returncode == 0:
-            print("Command executed successfully.")
-            print("Output:")
-            print(result.stdout)
+            plugin._logger.info("Command executed successfully.")
+            plugin._logger.info("Output:")
+            plugin._logger.info(result.stdout)
         else:
-            print("Command failed with return code:", result.returncode)
-            print("Error output:")
-            print(result.stderr)
+            plugin._logger.info(
+                "Command failed with return code:", result.returncode)
+            plugin._logger.info("Error output:")
+            plugin._logger.info(result.stderr)
     elif operating_system == "Darwin":
         command = "pkill -f chrom"
-        print(f"Running command: {command}")
-        result = subprocess.run(command.split(), capture_output=True, text=True)
+        plugin._logger.info(f"Running command: {command}")
+        result = subprocess.run(
+            command.split(), capture_output=True, text=True)
         if result.returncode == 0:
-            print("Command executed successfully.")
-            print("Output:")
-            print(result.stdout)
+            plugin._logger.info("Command executed successfully.")
+            plugin._logger.info("Output:")
+            plugin._logger.info(result.stdout)
         else:
-            print("Command failed with return code:", result.returncode)
-            print("Error output:")
-            print(result.stderr)
+            plugin._logger.info(
+                "Command failed with return code:", result.returncode)
+            plugin._logger.info("Error output:")
+            plugin._logger.info(result.stderr)
     else:
         # If no operating system is specified, kill all browsers
         kill_all_browsers("Windows")
@@ -248,14 +253,16 @@ def start_browser(
             plugin._logger.warning(e, exc_info=True)
             plugin._logger.warning("Checking if the browser is running...")
             command = "pgrep -f chrom"
-            result = subprocess.run(command.split(), capture_output=True, text=True)
+            result = subprocess.run(
+                command.split(), capture_output=True, text=True)
             if result.returncode == 0:
                 plugin._logger.warning("Output of pgrep -f chrom:")
                 plugin._logger.warning(result.stdout)
                 plugin._logger.warning("Browser is already running")
             else:
                 # this is fine, it just means that the browser is not running
-                plugin._logger.warning("pgrep -f chrom failed with return code:")
+                plugin._logger.warning(
+                    "pgrep -f chrom failed with return code:")
                 plugin._logger.warning(result.returncode)
                 plugin._logger.warning(
                     "Trying to start the browser using subprocess..."
@@ -291,7 +298,7 @@ def close_browser(browser_process: psutil.Popen):
 def extract_version_registry(output):
     try:
         google_version = ""
-        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24 :]:
+        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24:]:
             if letter != "\n":
                 google_version += letter
             else:
@@ -336,7 +343,8 @@ def get_windows_edge_version():
     except Exception as e:
         from . import __plugin_implementation__ as plugin
 
-        plugin._logger.warning("Error while getting ms-edge version.", exc_info=True)
+        plugin._logger.warning(
+            "Error while getting ms-edge version.", exc_info=True)
 
     return version
 
@@ -360,7 +368,8 @@ def get_windows_chrome_version():
         print(ex)
 
     version = (
-        os.popen(f"{install_path} --version").read().strip("Google Chrome ").strip()
+        os.popen(
+            f"{install_path} --version").read().strip("Google Chrome ").strip()
         if install_path
         else version
     )
