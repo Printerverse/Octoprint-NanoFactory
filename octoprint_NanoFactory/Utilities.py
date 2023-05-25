@@ -94,13 +94,17 @@ def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"]):
         subprocess.Popen(kill_chrome_command_windows, start_new_session=True)
         subprocess.Popen(kill_msedge_command_windows, start_new_session=True)
     else:
-        plugin._logger.warning("Killing all chromium-browser instances")
-        subprocess.run(kill_chromium_browser_command_linux.split())
-        plugin._logger.warning("Killing all chromium instances")
-        subprocess.run(kill_chromium_command_linux.split())
-        plugin._logger.warning("Killing all chrome instances")
-        subprocess.run(kill_chrome_command_linux.split())
-        plugin._logger.warning("Done killing")
+        command = "pkill -f chrom"
+        print(f"Running command: {command}")
+        result = subprocess.run(command.split(), capture_output=True, text=True)
+        if result.returncode == 0:
+            print("Command executed successfully.")
+            print("Output:")
+            print(result.stdout)
+        else:
+            print("Command failed with return code:", result.returncode)
+            print("Error output:")
+            print(result.stderr)
 
 
 def restart_browser(
@@ -113,10 +117,9 @@ def restart_browser(
 ):
     from . import __plugin_implementation__ as plugin
 
-    plugin._logger.warning("Closing the browser...")
     kill_all_browsers(operating_system)
     time.sleep(2)
-    plugin._logger.warning("Starting new browser (jk not really)")
+    plugin._logger.warning("Starting new browser")
     return start_browser(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
@@ -150,6 +153,10 @@ def start_browser(
     master_peer_id: str,
     base_url: str,
 ):
+    # first check if there are any browsers running and kill them
+    kill_all_browsers(operating_system)
+
+    # then start the browser
     url = "file:///{}?apiKey={}&peerID={}&masterPeerID={}&baseURL={}".format(
         index_html_file_path,
         api_key,
@@ -230,19 +237,15 @@ def start_browser(
         except Exception as e:
             plugin._logger.warning("Error while opening browser using psutil.")
             plugin._logger.warning(e, exc_info=True)
-            time.sleep(3)
-            plugin._logger.info("Retrying to open browser.")
-            browser_path = get_browser_path(operating_system)
-            process = psutil.Popen(
-                [browser_path, url] + get_browser_flags().split(" "),
-                stdin=subprocess.PIPE,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-            )
-            plugin._logger.info(
-                "NanoFactory browser started with PID: " + str(process.as_dict()["pid"])
-            )
-            return process
+            plugin._logger.warning("Checking if the browser is running...")
+            command = "pgrep -f chrom"
+            result = subprocess.run(command.split(), capture_output=True, text=True)
+            if result.returncode == 0:
+                plugin._logger.warning("Output of pgrep -f chrom:")
+                plugin._logger.warning(result.stdout)
+            else:
+                plugin._logger.warning("pgrep -f chrom failed with return code:")
+                plugin._logger.warning(result.returncode)
 
 
 def close_browser(browser_process: psutil.Popen):
