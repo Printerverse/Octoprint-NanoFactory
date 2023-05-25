@@ -95,11 +95,11 @@ def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"]):
         subprocess.Popen(kill_msedge_command_windows, start_new_session=True)
     else:
         plugin._logger.warning("Killing all chromium-browser instances")
-        subprocess.Popen(kill_chromium_browser_command_linux.split(), start_new_session=True)
+        subprocess.run(kill_chromium_browser_command_linux.split())
         plugin._logger.warning("Killing all chromium instances")
-        subprocess.Popen(kill_chromium_command_linux.split(), start_new_session=True)
+        subprocess.run(kill_chromium_command_linux.split())
         plugin._logger.warning("Killing all chrome instances")
-        subprocess.Popen(kill_chrome_command_linux.split(), start_new_session=True)
+        subprocess.run(kill_chrome_command_linux.split())
         plugin._logger.warning("Done killing")
 
 
