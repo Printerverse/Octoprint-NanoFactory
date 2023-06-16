@@ -46,6 +46,7 @@ class NanofactoryPlugin(
         self.os: Literal["Windows", "Darwin", "Linux"] = "Linux"
         self.browser_installed = False
         self.browser_process: Popen = None
+        self.restart_mode: Literal["stable", "dev"] = "stable"
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -73,7 +74,7 @@ class NanofactoryPlugin(
             "saveAPIKEY": ["api_key"],
             "getMasterPeerID": [],
             "saveMasterPeerID": ["masterPeerID"],
-            "restartNanoFactoryApp": [],
+            "restartNanoFactoryApp": ["mode"],
             "deleteNanoFactoryDatabase": [],
             "getCors": [],
             "getBrowserInstalled": [],
@@ -139,6 +140,7 @@ class NanofactoryPlugin(
             self.save_master_peer_id(data["masterPeerID"], True)
 
         elif command == "restartNanoFactoryApp":
+            self.restart_mode = data["mode"]
             self.browser_process = restart_browser(
                 self.os,
                 self.api_key,

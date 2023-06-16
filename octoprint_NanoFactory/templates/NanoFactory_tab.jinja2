@@ -156,6 +156,22 @@
                     NanoFactory Database</button>
             </div>
 
+            <br />
+
+            <div class="full-width">
+                <div><small><a href="#" class="muted"
+                            data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.full-width', container: '.hide' }"><i
+                                class="fas fa-caret-right"></i> {{ _('Advanced options') }}</a></small></div>
+                <div class="hide container-center">
+                    <label class="toggle">
+                        <span class="stable-label">Stable Mode</span>
+                        <input id="toggle-checkbox-nanofactory" class="toggle-checkbox" type="checkbox">
+                        <div class="toggle-switch"></div>
+                        <span class="dev-label">Dev Mode</span>
+                    </label>
+                </div>
+            </div>
+
 
             <div class="nanofactory-modal" data-bind="visible: showClearNanoFactoryDatabaseModal">
                 <div class="nanofactory-modal-content">

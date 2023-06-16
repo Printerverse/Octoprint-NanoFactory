@@ -31,6 +31,7 @@ $(function () {
 
         self.showClearNanoFactoryDatabaseModal = ko.observable(false)
 
+        self.restartMode = ko.observable("stable") // can be "stable" or "dev"
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -148,6 +149,17 @@ $(function () {
                     // self.apiKeyIconPath = ko.observable(self.submitIconPath)
                 }
 
+                // handle the checkbox on and off
+                document.getElementById("toggle-checkbox-nanofactory").addEventListener("change", function () {
+                    if (this.checked) {
+                        self.restartMode("dev")
+                    } else {
+                        self.restartMode("stable")
+                    }
+
+                    self.restartNanoFactoryApp("Restarted NanoFactory in " + self.restartMode() + " Successfully")
+                });
+
             }, 1000)
         }
 
@@ -178,11 +190,11 @@ $(function () {
         }
 
 
-        self.restartNanoFactoryApp = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp").done(function (response) {
+        self.restartNanoFactoryApp = function (notificationText = "Restarted NanoFactory Successfully") {
+            OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp", { "mode": self.restartMode() }).done(function (response) {
                 new PNotify({
                     title: "Restart successful",
-                    text: "Restarted NanoFactory Successfully",
+                    text: notificationText,
                     type: "success"
                 });
             }).catch(error => {

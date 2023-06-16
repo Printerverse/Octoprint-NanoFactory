@@ -182,15 +182,16 @@ def start_browser(
     master_peer_id: str,
     base_url: str,
 ):
-    url = "file:///{}?apiKey={}&peerID={}&masterPeerID={}&baseURL={}".format(
+    from . import __plugin_implementation__ as plugin
+
+    url = "file:///{}?apiKey={}&peerID={}&masterPeerID={}&baseURL={}&mode={}".format(
         index_html_file_path,
         api_key,
         peer_ID,
         master_peer_id,
         urllib.parse.quote(base_url, safe=""),
+        plugin.restart_mode
     )
-
-    from . import __plugin_implementation__ as plugin
 
     if operating_system == "Windows":
         try:

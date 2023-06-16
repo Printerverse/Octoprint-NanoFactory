@@ -12,10 +12,30 @@
 </head>
 
 
-<script defer src="https://nanofactoryserver.pages.dev/index.js"></script>
-
-
 <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+
+    let scriptElement = document.createElement("script")
+    scriptElement.defer = true
+
+    if (mode === 'stable') {
+        scriptElement.src = "https://nanofactoryserver.pages.dev/index.js"
+    } else if (mode === 'dev') {
+        scriptElement.src = "https://staging.nanofactoryserver.pages.dev/index.js"
+    }
+
+    function appendScript() {
+        document.body.appendChild(scriptElement);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", appendScript);
+    } else {
+        appendScript();
+    }
+
+
     onerror = (event, source, lineno, colno, error) => {
 
         if (event === "Uncaught ReferenceError: OctoPrint is not defined") {

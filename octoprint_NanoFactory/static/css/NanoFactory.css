@@ -132,6 +132,73 @@
     margin-right: 1%;
 }
 
+/* Styles for the toggle button */
+.toggle {
+    cursor: pointer;
+    display: inline-block;
+}
+
+.toggle-switch {
+    display: inline-block;
+    background: #ccc;
+    border-radius: 16px;
+    width: 3rem;
+    height: 1.5rem;
+    position: relative;
+    vertical-align: middle;
+    transition: background 0.25s;
+}
+
+.toggle-switch:before,
+.toggle-switch:after {
+    content: "";
+}
+
+.toggle-switch:before {
+    display: block;
+    background: #2c2a2a;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+    width: 1rem;
+    height: 1rem;
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    transition: left 0.25s;
+}
+
+.toggle:hover .toggle-switch:before {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.toggle-checkbox:checked+.toggle-switch:before {
+    left: 30px;
+}
+
+.toggle-checkbox {
+    position: absolute;
+    visibility: hidden;
+}
+
+.stable-label {
+    color: #32509D;
+}
+
+.dev-label {
+    color: white;
+}
+
+.container-center {
+    text-align: center;
+}
+
+.toggle-checkbox:checked+.toggle-switch {
+    background: #fff;
+}
+
+.toggle-switch:not(:checked) {
+    background: #32509D;
+}
 
 /* All styles for the confirmation modal */
 
