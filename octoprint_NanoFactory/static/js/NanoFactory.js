@@ -136,6 +136,10 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
+
+            // Making NanoFactory the first tab by default
+            const tabLink = $('li#tab_plugin_NanoFactory_link');
+            tabLink.prependTo('#tabs');
         }
 
         self.onStartupComplete = function () {
