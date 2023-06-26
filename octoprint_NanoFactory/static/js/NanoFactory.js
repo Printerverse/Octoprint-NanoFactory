@@ -134,7 +134,7 @@ $(function () {
                     self.showOnlyNanoFactoryTab(data["showOnlyNanoFactoryTab"])
                     setTimeout(() => {
                         self.handleShowOnlyNanoFactoryTab()
-                    }, 100);
+                    }, 50);
                 }
             }
         }
@@ -228,6 +228,9 @@ $(function () {
                 // Making NanoFactory the first tab 
                 const tabLink = $('li' + nanofactoryTabID);
                 tabLink.prependTo('#tabs');
+
+                window.location.href = nanofactoryTabID
+
             } else if (self.tabsChanged()) {
                 // reload to get the default tabs back as 
                 // the user has unchecked the checkbox
