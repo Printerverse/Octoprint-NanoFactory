@@ -4,11 +4,9 @@ from __future__ import absolute_import
 import json
 import os
 import platform
-import subprocess
 from uuid import uuid4
 
 import requests
-import yaml
 from flask import request
 from octoprint_NanoFactory.Utilities import (
     check_cors_for_octoprint_api,
@@ -47,6 +45,7 @@ class NanofactoryPlugin(
         self.browser_installed = False
         self.browser_process: Popen = None
         self.restart_mode: Literal["stable", "dev"] = "stable"
+        self.showOnlyNanoFactoryTab = False
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -81,6 +80,8 @@ class NanofactoryPlugin(
             "giveupSnapshotCameraStream": [],
             "startNanoFactoryPostSetup": [],
             "getOperatingSystem": [],
+            "getShowOnlyNanoFactoryTab": [],
+            "setShowOnlyNanoFactoryTab": ["showOnlyNanoFactoryTab"],
         }
 
     def on_api_command(self, command, data):
@@ -137,7 +138,9 @@ class NanofactoryPlugin(
             self.send_master_peer_id()
 
         elif command == "saveMasterPeerID":
-            self.save_master_peer_id(data["masterPeerID"], True)
+            self.master_peer_id = data["masterPeerID"]
+            self.send_master_peer_id()
+            self.update_nf_profile()
 
         elif command == "restartNanoFactoryApp":
             self.restart_mode = data["mode"]
@@ -181,12 +184,21 @@ class NanofactoryPlugin(
                 self._identifier, {"operating_system": self.os}
             )
 
+        elif command == "getShowOnlyNanoFactoryTab":
+            self.send_show_only_nanofactory_tab()
+
+        elif command == "setShowOnlyNanoFactoryTab":
+            self.showOnlyNanoFactoryTab = data["showOnlyNanoFactoryTab"]
+            self.update_nf_profile()
+            self.send_show_only_nanofactory_tab()
+
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def save_master_peer_id_endpoint(self):
         master_peer_id = request.args.get("master_peer_id", None)
         if master_peer_id:
-            self.save_master_peer_id(master_peer_id, False)
+            self.master_peer_id = master_peer_id
+            self.update_nf_profile()
         return "Success"
 
     @octoprint.plugin.BlueprintPlugin.route("/peer_connection_error", methods=["GET"])
@@ -275,27 +287,23 @@ class NanofactoryPlugin(
             else:
                 return False
 
-    def save_master_peer_id(self, master_peer_id: str, restart: bool):
-        self.master_peer_id = master_peer_id
+    def update_nf_profile(self):
         try:
             with open(
                 os.path.join(self.get_plugin_data_folder(),
                              "nf_profile.json"), "r+"
             ) as f:
                 nf_profile = json.loads(f.read())
+                nf_profile["api_key"] = self.api_key
+                nf_profile["peer_ID"] = self.peer_ID
                 nf_profile["master_peer_id"] = self.master_peer_id
+                nf_profile["showOnlyNanoFactoryTab"] = self.showOnlyNanoFactoryTab
                 f.seek(0)
                 json.dump(nf_profile, f)
                 f.truncate()
 
         except Exception as e:
             self._logger.warning(e, exc_info=True)
-
-        self.send_master_peer_id()
-
-        # if restart:
-        #     self.pid = restart_browser(self.os, self.api_key,
-        #                                self.peer_ID, self.master_peer_id, self.pid, self.base_url)
 
     def save_bed_levelling_data(self, data):
         self._logger.info("Saving bed levelling data")
@@ -313,6 +321,12 @@ class NanofactoryPlugin(
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
             self._identifier, {"api_key": self.api_key}
+        )
+
+    def send_show_only_nanofactory_tab(self):
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {
+                "showOnlyNanoFactoryTab": self.showOnlyNanoFactoryTab}
         )
 
     def send_master_peer_id(self):
@@ -364,6 +378,7 @@ class NanofactoryPlugin(
                         "peer_ID": str(uuid4()),
                         "api_key": api_key,
                         "master_peer_id": master_peer_id,
+                        "showOnlyNanoFactoryTab": True,
                     }
                     json.dump(nf_profile, f)
 
@@ -375,6 +390,8 @@ class NanofactoryPlugin(
             self._logger.warning("API Key not valid for NanoFactory")
 
         self.master_peer_id = nf_profile["master_peer_id"]
+
+        self.showOnlyNanoFactoryTab = nf_profile["showOnlyNanoFactoryTab"]
 
     # ~~ AssetPlugin mixin
 

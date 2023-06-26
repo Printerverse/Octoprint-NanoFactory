@@ -158,21 +158,30 @@
 
             <br />
 
+            {# the Advanced Options section #}
             <div class="full-width">
                 <div><small><a href="#" class="muted"
                             data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.full-width', container: '.hide' }"><i
                                 class="fas fa-caret-right"></i> {{ _('Advanced options') }}</a></small></div>
-                <div class="hide container-center">
+                <div class="hide">
                     <label class="toggle">
                         <span class="stable-label">Stable Mode</span>
-                        <input id="toggle-checkbox-nanofactory" class="toggle-checkbox" type="checkbox">
+                        <input id="nanofactory-checkbox-for-plugin-mode" class="toggle-checkbox" type="checkbox">
                         <div class="toggle-switch"></div>
                         <span class="dev-label">Dev Mode</span>
                     </label>
                 </div>
+
+                <div class="hide">
+                    <label class="tabs-checkbox">
+                        <input type="checkbox" id="nanofactory-checkbox-for-tabs"
+                            data-bind="checked: showOnlyNanoFactoryTab">
+                        <span>Show Only NanoFactory Tab</span>
+                    </label>
+                </div>
             </div>
 
-
+            {# Clear NanoFactory Database Modal #}
             <div class="nanofactory-modal" data-bind="visible: showClearNanoFactoryDatabaseModal">
                 <div class="nanofactory-modal-content">
                     <div class="nanofactory-modal-header">
