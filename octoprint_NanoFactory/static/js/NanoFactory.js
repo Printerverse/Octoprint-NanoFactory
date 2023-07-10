@@ -169,7 +169,7 @@ $(function () {
                         self.restartMode("stable")
                     }
 
-                    self.restartNanoFactoryApp("Restarted NanoFactory in " + self.restartMode() + " Successfully")
+                    self.restartNanoFactoryApp()
                 });
 
 
@@ -239,11 +239,11 @@ $(function () {
         }
 
 
-        self.restartNanoFactoryApp = function (notificationText = "Restarted NanoFactory Successfully") {
+        self.restartNanoFactoryApp = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp", { "mode": self.restartMode() }).done(function (response) {
                 new PNotify({
                     title: "Restart successful",
-                    text: notificationText,
+                    text: "Restarted NanoFactory Successfully",
                     type: "success"
                 });
             }).catch(error => {
