@@ -35,16 +35,6 @@
         appendScript();
     }
 
-
-    onerror = (event, source, lineno, colno, error) => {
-
-        if (event === "Uncaught ReferenceError: OctoPrint is not defined") {
-            setTimeout(() => {
-                location.reload()
-            }, 1000)
-        }
-    };
-
 </script>
 
 
