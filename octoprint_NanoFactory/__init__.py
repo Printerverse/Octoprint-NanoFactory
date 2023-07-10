@@ -199,6 +199,7 @@ class NanofactoryPlugin(
         if master_peer_id:
             self.master_peer_id = master_peer_id
             self.update_nf_profile()
+            self.send_master_peer_id()
         return "Success"
 
     @octoprint.plugin.BlueprintPlugin.route("/peer_connection_error", methods=["GET"])
