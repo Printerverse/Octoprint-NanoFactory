@@ -108,22 +108,8 @@ def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"] = 
     if operating_system == "Windows":
         subprocess.Popen(kill_chrome_command_windows, start_new_session=True)
         subprocess.Popen(kill_msedge_command_windows, start_new_session=True)
+
     elif operating_system == "Linux":
-        command = "pkill -f chrom"
-        plugin._logger.info(f"Running command: {command}")  # type: ignore
-        result = subprocess.run(
-            command.split(), capture_output=True, text=True)
-        if result.returncode == 0:
-            plugin._logger.info(  # type: ignore
-                "Command executed successfully.")
-            plugin._logger.info("Output:")  # type: ignore
-            plugin._logger.info(result.stdout)  # type: ignore
-        else:
-            plugin._logger.info(  # type: ignore
-                "Command failed with return code:", result.returncode)
-            plugin._logger.info("Error output:")  # type: ignore
-            plugin._logger.info(result.stderr)  # type: ignore
-    elif operating_system == "Darwin":
         command = "pkill -f chrom"
         plugin._logger.info(f"Running command: {command}")  # type: ignore
         result = subprocess.run(
@@ -142,7 +128,6 @@ def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"] = 
         # If no operating system is specified, kill all browsers
         kill_all_browsers("Windows")
         kill_all_browsers("Linux")
-        kill_all_browsers("Darwin")
 
 
 def restart_browser(
