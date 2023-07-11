@@ -46,6 +46,7 @@ class NanofactoryPlugin(
         self.browser_process: Popen = None
         self.restart_mode: Literal["stable", "dev"] = "stable"
         self.showOnlyNanoFactoryTab = False
+        self.showBrowserGUI = False
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -82,6 +83,8 @@ class NanofactoryPlugin(
             "getOperatingSystem": [],
             "getShowOnlyNanoFactoryTab": [],
             "setShowOnlyNanoFactoryTab": ["showOnlyNanoFactoryTab"],
+            "getShowBrowserGUI": [],
+            "setShowBrowserGUI": ["showBrowserGUI"],
         }
 
     def on_api_command(self, command, data):
@@ -192,6 +195,23 @@ class NanofactoryPlugin(
             self.update_nf_profile()
             self.send_show_only_nanofactory_tab()
 
+        elif command == "getShowBrowserGUI":
+            self.send_show_browser_gui()
+
+        elif command == "setShowBrowserGUI":
+            self.updateShowBrowserGUI(data["showBrowserGUI"])
+            restart_browser(self.os,
+                            self.api_key,
+                            self.peer_ID,
+                            self.master_peer_id,
+                            self.browser_process,
+                            self.base_url)
+
+    def updateShowBrowserGUI(self, showBrowserGUI):
+        self.showBrowserGUI = showBrowserGUI
+        self.update_nf_profile()
+        self.send_show_browser_gui()
+
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def save_master_peer_id_endpoint(self):
@@ -299,6 +319,7 @@ class NanofactoryPlugin(
                 nf_profile["peer_ID"] = self.peer_ID
                 nf_profile["master_peer_id"] = self.master_peer_id
                 nf_profile["showOnlyNanoFactoryTab"] = self.showOnlyNanoFactoryTab
+                nf_profile["showBrowserGUI"] = self.showBrowserGUI
                 f.seek(0)
                 json.dump(nf_profile, f)
                 f.truncate()
@@ -328,6 +349,12 @@ class NanofactoryPlugin(
         self._plugin_manager.send_plugin_message(
             self._identifier, {
                 "showOnlyNanoFactoryTab": self.showOnlyNanoFactoryTab}
+        )
+
+    def send_show_browser_gui(self):
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {
+                "showBrowserGUI": self.showBrowserGUI}
         )
 
     def send_master_peer_id(self):
@@ -380,6 +407,7 @@ class NanofactoryPlugin(
                         "api_key": api_key,
                         "master_peer_id": master_peer_id,
                         "showOnlyNanoFactoryTab": True,
+                        "showBrowserGUI": False,
                     }
                     json.dump(nf_profile, f)
 
@@ -389,10 +417,12 @@ class NanofactoryPlugin(
             self.api_key = nf_profile["api_key"]
         else:
             self._logger.warning("API Key not valid for NanoFactory")
-
         self.master_peer_id = nf_profile["master_peer_id"]
-
         self.showOnlyNanoFactoryTab = nf_profile["showOnlyNanoFactoryTab"]
+        if "showBrowserGUI" not in nf_profile:
+            nf_profile["showBrowserGUI"] = False
+        else:
+            self.showBrowserGUI = nf_profile["showBrowserGUI"]
 
     # ~~ AssetPlugin mixin
 

@@ -16,6 +16,7 @@ $(function () {
         self.nanoFactoryURL = ko.observable("")
         self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
         self.showOnlyNanoFactoryTab = ko.observable(false);
+        self.showBrowserGUI = ko.observable(false)
 
         self.isWindows = ko.observable(false)
         self.isLinux = ko.observable(false)
@@ -136,6 +137,15 @@ $(function () {
                         self.handleShowOnlyNanoFactoryTab()
                     }, 150);
                 }
+
+                if ("showBrowserGUI" in data) {
+                    self.showBrowserGUI(data["showBrowserGUI"])
+                    let text = data["showBrowserGUI"] ? "NanoFactory Browser GUI is Enabled" : "NanoFactory Browser GUI is Disabled"
+                    new PNotify({
+                        text: text,
+                        type: "notice",
+                    })
+                }
             }
         }
 
@@ -148,6 +158,7 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getShowOnlyNanoFactoryTab").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getShowBrowserGUI").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
@@ -177,6 +188,13 @@ $(function () {
                     self.tabsChanged(true)
                     self.updateJustNanofactory()
                 });
+
+
+                document.getElementById("nanofactory-checkbox-for-browser-gui").addEventListener("change", function (event) {
+                    self.updateShowBrowserGUI()
+                });
+
+
             }, 1000)
         }
 
@@ -208,6 +226,10 @@ $(function () {
 
         self.updateJustNanofactory = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "setShowOnlyNanoFactoryTab", { "showOnlyNanoFactoryTab": self.showOnlyNanoFactoryTab() }).done(function (response) { }).catch(error => { console.log(error) })
+        }
+
+        self.updateShowBrowserGUI = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "setShowBrowserGUI", { "showBrowserGUI": self.showBrowserGUI() }).done(function (response) { }).catch(error => { console.log(error) })
         }
 
         self.handleShowOnlyNanoFactoryTab = function () {

@@ -44,11 +44,12 @@ kill_chrome_command_linux = "killall chrome"
 def get_browser_flags(operating_system: Literal["Windows", "Darwin", "Linux"], check_display=False):
     browser_flags = flag_for_headless + flags + user_data_directory_path
 
-    if check_display and is_display_available(operating_system):
-        browser_flags = browser_flags.replace(flag_for_headless, "")
-    else:
-        # todo: inform gui that display is not available
-        pass
+    if check_display:
+        if is_display_available(operating_system):
+            browser_flags = browser_flags.replace(flag_for_headless, "")
+        else:
+            from . import __plugin_implementation__ as plugin
+            plugin.updateShowBrowserGUI(False)
     return browser_flags
 
 
@@ -193,7 +194,6 @@ def start_browser(
     peer_ID: str,
     master_peer_id: str,
     base_url: str,
-    check_display=False
 ):
     from . import __plugin_implementation__ as plugin
 
@@ -206,8 +206,7 @@ def start_browser(
         plugin.restart_mode
     )
 
-    browser_flags = get_browser_flags(operating_system, check_display)
-    plugin._logger.warning(browser_flags)
+    browser_flags = get_browser_flags(operating_system, plugin.showBrowserGUI)
 
     if operating_system == "Windows":
         try:

@@ -164,6 +164,14 @@
                             data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.full-width', container: '.hide' }"><i
                                 class="fas fa-caret-right"></i> {{ _('Advanced options') }}</a></small></div>
                 <div class="hide">
+                    <label class="tabs-checkbox">
+                        <input type="checkbox" id="nanofactory-checkbox-for-browser-gui"
+                            data-bind="checked: showBrowserGUI">
+                        <span>Show Browser GUI</span>
+                    </label>
+                </div>
+
+                <div class="hide">
                     <label class="toggle">
                         <span class="stable-label">Stable Mode</span>
                         <input id="nanofactory-checkbox-for-plugin-mode" class="toggle-checkbox" type="checkbox">
