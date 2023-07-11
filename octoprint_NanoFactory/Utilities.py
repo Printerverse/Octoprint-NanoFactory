@@ -34,8 +34,8 @@ flag_for_headless = "--headless "
 
 kill_pid_command_windows = "taskkill /F /PID "
 kill_pid_command_linux = "kill -9 "
-kill_chrome_command_windows = "taskkill /F /IM chrome.exe >nul"
-kill_msedge_command_windows = "taskkill /F /IM msedge.exe >nul"
+kill_chrome_command_windows = "taskkill /f /im chrome.exe 2> nul"
+kill_msedge_command_windows = "taskkill /f /im msedge.exe 2> nul"
 kill_chromium_browser_command_linux = "killall chromium-browser"
 kill_chromium_command_linux = "killall chromium"
 kill_chrome_command_linux = "killall chrome"
@@ -106,8 +106,10 @@ def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"] = 
     from . import __plugin_implementation__ as plugin
 
     if operating_system == "Windows":
-        subprocess.Popen(kill_chrome_command_windows, start_new_session=True)
-        subprocess.Popen(kill_msedge_command_windows, start_new_session=True)
+        subprocess.Popen(kill_chrome_command_windows,
+                         start_new_session=True, shell=True)
+        subprocess.Popen(kill_msedge_command_windows,
+                         start_new_session=True, shell=True)
 
     elif operating_system == "Linux":
         command = "pkill -f chrom"
@@ -141,6 +143,7 @@ def restart_browser(
     from . import __plugin_implementation__ as plugin
 
     kill_all_browsers(operating_system)
+    time.sleep(1)
     # Start the browser process in a separate thread
     # to prevent blocking
     browser_thread = threading.Thread(
@@ -303,7 +306,7 @@ def close_browser(browser_process: psutil.Popen):
     except Exception as e:
         plugin._logger.warning(e, exc_info=True)  # type: ignore
         plugin._logger.info("Closing all browsers...")  # type: ignore
-        kill_all_browsers()
+        kill_all_browsers(plugin.os)
 
 
 def extract_version_registry(output):
