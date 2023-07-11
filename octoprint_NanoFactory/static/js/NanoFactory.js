@@ -134,7 +134,7 @@ $(function () {
                     self.showOnlyNanoFactoryTab(data["showOnlyNanoFactoryTab"])
                     setTimeout(() => {
                         self.handleShowOnlyNanoFactoryTab()
-                    }, 50);
+                    }, 150);
                 }
             }
         }
