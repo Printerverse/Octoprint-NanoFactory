@@ -29,7 +29,8 @@ linux_chrome_path_1 = "/usr/bin/chromium-browser"
 linux_chrome_path_2 = "/usr/bin/chromium"
 
 user_data_directory_path = ""
-flags = "--headless --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
+flags = "--allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=0 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
+flag_for_headless = "--headless "
 
 kill_pid_command_windows = "taskkill /F /PID "
 kill_pid_command_linux = "kill -9 "
@@ -40,8 +41,15 @@ kill_chromium_command_linux = "killall chromium"
 kill_chrome_command_linux = "killall chrome"
 
 
-def get_browser_flags():
-    return flags + user_data_directory_path
+def get_browser_flags(operating_system: Literal["Windows", "Darwin", "Linux"], check_display=False):
+    browser_flags = flag_for_headless + flags + user_data_directory_path
+
+    if check_display and is_display_available(operating_system):
+        browser_flags = browser_flags.replace(flag_for_headless, "")
+    else:
+        # todo: inform gui that display is not available
+        pass
+    return browser_flags
 
 
 def initialize_user_data_directory(
@@ -91,6 +99,8 @@ def check_if_browser_is_installed(
 
 # I would add union types here but this version of python doesn't support them
 # so please ignore the type errors
+
+# type: ignore
 def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"] = ""):
     from . import __plugin_implementation__ as plugin
 
@@ -99,32 +109,34 @@ def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"] = 
         subprocess.Popen(kill_msedge_command_windows, start_new_session=True)
     elif operating_system == "Linux":
         command = "pkill -f chrom"
-        plugin._logger.info(f"Running command: {command}")
+        plugin._logger.info(f"Running command: {command}")  # type: ignore
         result = subprocess.run(
             command.split(), capture_output=True, text=True)
         if result.returncode == 0:
-            plugin._logger.info("Command executed successfully.")
-            plugin._logger.info("Output:")
-            plugin._logger.info(result.stdout)
+            plugin._logger.info(  # type: ignore
+                "Command executed successfully.")
+            plugin._logger.info("Output:")  # type: ignore
+            plugin._logger.info(result.stdout)  # type: ignore
         else:
-            plugin._logger.info(
+            plugin._logger.info(  # type: ignore
                 "Command failed with return code:", result.returncode)
-            plugin._logger.info("Error output:")
-            plugin._logger.info(result.stderr)
+            plugin._logger.info("Error output:")  # type: ignore
+            plugin._logger.info(result.stderr)  # type: ignore
     elif operating_system == "Darwin":
         command = "pkill -f chrom"
-        plugin._logger.info(f"Running command: {command}")
+        plugin._logger.info(f"Running command: {command}")  # type: ignore
         result = subprocess.run(
             command.split(), capture_output=True, text=True)
         if result.returncode == 0:
-            plugin._logger.info("Command executed successfully.")
-            plugin._logger.info("Output:")
-            plugin._logger.info(result.stdout)
+            plugin._logger.info(  # type: ignore
+                "Command executed successfully.")
+            plugin._logger.info("Output:")  # type: ignore
+            plugin._logger.info(result.stdout)  # type: ignore
         else:
-            plugin._logger.info(
+            plugin._logger.info(  # type: ignore
                 "Command failed with return code:", result.returncode)
-            plugin._logger.info("Error output:")
-            plugin._logger.info(result.stderr)
+            plugin._logger.info("Error output:")  # type: ignore
+            plugin._logger.info(result.stderr)  # type: ignore
     else:
         # If no operating system is specified, kill all browsers
         kill_all_browsers("Windows")
@@ -181,6 +193,7 @@ def start_browser(
     peer_ID: str,
     master_peer_id: str,
     base_url: str,
+    check_display=False
 ):
     from . import __plugin_implementation__ as plugin
 
@@ -193,18 +206,22 @@ def start_browser(
         plugin.restart_mode
     )
 
+    browser_flags = get_browser_flags(operating_system, check_display)
+    plugin._logger.warning(browser_flags)
+
     if operating_system == "Windows":
         try:
             browser_path = get_browser_path(operating_system)
 
             if browser_path:
                 process = psutil.Popen(
-                    [browser_path, url] + get_browser_flags().split(" "),
+                    [browser_path, url] +
+                    browser_flags.split(" "),
                     stdin=subprocess.PIPE,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.PIPE,
                 )
-                plugin._logger.info(
+                plugin._logger.info(  # type: ignore
                     "NanoFactory browser started with PID: "
                     + str(process.as_dict()["pid"])
                 )
@@ -213,20 +230,23 @@ def start_browser(
             else:
                 if get_windows_chrome_version():
                     subprocess.run(
-                        "start chrome {} {}".format(url, get_browser_flags()),
+                        "start chrome {} {}".format(
+                            url, browser_flags),
                         shell=True,
                     )
                 else:
                     subprocess.run(
-                        "start msedge {} {}".format(url, get_browser_flags()),
+                        "start msedge {} {}".format(
+                            url, browser_flags),
                         shell=True,
                     )
 
         except Exception as e:
             from . import __plugin_implementation__ as plugin
 
-            plugin._logger.error("Error while opening browser.")
-            plugin._logger.error(e, exc_info=True)
+            plugin._logger.error(  # type: ignore
+                "Error while opening browser.")  # type: ignore
+            plugin._logger.error(e, exc_info=True)  # type: ignore
 
     if operating_system == "Linux":
         try:
@@ -235,13 +255,14 @@ def start_browser(
             if not browser_path:
                 from . import __plugin_implementation__ as plugin
 
-                plugin._logger.error(
+                plugin._logger.error(  # type: ignore
                     linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found."
                 )
                 return
 
             process = psutil.Popen(
-                [browser_path, url] + (get_browser_flags()).split(" "),
+                [browser_path, url] +
+                (browser_flags).split(" "),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -250,38 +271,43 @@ def start_browser(
             return process
 
         except Exception as e:
-            plugin._logger.warning("Error while opening browser using psutil.")
-            plugin._logger.warning(e, exc_info=True)
-            plugin._logger.warning("Checking if the browser is running...")
+            plugin._logger.warning(  # type: ignore
+                "Error while opening browser using psutil.")  # type: ignore
+            plugin._logger.warning(e, exc_info=True)  # type: ignore
+            plugin._logger.warning(  # type: ignore
+                "Checking if the browser is running...")  # type: ignore
             command = "pgrep -f chrom"
             result = subprocess.run(
                 command.split(), capture_output=True, text=True)
             if result.returncode == 0:
-                plugin._logger.warning("Output of pgrep -f chrom:")
-                plugin._logger.warning(result.stdout)
-                plugin._logger.warning("Browser is already running")
+                plugin._logger.warning(  # type: ignore
+                    "Output of pgrep -f chrom:")  # type: ignore
+                plugin._logger.warning(result.stdout)  # type: ignore
+                plugin._logger.warning(  # type: ignore
+                    "Browser is already running")  # type: ignore
             else:
                 # this is fine, it just means that the browser is not running
-                plugin._logger.warning(
+                plugin._logger.warning(  # type: ignore
                     "pgrep -f chrom failed with return code:")
-                plugin._logger.warning(result.returncode)
-                plugin._logger.warning(
+                plugin._logger.warning(result.returncode)  # type: ignore
+                plugin._logger.warning(  # type: ignore
                     "Trying to start the browser using subprocess..."
                 )
                 try:
                     browser_path = get_browser_path(operating_system)
                     subprocess.run(
-                        [browser_path, url] + (get_browser_flags()).split(" "),
+                        [browser_path, url] +
+                        (browser_flags).split(" "),
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         start_new_session=True,
                     )
                 except Exception as e:
-                    plugin._logger.error(
+                    plugin._logger.error(  # type: ignore
                         "Error while opening browser using subprocess."
                     )
-                    plugin._logger.error(e, exc_info=True)
+                    plugin._logger.error(e, exc_info=True)  # type: ignore
 
 
 def close_browser(browser_process: psutil.Popen):
@@ -289,10 +315,10 @@ def close_browser(browser_process: psutil.Popen):
 
     try:
         browser_process.terminate()
-        plugin._logger.info("Browser closed.")
+        plugin._logger.info("Browser closed.")  # type: ignore
     except Exception as e:
-        plugin._logger.warning(e, exc_info=True)
-        plugin._logger.info("Closing all browsers...")
+        plugin._logger.warning(e, exc_info=True)  # type: ignore
+        plugin._logger.info("Closing all browsers...")  # type: ignore
         kill_all_browsers()
 
 
@@ -344,7 +370,7 @@ def get_windows_edge_version():
     except Exception as e:
         from . import __plugin_implementation__ as plugin
 
-        plugin._logger.warning(
+        plugin._logger.warning(  # type: ignore
             "Error while getting ms-edge version.", exc_info=True)
 
     return version
@@ -376,3 +402,23 @@ def get_windows_chrome_version():
     )
 
     return version
+
+
+def is_display_available(operating_system: Literal["Windows", "Darwin", "Linux"]):
+    if operating_system == "Windows":
+        command = 'wmic path Win32_VideoController get Status /value'
+        result = subprocess.run(
+            command, capture_output=True, text=True, shell=True)
+
+        # Check the output for the status
+        if result.returncode == 0:
+            output_lines = result.stdout.strip().split('\n')
+            status_line = [
+                line for line in output_lines if line.startswith('Status=')]
+            if status_line:
+                status = status_line[0].split('=')[1].strip()
+                return status == 'OK'
+
+        return False
+    elif operating_system == "Linux":
+        return os.environ.get("DISPLAY") is not None
