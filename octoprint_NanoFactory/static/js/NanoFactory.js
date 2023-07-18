@@ -15,7 +15,6 @@ $(function () {
         self.masterPeerID = ko.observable("")
         self.nanoFactoryURL = ko.observable("")
         self.nanoFactoryActionButtonText = ko.observable("Add to NanoFactory")
-        self.showOnlyNanoFactoryTab = ko.observable(false);
         self.showBrowserGUI = ko.observable(false)
 
         self.isWindows = ko.observable(false)
@@ -34,9 +33,6 @@ $(function () {
         self.showClearNanoFactoryDatabaseModal = ko.observable(false)
 
         self.restartMode = ko.observable("stable") // can be "stable" or "dev"
-
-        const nanofactoryTabID = "#tab_plugin_NanoFactory_link"
-        self.tabsChanged = ko.observable(false)
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -131,13 +127,6 @@ $(function () {
                     }
                 }
 
-                if ("showOnlyNanoFactoryTab" in data) {
-                    self.showOnlyNanoFactoryTab(data["showOnlyNanoFactoryTab"])
-                    setTimeout(() => {
-                        self.handleShowOnlyNanoFactoryTab()
-                    }, 150);
-                }
-
                 if ("showBrowserGUI" in data) {
                     self.showBrowserGUI(data["showBrowserGUI"])
                     let text = data["showBrowserGUI"] ? "NanoFactory Browser GUI is Enabled" : "NanoFactory Browser GUI is Disabled"
@@ -157,7 +146,6 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getShowOnlyNanoFactoryTab").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getShowBrowserGUI").done(function (response) { }).catch(error => { console.log(error) });
         }
 
@@ -181,12 +169,6 @@ $(function () {
                     }
 
                     self.restartNanoFactoryApp()
-                });
-
-
-                document.getElementById("nanofactory-checkbox-for-tabs").addEventListener("change", function () {
-                    self.tabsChanged(true)
-                    self.updateJustNanofactory()
                 });
 
 
@@ -224,42 +206,10 @@ $(function () {
                 self.copyToClipboard(self.nanoFactoryURL())
         }
 
-        self.updateJustNanofactory = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "setShowOnlyNanoFactoryTab", { "showOnlyNanoFactoryTab": self.showOnlyNanoFactoryTab() }).done(function (response) { }).catch(error => { console.log(error) })
-        }
 
         self.updateShowBrowserGUI = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "setShowBrowserGUI", { "showBrowserGUI": self.showBrowserGUI() }).done(function (response) { }).catch(error => { console.log(error) })
         }
-
-        self.handleShowOnlyNanoFactoryTab = function () {
-            if (self.showOnlyNanoFactoryTab()) {
-                // Moving all other tabs to the hamburger menu
-                let elements = $('#tabs').children();
-
-                let filteredTabs = elements.filter(function (index) {
-                    if (!elements[index].id)
-                        return false
-                    return !elements[index].id.includes(nanofactoryTabID)
-                })
-
-                filteredTabs.each(function (index) {
-                    $(this).appendTo('.dropdown-menu');
-                })
-
-                // Making NanoFactory the first tab 
-                const tabLink = $('li' + nanofactoryTabID);
-                tabLink.prependTo('#tabs');
-
-                window.location.href = nanofactoryTabID
-
-            } else if (self.tabsChanged()) {
-                // reload to get the default tabs back as 
-                // the user has unchecked the checkbox
-                window.location.reload()
-            }
-        }
-
 
         self.restartNanoFactoryApp = function () {
             OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp", { "mode": self.restartMode() }).done(function (response) {

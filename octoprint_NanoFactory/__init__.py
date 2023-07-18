@@ -45,7 +45,6 @@ class NanofactoryPlugin(
         self.browser_installed = False
         self.browser_process: Popen = None
         self.restart_mode: Literal["stable", "dev"] = "stable"
-        self.showOnlyNanoFactoryTab = False
         self.showBrowserGUI = False
 
     # # ~~ StartupPlugin mixin
@@ -81,8 +80,6 @@ class NanofactoryPlugin(
             "giveupSnapshotCameraStream": [],
             "startNanoFactoryPostSetup": [],
             "getOperatingSystem": [],
-            "getShowOnlyNanoFactoryTab": [],
-            "setShowOnlyNanoFactoryTab": ["showOnlyNanoFactoryTab"],
             "getShowBrowserGUI": [],
             "setShowBrowserGUI": ["showBrowserGUI"],
         }
@@ -186,14 +183,6 @@ class NanofactoryPlugin(
             self._plugin_manager.send_plugin_message(
                 self._identifier, {"operating_system": self.os}
             )
-
-        elif command == "getShowOnlyNanoFactoryTab":
-            self.send_show_only_nanofactory_tab()
-
-        elif command == "setShowOnlyNanoFactoryTab":
-            self.showOnlyNanoFactoryTab = data["showOnlyNanoFactoryTab"]
-            self.update_nf_profile()
-            self.send_show_only_nanofactory_tab()
 
         elif command == "getShowBrowserGUI":
             self.send_show_browser_gui()
@@ -318,7 +307,6 @@ class NanofactoryPlugin(
                 nf_profile["api_key"] = self.api_key
                 nf_profile["peer_ID"] = self.peer_ID
                 nf_profile["master_peer_id"] = self.master_peer_id
-                nf_profile["showOnlyNanoFactoryTab"] = self.showOnlyNanoFactoryTab
                 nf_profile["showBrowserGUI"] = self.showBrowserGUI
                 f.seek(0)
                 json.dump(nf_profile, f)
@@ -343,12 +331,6 @@ class NanofactoryPlugin(
     def send_api_key(self):
         self._plugin_manager.send_plugin_message(
             self._identifier, {"api_key": self.api_key}
-        )
-
-    def send_show_only_nanofactory_tab(self):
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {
-                "showOnlyNanoFactoryTab": self.showOnlyNanoFactoryTab}
         )
 
     def send_show_browser_gui(self):
@@ -406,7 +388,6 @@ class NanofactoryPlugin(
                         "peer_ID": str(uuid4()),
                         "api_key": api_key,
                         "master_peer_id": master_peer_id,
-                        "showOnlyNanoFactoryTab": True,
                         "showBrowserGUI": False,
                     }
                     json.dump(nf_profile, f)
@@ -418,7 +399,6 @@ class NanofactoryPlugin(
         else:
             self._logger.warning("API Key not valid for NanoFactory")
         self.master_peer_id = nf_profile["master_peer_id"]
-        self.showOnlyNanoFactoryTab = nf_profile["showOnlyNanoFactoryTab"]
         if "showBrowserGUI" not in nf_profile:
             nf_profile["showBrowserGUI"] = False
         else:
