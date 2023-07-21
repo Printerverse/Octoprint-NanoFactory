@@ -45,11 +45,11 @@ def get_browser_flags(operating_system: Literal["Windows", "Darwin", "Linux"], c
     browser_flags = flag_for_headless + flags + user_data_directory_path
 
     if check_display:
-        if is_display_available(operating_system):
-            browser_flags = browser_flags.replace(flag_for_headless, "")
-        else:
-            from . import __plugin_implementation__ as plugin
-            plugin.updateShowBrowserGUI(False)
+        # if is_display_available(operating_system):
+        browser_flags = browser_flags.replace(flag_for_headless, "")
+        # else:
+        #     from . import __plugin_implementation__ as plugin
+        #     plugin.updateShowBrowserGUI(False)
     return browser_flags
 
 
