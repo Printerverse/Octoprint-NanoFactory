@@ -21,7 +21,7 @@ $(function () {
         self.isLinux = ko.observable(false)
         self.isMac = ko.observable(false)
 
-        self.upgradeLinuxCommand = ko.observable("sudo apt update && sudo apt upgrade -y")
+        self.updateLinuxCommand = ko.observable("sudo apt update -y")
         self.installChromiumBrowser = ko.observable("sudo apt install chromium-browser -y")
         self.installChromium = ko.observable("sudo apt install chromium -y")
 
@@ -423,8 +423,8 @@ $(function () {
 
         self.copyToClipboard = function (text) {
 
-            if (text === "upgradeLinuxCommand")
-                text = self.upgradeLinuxCommand()
+            if (text === "updateLinuxCommand")
+                text = self.updateLinuxCommand()
 
             if (text === "installChromiumBrowser")
                 text = self.installChromiumBrowser()
