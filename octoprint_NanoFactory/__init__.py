@@ -22,7 +22,7 @@ from typing_extensions import Literal
 import octoprint.plugin
 from octoprint.server import settings
 
-from .BedLevelling import process_gcode
+from . import BedLevelling
 
 
 class NanofactoryPlugin(
@@ -43,7 +43,6 @@ class NanofactoryPlugin(
         self.cors_error = False
         self.os: Literal["Windows", "Darwin", "Linux"] = "Linux"
         self.browser_installed = False
-        self.browser_process: Popen = None
         self.restart_mode: Literal["stable", "dev"] = "stable"
         self.showBrowserGUI = False
 
@@ -61,7 +60,7 @@ class NanofactoryPlugin(
 
         initialize_user_data_directory(self.os)
         if self.api_key and self.peer_ID and self.browser_installed:
-            self.browser_process = start_browser(
+            start_browser(
                 self.os, self.api_key, self.peer_ID, self.master_peer_id, self.base_url
             )
 
@@ -98,12 +97,11 @@ class NanofactoryPlugin(
                     json.dump(nf_profile, f)
                     f.truncate()
 
-                self.browser_process = restart_browser(
+                restart_browser(
                     self.os,
                     self.api_key,
                     self.peer_ID,
                     self.master_peer_id,
-                    self.browser_process,
                     self.base_url,
                 )
 
@@ -117,7 +115,7 @@ class NanofactoryPlugin(
             self.browser_installed = check_if_browser_is_installed(self.os)
 
             if self.browser_installed:
-                self.browser_process = start_browser(
+                start_browser(
                     self.os,
                     self.api_key,
                     self.peer_ID,
@@ -144,16 +142,15 @@ class NanofactoryPlugin(
 
         elif command == "restartNanoFactoryApp":
             self.restart_mode = data["mode"]
-            self.browser_process = restart_browser(
+            restart_browser(
                 self.os,
                 self.api_key,
                 self.peer_ID,
                 self.master_peer_id,
-                self.browser_process,
                 self.base_url,
             )
 
-        elif command == "deleteNanoFactoryDatabase":
+        elif command == "deleteNanoFactoryDatabasse":
             self._plugin_manager.send_plugin_message(
                 self._identifier, {
                     "deleteDatabase": "deleteNanoFactoryDatabase"}
@@ -193,7 +190,6 @@ class NanofactoryPlugin(
                             self.api_key,
                             self.peer_ID,
                             self.master_peer_id,
-                            self.browser_process,
                             self.base_url)
 
     def updateShowBrowserGUI(self, showBrowserGUI):
@@ -284,8 +280,7 @@ class NanofactoryPlugin(
         return True
 
     def on_shutdown(self):
-        if self.browser_process:
-            close_browser(self.browser_process)
+        close_browser()
 
     def check_api_key_validity(self, api_key):
         if api_key:
@@ -451,5 +446,5 @@ def __plugin_load__():
     global __plugin_hooks__
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
-        "octoprint.comm.protocol.gcode.received": process_gcode,
+        "octoprint.comm.protocol.gcode.received": BedLevelling.process_gcode,
     }

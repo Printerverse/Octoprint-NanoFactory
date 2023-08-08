@@ -41,7 +41,7 @@ kill_chromium_command_linux = "killall chromium"
 kill_chrome_command_linux = "killall chrome"
 
 
-def get_browser_flags(operating_system: Literal["Windows", "Darwin", "Linux"], check_display=False):
+def get_browser_flags(check_display=False):
     browser_flags = flag_for_headless + flags + user_data_directory_path
 
     if check_display:
@@ -137,12 +137,9 @@ def restart_browser(
     api_key: str,
     peer_ID: str,
     master_peer_id: str,
-    browser_process: psutil.Popen,
     base_url: str,
 ):
-    from . import __plugin_implementation__ as plugin
-
-    kill_all_browsers(operating_system)
+    close_browser()
     time.sleep(1)
     # Start the browser process in a separate thread
     # to prevent blocking
@@ -194,7 +191,7 @@ def start_browser(
         plugin.restart_mode
     )
 
-    browser_flags = get_browser_flags(operating_system, plugin.showBrowserGUI)
+    browser_flags = get_browser_flags(plugin.showBrowserGUI)
 
     if operating_system == "Windows":
         try:
@@ -212,7 +209,7 @@ def start_browser(
                     "NanoFactory browser started with PID: "
                     + str(process.as_dict()["pid"])
                 )
-                return process
+                plugin.pid = process.as_dict()["pid"]
 
             else:
                 if get_windows_chrome_version():
@@ -229,7 +226,6 @@ def start_browser(
                     )
 
         except Exception as e:
-            from . import __plugin_implementation__ as plugin
 
             plugin._logger.error(  # type: ignore
                 "Error while opening browser.")  # type: ignore
@@ -240,7 +236,6 @@ def start_browser(
             browser_path = get_browser_path(operating_system)
 
             if not browser_path:
-                from . import __plugin_implementation__ as plugin
 
                 plugin._logger.error(  # type: ignore
                     linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found."
@@ -255,7 +250,11 @@ def start_browser(
                 stderr=subprocess.PIPE,
                 start_new_session=True,
             )
-            return process
+            plugin._logger.info(  # type: ignore
+                "NanoFactory browser started with PID: "
+                + str(process.as_dict()["pid"])
+            )
+            plugin.pid = process.as_dict()["pid"]
 
         except Exception as e:
             plugin._logger.warning(  # type: ignore
@@ -297,12 +296,25 @@ def start_browser(
                     plugin._logger.error(e, exc_info=True)  # type: ignore
 
 
-def close_browser(browser_process: psutil.Popen):
+def close_browser():
     from . import __plugin_implementation__ as plugin
 
     try:
-        browser_process.terminate()
-        plugin._logger.info("Browser closed.")  # type: ignore
+        if plugin.pid:
+            if plugin.os == "Windows":
+                subprocess.run(
+                    kill_pid_command_windows + str(plugin.pid),
+                    shell=True,
+                    start_new_session=True
+                )
+            elif plugin.os == "Linux":
+                subprocess.run(
+                    kill_pid_command_linux + str(plugin.pid),
+                    shell=True,
+                    start_new_session=True
+                )
+        else:
+            kill_all_browsers(plugin.os)
     except Exception as e:
         plugin._logger.warning(e, exc_info=True)  # type: ignore
         plugin._logger.info("Closing all browsers...")  # type: ignore
