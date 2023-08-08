@@ -180,6 +180,14 @@
     color: white;
 }
 
+/* add styling for when the button is disabled */
+.nanofactory-button:disabled {
+    background-color: #393939;
+    border: 1px solid #393939;
+    color: #777777;
+    cursor: not-allowed;
+}
+
 .nanofactory-input-field {
     width: 19rem;
     border-radius: 12px !important;

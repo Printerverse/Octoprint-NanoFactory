@@ -142,6 +142,12 @@ $(function () {
                         type: "notice",
                     })
                 }
+
+                if ("startProxyServer" in data) {
+                    if (data["startProxyServer"]) {
+                        self.initiateSSHConnection()
+                    }
+                }
             }
         }
 
@@ -486,21 +492,22 @@ $(function () {
             );
         }
 
-        var term;
+
+        let term;
         function initXTerm() {
             term = new Terminal({
-                cols: 55,
-                rows: 20
+                rows: 24,
+                cols: 30,
             });
-            term.loadAddon(new WebLinksAddon.WebLinksAddon());
             const fitAddon = new FitAddon.FitAddon();
             term.loadAddon(fitAddon);
-            const searchAddon = new SearchAddon.SearchAddon();
-            term.loadAddon(searchAddon);
             term.open(document.getElementById('terminal'));
             fitAddon.fit();
             term.write('\n\r');
             fitAddon.fit();
+
+            // Assigning term to window so that wasm can find it
+            window.term = term;
         }
         initXTerm();
 
@@ -514,28 +521,24 @@ $(function () {
                 return $("portInp").val() == "" || $('#hostInp').val() == "" || $('#usrInp').val() == "" ||
                     ($('#passInp').val() == "" && $('#pkInp').val() == "")
             }
-            pkFileOpen = function (evt) {
-                const input = event.target
-                if ('files' in input && input.files.length > 0) {
-                    console.log("open" + input.files[0])
-                    placeFileContent(document.getElementById('pkInp'), input.files[0])
-                }
+
+            self.startProxyServer = function () {
+                $('#conBtn').prop('disabled', true);
+                showMsg('Connecting...');
+                OctoPrint.simpleApiCommand("NanoFactory", "startProxyServer").done(function (response) { }).catch(error => { console.log(error) });
             }
 
-            function placeFileContent(target, file) {
-                readFileContent(file).then(content => {
-                    target.value = content
-                    $('#conBtn').prop('disabled', notReady() ? true : false);
-                }).catch(error => console.log(error))
+            self.initiateSSHConnection = function () {
+                $('#terminal').css('display', 'block');
+                const SSH_PORT = 22
+                const PASS_KEY = ""
+                const BYPASS_PROXY = false
+                const BYPASS_FINGERPRINT = false
+                initConnection(term.rows, term.cols, $('#hostInp').val(), SSH_PORT, $('#usrInp').val(), $('#passInp').val(), PASS_KEY, BYPASS_PROXY, BYPASS_FINGERPRINT);
             }
 
-            function readFileContent(file) {
-                const reader = new FileReader()
-                return new Promise((resolve, reject) => {
-                    reader.onload = event => resolve(event.target.result)
-                    reader.onerror = error => reject(error)
-                    reader.readAsText(file)
-                })
+            self.stopProxyServer = function () {
+                OctoPrint.simpleApiCommand("NanoFactory", "stopProxyServer").done(function (response) { }).catch(error => { console.log(error) });
             }
 
             showServerKey = function (key) {
@@ -585,13 +588,9 @@ $(function () {
                 $('#portInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
                 $('#usrInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
                 $('#passInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-                $('#pkInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-                $('#pkFile').change(pkFileOpen);
                 $('#msg').hide()
                 $('#errMsg').hide()
             });
-            var home = "/";
-
         };
 
 

@@ -4,8 +4,6 @@
     <!-- Xterm.js -->
     <script src="plugin/NanoFactory/static/js/node_modules/xterm/lib/xterm.js"></script>
     <script src="plugin/NanoFactory/static/js/node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
-    <script src="plugin/NanoFactory/static/js/node_modules/xterm-addon-search/lib/xterm-addon-search.js"></script>
-    <script src="plugin/NanoFactory/static/js/node_modules/xterm-addon-web-links/lib/xterm-addon-web-links.js"></script>
     <link rel="stylesheet" href="plugin/NanoFactory/static/js/node_modules/xterm/css/xterm.css" />
 
     <img class="logo" src="plugin/NanoFactory/static/img/Logo.svg">
@@ -56,12 +54,27 @@
 
                     <div class="automated-setup-instructions-linux" data-bind="visible: showAutomatedInstructionsLinux">
                         <div>
-                            Enter your username and password to tunnel into your printer server
+                            <div id="conInf" class="full-width center-flex-box">
+                            </div>
+                            <div>
+                                <div class="full-width">
+                                    <div id="msg" class="alert alert-primary" role="alert"></div>
+                                    <div id="errMsg" class="alert alert-danger" role="alert"> </div>
+                                </div>
+                            </div>
                         </div>
 
                         <br />
 
                         <div id="conPan" class="center-flex-box">
+
+                            <div>
+                                Enter your username and password to tunnel into your printer server
+                            </div>
+
+                            <br />
+
+
                             <div class="full-width">
                                 <input class="nanofactory-input-field full-width" id="hostInp" type="text"
                                     placeholder="Host to Connect" data-bind="value: hostname">
@@ -75,13 +88,16 @@
                             <br />
                             <div>
                                 <button id="conBtn" type="button" class="nanofactory-button success-button half-width"
-                                    onclick="$('#conBtn').prop('disabled',true);showMsg('Connecting...');initConnection(term.rows, term.cols,$('#hostInp').val(),22,$('#usrInp').val(),$('#passInp').val(),'', false, false);">Connect
+                                    data-bind="click: startProxyServer">Connect
                                     & Install</button>
                             </div>
 
-                            <div class="full-width">
-                                <div id="terminal" class="full-width" style="display: none;"></div>
-                            </div>
+                        </div>
+
+                        <br />
+
+                        <div class="full-width">
+                            <div id="terminal" class="full-width" style="display: none;"></div>
                         </div>
                     </div>
 
@@ -251,6 +267,56 @@
             </div>
 
         </div>
+
+        {# Fingerprint Modal #}
+        <div id="fingerprintModal" class="modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Server fingerprint</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                            onclick="acceptFingerprint(false);">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div id="fingerprintMsg" class="modal-body">
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                            onclick="acceptFingerprint(true);">Yes</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            onclick="acceptFingerprint(false);">No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Reconnect Modal #}
+        <div id="reconnectModal" class="modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Connection lost</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                            onclick="reconnect(false);">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div id="connLostMsg" class="modal-body">
+                        The connection to your server was interrupted.
+                        Do you want to reconnect?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                            onclick="reconnect(true);">Yes</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            onclick="reconnect(false);">No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <div data-bind="visible: isMac">
             <img src="plugin/NanoFactory/static/img/MacMeme.jpg" />
