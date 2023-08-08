@@ -22,6 +22,10 @@ $(function () {
         self.isMac = ko.observable(false)
 
         self.updateLinuxAndInstallChromiumCommand = ko.observable("sudo apt update && sudo apt install chromium chromium-browser -y")
+        self.showTabBarLinux = ko.observable(false)
+        self.showAutomatedInstructionsLinux = ko.observable(false)
+        self.showManualInstructionsLinux = ko.observable(true)
+        self.hostname = ko.observable(window.location.hostname)
 
         self.showAPIKeyEditButton = ko.observable(true)
         self.showAPIKeySubmitButton = ko.observable(false)
@@ -102,27 +106,32 @@ $(function () {
                 // check for the key browser_installed in the data
 
                 if ("browser_installed" in data) {
-                    if (data["browser_installed"]) {
-                        self.showSetupInstructions(false)
-                    } else {
-                        self.showSetupInstructions(true)
-                        new PNotify({
-                            title: "Browser Not Installed",
-                            text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
-                            type: "notice",
-                            hide: false
-                        });
-                    }
+                    // if (data["browser_installed"]) {
+                    //     self.showSetupInstructions(false)
+                    // } else {
+                    self.showSetupInstructions(true)
+                    new PNotify({
+                        title: "Browser Not Installed",
+                        text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
+                        type: "notice",
+                        hide: false
+                    });
+                    // }
                 }
 
                 if (data["operating_system"]) {
-                    if (data["operating_system"] == "Windows") {
-                        self.isWindows(true)
-                    } else if (data["operating_system"] == "Linux") {
-                        self.isLinux(true)
-                    } else if (data["operating_system"] == "Darwin") {
-                        self.isMac(true)
-                    }
+                    // if (data["operating_system"] == "Windows") {
+                    //     self.isWindows(true)
+                    // } else if (data["operating_system"] == "Linux") {
+                    self.isLinux(true)
+                    // if (!(["localhost", "::", "127.0.0.1"].includes(self.hostname()))) {
+                    self.showTabBarLinux(true)
+                    self.showAutomatedInstructionsLinux(true)
+                    self.showManualInstructionsLinux(false)
+                    // }
+                    // } else if (data["operating_system"] == "Darwin") {
+                    //     self.isMac(true)
+                    // }
                 }
 
                 if ("showBrowserGUI" in data) {
@@ -455,6 +464,136 @@ $(function () {
                 });
             }
         }
+
+        self.handleTabBarClick = function (tab) {
+            if (tab === "manual") {
+                self.showManualInstructionsLinux(true)
+                self.showAutomatedInstructionsLinux(false)
+            } else {
+                self.showManualInstructionsLinux(false)
+                self.showAutomatedInstructionsLinux(true)
+            }
+        }
+
+        // -------------- SSH related functions --------------
+        function fetchAndInstantiate(url, importObject) {
+            return fetch(url).then(response =>
+                response.arrayBuffer()
+            ).then(bytes =>
+                WebAssembly.instantiate(bytes, importObject)
+            ).then(results =>
+                results.instance
+            );
+        }
+
+        var term;
+        function initXTerm() {
+            term = new Terminal({
+                cols: 55,
+                rows: 20
+            });
+            term.loadAddon(new WebLinksAddon.WebLinksAddon());
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            const searchAddon = new SearchAddon.SearchAddon();
+            term.loadAddon(searchAddon);
+            term.open(document.getElementById('terminal'));
+            fitAddon.fit();
+            term.write('\n\r');
+            fitAddon.fit();
+        }
+        initXTerm();
+
+        var go = new Go();
+        var mod = fetchAndInstantiate("plugin/NanoFactory/static/js/main.wasm", go.importObject);
+        window.onload = function () {
+            mod.then(function (instance) {
+                go.run(instance);
+            });
+            notReady = function () {
+                return $("portInp").val() == "" || $('#hostInp').val() == "" || $('#usrInp').val() == "" ||
+                    ($('#passInp').val() == "" && $('#pkInp').val() == "")
+            }
+            pkFileOpen = function (evt) {
+                const input = event.target
+                if ('files' in input && input.files.length > 0) {
+                    console.log("open" + input.files[0])
+                    placeFileContent(document.getElementById('pkInp'), input.files[0])
+                }
+            }
+
+            function placeFileContent(target, file) {
+                readFileContent(file).then(content => {
+                    target.value = content
+                    $('#conBtn').prop('disabled', notReady() ? true : false);
+                }).catch(error => console.log(error))
+            }
+
+            function readFileContent(file) {
+                const reader = new FileReader()
+                return new Promise((resolve, reject) => {
+                    reader.onload = event => resolve(event.target.result)
+                    reader.onerror = error => reject(error)
+                    reader.readAsText(file)
+                })
+            }
+
+            showServerKey = function (key) {
+                $('#fingerprintMsg').html("RSA key fingerprint is " + key + " <br>Are you sure you want to continue connecting (yes/no)?")
+                $('#fingerprintModal').modal('show')
+            }
+
+            connected = function (status) {
+                showMsg('');
+                showErr('');
+                $('#msg').hide();
+                $('#errMsg').hide()
+                $('#conPan').hide();
+                $('#conInf').html(status);
+            }
+
+            showReconnect = function (errorMsg) {
+                $('#connLostMsg').html("The connection to your server was interrupted: " + errorMsg + "<br>Do you want to reconnect?")
+                $('#reconnectModal').modal('show')
+            }
+
+            reconnect = function (shouldReconnect) {
+                if (shouldReconnect) {
+                    initConnection(term.rows, term.cols, $('#hostInp').val(), Number($('#portInp').val()), $('#usrInp').val(), $('#passInp').val(), $('#pkInp').val(), $('#bypassProxyInp').is(':checked'), false);
+                } else {
+                    $('#conPan').show();
+                }
+            }
+
+            showMsg = function (msg) {
+                $('#errMsg').hide()
+                $('#msg').show()
+                $('#msg').html(msg);
+            }
+
+            showErr = function (msg) {
+                $('#msg').hide();
+                $('#conPan').show();
+                $('#conBtn').prop('disabled', false);
+                $('#errMsg').show();
+                $('#errMsg').html(msg);
+            }
+
+            $(document).ready(function () {
+                $('#conBtn').prop('disabled', true);
+                $('#hostInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+                $('#portInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+                $('#usrInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+                $('#passInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+                $('#pkInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+                $('#pkFile').change(pkFileOpen);
+                $('#msg').hide()
+                $('#errMsg').hide()
+            });
+            var home = "/";
+
+        };
+
 
     }
 
