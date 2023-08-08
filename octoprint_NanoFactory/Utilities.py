@@ -40,6 +40,8 @@ kill_chromium_browser_command_linux = "killall chromium-browser"
 kill_chromium_command_linux = "killall chromium"
 kill_chrome_command_linux = "killall chrome"
 
+browser_thread: threading.Thread = None
+
 
 def get_browser_flags(check_display=False):
     browser_flags = flag_for_headless + flags + user_data_directory_path
@@ -137,17 +139,12 @@ def restart_browser(
     api_key: str,
     peer_ID: str,
     master_peer_id: str,
-    base_url: str,
+    base_url: str
 ):
     close_browser()
     time.sleep(1)
-    # Start the browser process in a separate thread
-    # to prevent blocking
-    browser_thread = threading.Thread(
-        target=start_browser,
-        args=(operating_system, api_key, peer_ID, master_peer_id, base_url),
-    )
-    browser_thread.start()
+    start_browser_thread(operating_system, api_key,
+                         peer_ID, master_peer_id, base_url)
 
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
@@ -171,6 +168,25 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
             return linux_chrome_path_2
         else:
             return None
+
+
+def start_browser_thread(
+    operating_system: Literal["Windows", "Darwin", "Linux"],
+    api_key: str,
+    peer_ID: str,
+    master_peer_id: str,
+    base_url: str
+):
+    global browser_thread
+    # Start the browser process in a separate thread
+    # to prevent blocking
+    browser_thread = threading.Thread(
+        target=start_browser,
+        args=(operating_system, api_key, peer_ID, master_peer_id, base_url),
+    )
+    # the thread is a daemon thread so that it stops automatically on exit
+    browser_thread.daemon = True
+    browser_thread.start()
 
 
 def start_browser(

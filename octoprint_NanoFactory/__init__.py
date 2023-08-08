@@ -14,7 +14,7 @@ from octoprint_NanoFactory.Utilities import (
     close_browser,
     initialize_user_data_directory,
     restart_browser,
-    start_browser,
+    start_browser_thread,
 )
 from psutil import Popen
 from typing_extensions import Literal
@@ -60,7 +60,7 @@ class NanofactoryPlugin(
 
         initialize_user_data_directory(self.os)
         if self.api_key and self.peer_ID and self.browser_installed:
-            start_browser(
+            start_browser_thread(
                 self.os, self.api_key, self.peer_ID, self.master_peer_id, self.base_url
             )
 
@@ -115,7 +115,7 @@ class NanofactoryPlugin(
             self.browser_installed = check_if_browser_is_installed(self.os)
 
             if self.browser_installed:
-                start_browser(
+                start_browser_thread(
                     self.os,
                     self.api_key,
                     self.peer_ID,
