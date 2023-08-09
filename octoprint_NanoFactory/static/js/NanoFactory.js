@@ -110,6 +110,7 @@ $(function () {
                     //     self.showSetupInstructions(false)
                     // } else {
                     self.showSetupInstructions(true)
+                    self.initializeSSHUtils()
                     new PNotify({
                         title: "Browser Not Installed",
                         text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
@@ -153,12 +154,12 @@ $(function () {
 
 
         self.onBeforeBinding = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getShowBrowserGUI").done(function (response) { }).catch(error => { console.log(error) });
         }
 
@@ -482,22 +483,49 @@ $(function () {
         }
 
         // -------------- SSH related functions --------------
-        function fetchAndInstantiate(url, importObject) {
-            return fetch(url).then(response =>
-                response.arrayBuffer()
-            ).then(bytes =>
-                WebAssembly.instantiate(bytes, importObject)
-            ).then(results =>
-                results.instance
-            );
+        self.startProxyServer = function () {
+            $('#conBtn').prop('disabled', true);
+            showMsg('Connecting...');
+            OctoPrint.simpleApiCommand("NanoFactory", "startProxyServer").done(function (response) { }).catch(error => { console.log(error) });
         }
 
+        self.initiateSSHConnection = function () {
+            $('#terminal').css('display', 'block');
+            const SSH_PORT = 22
+            const PASS_KEY = ""
+            const BYPASS_PROXY = false
+            const BYPASS_FINGERPRINT = false
+            initConnection(term.rows, term.cols, $('#hostInp').val(), SSH_PORT, $('#usrInp').val(), $('#passInp').val(), PASS_KEY, BYPASS_PROXY, BYPASS_FINGERPRINT);
+        }
+
+        self.stopProxyServer = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "stopProxyServer").done(function (response) { }).catch(error => { console.log(error) });
+        }
+
+        self.initializeSSHUtils = async function () {
+            $('#conBtn').prop('disabled', true);
+            $('#hostInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+            $('#portInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+            $('#usrInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+            $('#passInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+            $('#msg').hide()
+            $('#errMsg').hide()
+
+            initXTerm();
+
+            let go = new Go();
+            let mod = await fetchAndInstantiate("plugin/NanoFactory/static/js/main.wasm", go.importObject);
+            go.run(mod);
+
+        }
 
         let term;
+
         function initXTerm() {
             term = new Terminal({
                 rows: 24,
-                cols: 30,
+                cols: 50,
+                cursorBlink: true
             });
             const fitAddon = new FitAddon.FitAddon();
             term.loadAddon(fitAddon);
@@ -509,91 +537,64 @@ $(function () {
             // Assigning term to window so that wasm can find it
             window.term = term;
         }
-        initXTerm();
 
-        var go = new Go();
-        var mod = fetchAndInstantiate("plugin/NanoFactory/static/js/main.wasm", go.importObject);
-        window.onload = function () {
-            mod.then(function (instance) {
-                go.run(instance);
-            });
-            notReady = function () {
-                return $("portInp").val() == "" || $('#hostInp').val() == "" || $('#usrInp').val() == "" ||
-                    ($('#passInp').val() == "" && $('#pkInp').val() == "")
-            }
+        function fetchAndInstantiate(url, importObject) {
+            return fetch(url).then(response =>
+                response.arrayBuffer()
+            ).then(bytes =>
+                WebAssembly.instantiate(bytes, importObject)
+            ).then(results =>
+                results.instance
+            );
+        }
 
-            self.startProxyServer = function () {
-                $('#conBtn').prop('disabled', true);
-                showMsg('Connecting...');
-                OctoPrint.simpleApiCommand("NanoFactory", "startProxyServer").done(function (response) { }).catch(error => { console.log(error) });
-            }
+        notReady = function () {
+            return $("portInp").val() == "" || $('#hostInp').val() == "" || $('#usrInp').val() == "" ||
+                ($('#passInp').val() == "" && $('#pkInp').val() == "")
+        }
 
-            self.initiateSSHConnection = function () {
-                $('#terminal').css('display', 'block');
-                const SSH_PORT = 22
-                const PASS_KEY = ""
-                const BYPASS_PROXY = false
-                const BYPASS_FINGERPRINT = false
-                initConnection(term.rows, term.cols, $('#hostInp').val(), SSH_PORT, $('#usrInp').val(), $('#passInp').val(), PASS_KEY, BYPASS_PROXY, BYPASS_FINGERPRINT);
-            }
+        showServerKey = function (key) {
+            $('#fingerprintMsg').html("RSA key fingerprint is " + key + " <br>Are you sure you want to continue connecting (yes/no)?")
+            $('#fingerprintModal').modal('show')
+        }
 
-            self.stopProxyServer = function () {
-                OctoPrint.simpleApiCommand("NanoFactory", "stopProxyServer").done(function (response) { }).catch(error => { console.log(error) });
-            }
+        connected = function (status) {
+            showMsg('');
+            showErr('');
+            $('#msg').hide();
+            $('#errMsg').hide()
+            $('#conPan').hide();
+            $('#conInf').html(status);
 
-            showServerKey = function (key) {
-                $('#fingerprintMsg').html("RSA key fingerprint is " + key + " <br>Are you sure you want to continue connecting (yes/no)?")
-                $('#fingerprintModal').modal('show')
-            }
+            term.focus();
+        }
 
-            connected = function (status) {
-                showMsg('');
-                showErr('');
-                $('#msg').hide();
-                $('#errMsg').hide()
-                $('#conPan').hide();
-                $('#conInf').html(status);
-            }
+        showReconnect = function (errorMsg) {
+            $('#connLostMsg').html("The connection to your server was interrupted: " + errorMsg + "<br>Do you want to reconnect?")
+            $('#reconnectModal').modal('show')
+        }
 
-            showReconnect = function (errorMsg) {
-                $('#connLostMsg').html("The connection to your server was interrupted: " + errorMsg + "<br>Do you want to reconnect?")
-                $('#reconnectModal').modal('show')
-            }
-
-            reconnect = function (shouldReconnect) {
-                if (shouldReconnect) {
-                    initConnection(term.rows, term.cols, $('#hostInp').val(), Number($('#portInp').val()), $('#usrInp').val(), $('#passInp').val(), $('#pkInp').val(), $('#bypassProxyInp').is(':checked'), false);
-                } else {
-                    $('#conPan').show();
-                }
-            }
-
-            showMsg = function (msg) {
-                $('#errMsg').hide()
-                $('#msg').show()
-                $('#msg').html(msg);
-            }
-
-            showErr = function (msg) {
-                $('#msg').hide();
+        reconnect = function (shouldReconnect) {
+            if (shouldReconnect) {
+                initConnection(term.rows, term.cols, $('#hostInp').val(), Number($('#portInp').val()), $('#usrInp').val(), $('#passInp').val(), $('#pkInp').val(), $('#bypassProxyInp').is(':checked'), false);
+            } else {
                 $('#conPan').show();
-                $('#conBtn').prop('disabled', false);
-                $('#errMsg').show();
-                $('#errMsg').html(msg);
             }
+        }
 
-            $(document).ready(function () {
-                $('#conBtn').prop('disabled', true);
-                $('#hostInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-                $('#portInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-                $('#usrInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-                $('#passInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-                $('#msg').hide()
-                $('#errMsg').hide()
-            });
-        };
+        showMsg = function (msg) {
+            $('#errMsg').hide()
+            $('#msg').show()
+            $('#msg').html(msg);
+        }
 
-
+        showErr = function (msg) {
+            $('#msg').hide();
+            $('#conPan').show();
+            $('#conBtn').prop('disabled', false);
+            $('#errMsg').show();
+            $('#errMsg').html(msg);
+        }
     }
 
 
