@@ -108,15 +108,16 @@ $(function () {
                 if ("browser_installed" in data) {
                     // if (data["browser_installed"]) {
                     //     self.showSetupInstructions(false)
+                    //     this.stopProxyServer()
                     // } else {
                     self.showSetupInstructions(true)
                     self.initializeSSHUtils()
-                    new PNotify({
-                        title: "Browser Not Installed",
-                        text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
-                        type: "notice",
-                        hide: false
-                    });
+                    // new PNotify({
+                    //     title: "Browser Not Installed",
+                    //     text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
+                    //     type: "notice",
+                    //     hide: false
+                    // });
                     // }
                 }
 
@@ -195,7 +196,6 @@ $(function () {
         }
 
         self.startNanoFactoryPostSetup = function () {
-
             OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
         }
 
@@ -476,9 +476,11 @@ $(function () {
             if (tab === "manual") {
                 self.showManualInstructionsLinux(true)
                 self.showAutomatedInstructionsLinux(false)
+                $("#start-nanofactory-section").css("display", "block")
             } else {
                 self.showManualInstructionsLinux(false)
                 self.showAutomatedInstructionsLinux(true)
+                $("#start-nanofactory-section").css("display", "none")
             }
         }
 
@@ -567,6 +569,7 @@ $(function () {
             $('#conInf').html(status);
 
             term.focus();
+            $("#start-nanofactory-section").css("display", "block")
         }
 
         showReconnect = function (errorMsg) {

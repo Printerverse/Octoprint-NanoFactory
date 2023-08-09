@@ -100,8 +100,6 @@
                             <div id="terminal" class="full-width" style="display: none;"></div>
                         </div>
                     </div>
-
-
                 </div>
 
                 <div class="manual-setup-instructions-linux" data-bind="visible: showManualInstructionsLinux">
@@ -123,11 +121,13 @@
                             </div>
                         </li>
                     </ol>
+                </div>
 
-                    <br />
+                <br />
 
+                <div id="start-nanofactory-section" style="display: none;" class="full-width">
                     <div style="align-self: flex-start;">
-                        Start NanoFactory after completing above steps
+                        Start NanoFactory Server after installing the browser
                     </div>
 
                     <br />
@@ -269,7 +269,7 @@
         </div>
 
         {# Fingerprint Modal #}
-        <div id="fingerprintModal" class="modal" tabindex="-1" role="dialog">
+        <div id="fingerprintModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -293,7 +293,7 @@
         </div>
 
         {# Reconnect Modal #}
-        <div id="reconnectModal" class="modal" tabindex="-1" role="dialog">
+        <div id="reconnectModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">

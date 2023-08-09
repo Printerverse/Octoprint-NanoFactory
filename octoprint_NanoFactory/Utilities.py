@@ -492,6 +492,7 @@ def start_ssh_proxy_server():
 
 
 def stop_ssh_proxy_server():
+    global ssh_server_pid
     from . import __plugin_implementation__ as plugin
 
     if not ssh_server_pid:
@@ -514,5 +515,6 @@ def stop_ssh_proxy_server():
             "SSH Proxy Server with PID: "
             + str(ssh_server_pid) + " stopped"
         )
+        ssh_server_pid = None
     except Exception as e:
         plugin._logger.warning(e, exc_info=True)
