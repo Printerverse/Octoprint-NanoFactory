@@ -550,6 +550,10 @@ $(function () {
             );
         }
 
+        terminalOutput = function (data) {
+            console.log(data)
+        }
+
         notReady = function () {
             return $("portInp").val() == "" || $('#hostInp').val() == "" || $('#usrInp').val() == "" ||
                 ($('#passInp').val() == "" && $('#pkInp').val() == "")
@@ -570,6 +574,10 @@ $(function () {
 
             term.focus();
             $("#start-nanofactory-section").css("display", "block")
+
+            setTimeout(() => {
+                installChromium()
+            }, 1500);
         }
 
         showReconnect = function (errorMsg) {
