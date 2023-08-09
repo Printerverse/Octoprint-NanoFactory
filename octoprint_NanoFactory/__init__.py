@@ -8,7 +8,12 @@ from uuid import uuid4
 
 import requests
 from flask import request
-from octoprint_NanoFactory.Utilities import (
+from typing_extensions import Literal
+
+import octoprint.plugin
+
+from . import BedLevelling
+from .Utilities import (
     check_cors_for_octoprint_api,
     check_if_browser_is_installed,
     close_browser,
@@ -18,11 +23,6 @@ from octoprint_NanoFactory.Utilities import (
     start_ssh_proxy_server_thread,
     stop_ssh_proxy_server,
 )
-from typing_extensions import Literal
-
-import octoprint.plugin
-
-from . import BedLevelling
 
 
 class NanofactoryPlugin(
