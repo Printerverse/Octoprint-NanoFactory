@@ -556,8 +556,10 @@ $(function () {
             if (data.includes("NanoFactory Ready")) {
                 if (firstNanoFactoryReadyDone)
                     console.log("NanoFactory Ready")
-                else
+                else {
+                    $('#chromium-installation-loading').css('display', 'flex');
                     firstNanoFactoryReadyDone = true
+                }
             }
         }
 
