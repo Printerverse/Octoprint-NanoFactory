@@ -96,235 +96,245 @@
                         </div>
 
 
+                        <div class="full-width" id="terminal-container" style="display: none;">
+                            <div><small><a href="#" class="muted"
+                                        data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.full-width', container: '.hide' }"><i
+                                            class="fas fa-caret-right"></i> {{ _('Install Logs') }}</a></small>
+                            </div>
+                            <div class="hide">
+                                <div class="full-width">
+                                    <div id="terminal" class="full-width"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-setup-instructions-linux" data-bind="visible: showManualInstructionsLinux">
+                        <div style="align-self: flex-start;">Please follow the steps below to install the chromium
+                            browser.
+                        </div>
+                        <br />
+                        <ol>
+                            <li>SSH into your printer server or open the terminal on the device running OctoPrint
+                            </li>
+                            <br />
+
+                            <li>
+                                Install the Chromium Browser
+                                <div class="nanofactory-code">
+                                    <span data-bind="text: updateLinuxAndInstallChromiumCommand"></span>
+                                    <img class="copy-icon"
+                                        data-bind="click: function() { copyToClipboard('updateLinuxAndInstallChromiumCommand') }"
+                                        src="plugin/NanoFactory/static/img/copy-icon.svg" width="16" height="16" />
+                                </div>
+                            </li>
+                        </ol>
+
+                        <br />
+
                         <div class="full-width">
-                            <div id="terminal" class="full-width" style="display: none;"></div>
+                            <div style="align-self: flex-start;">
+                                Start NanoFactory Server after installing the browser
+                            </div>
+
+                            <br />
+
+                            <button class="nanofactory-button full-width success-button"
+                                data-bind="click: startNanoFactoryPostSetup">Start NanoFactory
+                                Server</button>
                         </div>
                     </div>
                 </div>
-
-                <div class="manual-setup-instructions-linux" data-bind="visible: showManualInstructionsLinux">
-                    <div style="align-self: flex-start;">Please follow the steps below to install the chromium browser.
-                    </div>
-                    <br />
-                    <ol>
-                        <li>SSH into your printer server or open the terminal on the device running OctoPrint
-                        </li>
-                        <br />
-
-                        <li>
-                            Install the Chromium Browser
-                            <div class="nanofactory-code">
-                                <span data-bind="text: updateLinuxAndInstallChromiumCommand"></span>
-                                <img class="copy-icon"
-                                    data-bind="click: function() { copyToClipboard('updateLinuxAndInstallChromiumCommand') }"
-                                    src="plugin/NanoFactory/static/img/copy-icon.svg" width="16" height="16" />
-                            </div>
-                        </li>
-                    </ol>
-                </div>
-
-                <br />
-
-                <div id="start-nanofactory-section" style="display: none;" class="full-width">
-                    <div style="align-self: flex-start;">
-                        Start NanoFactory Server after installing the browser
-                    </div>
-
-                    <br />
-
-                    <button class="nanofactory-button full-width success-button"
-                        data-bind="click: startNanoFactoryPostSetup">Start NanoFactory
-                        Server</button>
-                </div>
             </div>
         </div>
-    </div>
 
-    <div class="nanofactory-tab-container-body center-flex-box" data-bind="hidden: showSetupInstructions">
+        <div class="nanofactory-tab-container-body center-flex-box" data-bind="hidden: showSetupInstructions">
 
-        <div class="combined-container-parent combined-buttons-container">
-            <button class="nanofactory-button half-width success-button" style="text-decoration:none;"
-                data-bind="click: goToNanoFactoryURL">
-                <span data-bind="text: nanoFactoryActionButtonText"></span>
-                <span> <img src="plugin/NanoFactory/static/img/NewTab.png" width="25" height="25" /></span>
-            </button>
-            <button class="nanofactory-button half-width success-button" data-bind="click: sharePrinter">
-                <span>Share Printer</span>
-                <span> <img src="plugin/NanoFactory/static/img/share-icon.svg" width="20" height="20" /></span>
-            </button>
-        </div>
-
-        <br />
-
-        <div class="combined-container-parent">
-            <h5>API Key for NanoFactory:</h5>
-            <div class="combined-container">
-                <input class="nanofactory-input-field" type="text" id="api-key"
-                    placeholder="Please enter the API Key for NanoFactory" data-bind="value: APIKEY" />
-                <button class="nanofactory-button change-button success-button"
-                    data-bind="click: handleAPIKeyEdit, visible: showAPIKeyEditButton">
-                    <img src="plugin/NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
+            <div class="combined-container-parent combined-buttons-container">
+                <button class="nanofactory-button half-width success-button" style="text-decoration:none;"
+                    data-bind="click: goToNanoFactoryURL">
+                    <span data-bind="text: nanoFactoryActionButtonText"></span>
+                    <span> <img src="plugin/NanoFactory/static/img/NewTab.png" width="25" height="25" /></span>
                 </button>
-                <button class="nanofactory-button change-button success-button"
-                    data-bind="click: handleAPIKeySubmit, visible: showAPIKeySubmitButton">
-                    <img src="plugin/NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
+                <button class="nanofactory-button half-width success-button" data-bind="click: sharePrinter">
+                    <span>Share Printer</span>
+                    <span> <img src="plugin/NanoFactory/static/img/share-icon.svg" width="20" height="20" /></span>
                 </button>
             </div>
-        </div>
 
-        <br />
-
-        <div class="combined-container-parent">
-            <h5>Master Device ID:</h5>
-            <div class="combined-container">
-                <input class="nanofactory-input-field" type="text" id="master-peer-id"
-                    placeholder="Please enter the Master Device ID for this printer" data-bind="value: masterPeerID" />
-                <button class="nanofactory-button change-button success-button"
-                    data-bind="click: handleMasterPeerIDClear, visible: showMasterPeerIDEditButton">
-                    <img src="plugin/NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
-                </button>
-                <button class="nanofactory-button change-button success-button"
-                    data-bind="click: handleMasterPeerIDSubmit, visible: showMasterPeerIDSubmitButton">
-                    <img src="plugin/NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
-                </button>
-            </div>
-        </div>
-
-        <br />
-
-        <div class="combined-container-parent combined-buttons-container">
-            <button class="nanofactory-button half-width success-button"
-                data-bind="click: restartNanoFactoryApp">Restart
-                NanoFactory Server</button>
-
-            <button class="nanofactory-button half-width success-button"
-                data-bind="click: giveupSnapshotCameraStream">Reload Camera
-                Stream</button>
-        </div>
-
-        <br />
-
-        <div class="full-width">
-            <button class="nanofactory-button full-width danger-button"
-                data-bind="click: toggleClearNanoFactoryDatabaseModal">Clear
-                NanoFactory Database</button>
-        </div>
-
-        <br />
-
-        {# the Advanced Options section #}
-        <div class="full-width">
-            <div><small><a href="#" class="muted"
-                        data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.full-width', container: '.hide' }"><i
-                            class="fas fa-caret-right"></i> {{ _('Advanced options') }}</a></small></div>
-            <div class="hide">
-                <label class="tabs-checkbox">
-                    <input type="checkbox" id="nanofactory-checkbox-for-browser-gui"
-                        data-bind="checked: showBrowserGUI">
-                    <span>Show Browser GUI</span>
-                </label>
-            </div>
-
-            <div class="hide">
-                <label class="toggle">
-                    <span class="stable-label">Stable Mode</span>
-                    <input id="nanofactory-checkbox-for-plugin-mode" class="toggle-checkbox" type="checkbox">
-                    <div class="toggle-switch"></div>
-                    <span class="dev-label">Dev Mode</span>
-                </label>
-            </div>
-        </div>
-
-        {# Clear NanoFactory Database Modal #}
-        <div class="nanofactory-modal center-flex-box" data-bind="visible: showClearNanoFactoryDatabaseModal">
-            <div class="nanofactory-modal-content">
-                <div class="nanofactory-modal-header">
-                    Clear NanoFactory Database
-
-                    <div data-bind="click: toggleClearNanoFactoryDatabaseModal" class="nanofactory-modal-close-icon">
-                        <img src="plugin/NanoFactory/static/img/close-icon.svg" />
-                    </div>
-                </div>
-
-                <div class="nanofactory-modal-body">
-                    <div>
-                        Are you sure you want to clear the NanoFactory database? Doing so will delete all the data
-                        about your printer, filaments, files, printjobs associated with NanoFactory and all approved
-                        devices will also lose access to your printer.
-                    </div>
-                    <br />
-                    <div>
-                        <b> This action cannot be undone. </b>
-                    </div>
-                </div>
-
-                <div class="nanofactory-modal-footer">
-                    <button class="nanofactory-button neutral-button"
-                        data-bind="click: toggleClearNanoFactoryDatabaseModal">No</button>
-                    <button class="nanofactory-button danger-button"
-                        data-bind="click: deleteNanoFactoryDatabase">Yes</button>
-                </div>
-            </div>
-
-        </div>
-
-        {# Fingerprint Modal #}
-        <div id="fingerprintModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Server fingerprint</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"
-                            onclick="acceptFingerprint(false);">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div id="fingerprintMsg" class="modal-body">
-
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-dismiss="modal"
-                            onclick="acceptFingerprint(true);">Yes</button>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
-                            onclick="acceptFingerprint(false);">No</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {# Reconnect Modal #}
-        <div id="reconnectModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Connection lost</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"
-                            onclick="reconnect(false);">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div id="connLostMsg" class="modal-body">
-                        The connection to your server was interrupted.
-                        Do you want to reconnect?
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-dismiss="modal"
-                            onclick="reconnect(true);">Yes</button>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
-                            onclick="reconnect(false);">No</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <div data-bind="visible: isMac">
-            <img src="plugin/NanoFactory/static/img/MacMeme.jpg" />
             <br />
-            <h4 style="text-align: center">
-                NanoFactory Server will not be supported on Mac OS. Please use Windows or Linux
-            </h4>
+
+            <div class="combined-container-parent">
+                <h5>API Key for NanoFactory:</h5>
+                <div class="combined-container">
+                    <input class="nanofactory-input-field" type="text" id="api-key"
+                        placeholder="Please enter the API Key for NanoFactory" data-bind="value: APIKEY" />
+                    <button class="nanofactory-button change-button success-button"
+                        data-bind="click: handleAPIKeyEdit, visible: showAPIKeyEditButton">
+                        <img src="plugin/NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
+                    </button>
+                    <button class="nanofactory-button change-button success-button"
+                        data-bind="click: handleAPIKeySubmit, visible: showAPIKeySubmitButton">
+                        <img src="plugin/NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
+                    </button>
+                </div>
+            </div>
+
+            <br />
+
+            <div class="combined-container-parent">
+                <h5>Master Device ID:</h5>
+                <div class="combined-container">
+                    <input class="nanofactory-input-field" type="text" id="master-peer-id"
+                        placeholder="Please enter the Master Device ID for this printer"
+                        data-bind="value: masterPeerID" />
+                    <button class="nanofactory-button change-button success-button"
+                        data-bind="click: handleMasterPeerIDClear, visible: showMasterPeerIDEditButton">
+                        <img src="plugin/NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
+                    </button>
+                    <button class="nanofactory-button change-button success-button"
+                        data-bind="click: handleMasterPeerIDSubmit, visible: showMasterPeerIDSubmitButton">
+                        <img src="plugin/NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
+                    </button>
+                </div>
+            </div>
+
+            <br />
+
+            <div class="combined-container-parent combined-buttons-container">
+                <button class="nanofactory-button half-width success-button"
+                    data-bind="click: restartNanoFactoryApp">Restart
+                    NanoFactory Server</button>
+
+                <button class="nanofactory-button half-width success-button"
+                    data-bind="click: giveupSnapshotCameraStream">Reload Camera
+                    Stream</button>
+            </div>
+
+            <br />
+
+            <div class="full-width">
+                <button class="nanofactory-button full-width danger-button"
+                    data-bind="click: toggleClearNanoFactoryDatabaseModal">Clear
+                    NanoFactory Database</button>
+            </div>
+
+            <br />
+
+            {# the Advanced Options section #}
+            <div class="full-width">
+                <div><small><a href="#" class="muted"
+                            data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.full-width', container: '.hide' }"><i
+                                class="fas fa-caret-right"></i> {{ _('Advanced options') }}</a></small></div>
+                <div class="hide">
+                    <label class="tabs-checkbox">
+                        <input type="checkbox" id="nanofactory-checkbox-for-browser-gui"
+                            data-bind="checked: showBrowserGUI">
+                        <span>Show Browser GUI</span>
+                    </label>
+                </div>
+
+                <div class="hide">
+                    <label class="toggle">
+                        <span class="stable-label">Stable Mode</span>
+                        <input id="nanofactory-checkbox-for-plugin-mode" class="toggle-checkbox" type="checkbox">
+                        <div class="toggle-switch"></div>
+                        <span class="dev-label">Dev Mode</span>
+                    </label>
+                </div>
+            </div>
+
+            {# Clear NanoFactory Database Modal #}
+            <div class="nanofactory-modal center-flex-box" data-bind="visible: showClearNanoFactoryDatabaseModal">
+                <div class="nanofactory-modal-content">
+                    <div class="nanofactory-modal-header">
+                        Clear NanoFactory Database
+
+                        <div data-bind="click: toggleClearNanoFactoryDatabaseModal"
+                            class="nanofactory-modal-close-icon">
+                            <img src="plugin/NanoFactory/static/img/close-icon.svg" />
+                        </div>
+                    </div>
+
+                    <div class="nanofactory-modal-body">
+                        <div>
+                            Are you sure you want to clear the NanoFactory database? Doing so will delete all the data
+                            about your printer, filaments, files, printjobs associated with NanoFactory and all approved
+                            devices will also lose access to your printer.
+                        </div>
+                        <br />
+                        <div>
+                            <b> This action cannot be undone. </b>
+                        </div>
+                    </div>
+
+                    <div class="nanofactory-modal-footer">
+                        <button class="nanofactory-button neutral-button"
+                            data-bind="click: toggleClearNanoFactoryDatabaseModal">No</button>
+                        <button class="nanofactory-button danger-button"
+                            data-bind="click: deleteNanoFactoryDatabase">Yes</button>
+                    </div>
+                </div>
+
+            </div>
+
+            {# Fingerprint Modal #}
+            <div id="fingerprintModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Server fingerprint</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                onclick="acceptFingerprint(false);">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div id="fingerprintMsg" class="modal-body">
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                onclick="acceptFingerprint(true);">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                                onclick="acceptFingerprint(false);">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Reconnect Modal #}
+            <div id="reconnectModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Connection lost</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                onclick="reconnect(false);">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div id="connLostMsg" class="modal-body">
+                            The connection to your server was interrupted.
+                            Do you want to reconnect?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                onclick="reconnect(true);">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                                onclick="reconnect(false);">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div data-bind="visible: isMac">
+                <img src="plugin/NanoFactory/static/img/MacMeme.jpg" />
+                <br />
+                <h4 style="text-align: center">
+                    NanoFactory Server will not be supported on Mac OS. Please use Windows or Linux
+                </h4>
+            </div>
         </div>
     </div>
-</div>
 </div>

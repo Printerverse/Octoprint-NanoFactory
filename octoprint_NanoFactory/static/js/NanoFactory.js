@@ -476,11 +476,9 @@ $(function () {
             if (tab === "manual") {
                 self.showManualInstructionsLinux(true)
                 self.showAutomatedInstructionsLinux(false)
-                $("#start-nanofactory-section").css("display", "block")
             } else {
                 self.showManualInstructionsLinux(false)
                 self.showAutomatedInstructionsLinux(true)
-                $("#start-nanofactory-section").css("display", "none")
             }
         }
 
@@ -492,7 +490,7 @@ $(function () {
         }
 
         self.initiateSSHConnection = function () {
-            $('#terminal').css('display', 'block');
+            $('#terminal-container').css('display', 'block');
             const SSH_PORT = 22
             const PASS_KEY = ""
             const BYPASS_PROXY = false
@@ -550,8 +548,17 @@ $(function () {
             );
         }
 
+        // an "echo 'NanoFactory Ready'" is sent along with the commands to install Chromium Browser
+        // Hence we wanna ignore the first "NanoFactory Ready" as it is just the command being sent to the terminal
+        // It showing up again is when chromium has finished installing
+        let firstNanoFactoryReadyDone = false
         terminalOutput = function (data) {
-            console.log(data)
+            if (data.includes("NanoFactory Ready")) {
+                if (firstNanoFactoryReadyDone)
+                    console.log("NanoFactory Ready")
+                else
+                    firstNanoFactoryReadyDone = true
+            }
         }
 
         notReady = function () {
@@ -573,7 +580,6 @@ $(function () {
             $('#conInf').html(status);
 
             term.focus();
-            $("#start-nanofactory-section").css("display", "block")
 
             setTimeout(() => {
                 installChromium()
