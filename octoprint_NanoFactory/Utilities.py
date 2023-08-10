@@ -461,7 +461,8 @@ def start_ssh_proxy_server():
     global ssh_server_pid
     from . import __plugin_implementation__ as plugin
 
-    path_to_proxy = os.path.dirname(os.path.realpath(__file__)) + '/proxy'
+    path_to_proxy = os.path.dirname(
+        os.path.realpath(__file__)) + '/static/js/proxy'
 
     try:
         if plugin.os == "Windows":
