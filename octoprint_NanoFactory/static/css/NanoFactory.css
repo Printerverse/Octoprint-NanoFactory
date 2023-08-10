@@ -90,6 +90,7 @@
     gap: 0.5rem;
 }
 
+/* 
 .xterm .xterm-viewport::-webkit-scrollbar {
     width: 1em !important;
 }
@@ -101,7 +102,7 @@
 .xterm .xterm-viewport::-webkit-scrollbar-thumb {
     background-color: #202020 !important;
     outline: none !important;
-}
+} */
 
 .combined-container-parent {
     width: 100%;

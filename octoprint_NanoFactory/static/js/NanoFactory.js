@@ -106,34 +106,34 @@ $(function () {
                 // check for the key browser_installed in the data
 
                 if ("browser_installed" in data) {
-                    // if (data["browser_installed"]) {
-                    //     self.showSetupInstructions(false)
-                    //     this.stopProxyServer()
-                    // } else {
-                    self.showSetupInstructions(true)
-                    self.initializeSSHUtils()
-                    // new PNotify({
-                    //     title: "Browser Not Installed",
-                    //     text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
-                    //     type: "notice",
-                    //     hide: false
-                    // });
-                    // }
+                    if (data["browser_installed"]) {
+                        self.showSetupInstructions(false)
+                        this.stopProxyServer()
+                    } else {
+                        self.showSetupInstructions(true)
+                        self.initializeSSHUtils()
+                        new PNotify({
+                            title: "Browser Not Installed",
+                            text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
+                            type: "notice",
+                            hide: false
+                        });
+                    }
                 }
 
                 if (data["operating_system"]) {
-                    // if (data["operating_system"] == "Windows") {
-                    //     self.isWindows(true)
-                    // } else if (data["operating_system"] == "Linux") {
-                    self.isLinux(true)
-                    // if (!(["localhost", "::", "127.0.0.1"].includes(self.hostname()))) {
-                    self.showTabBarLinux(true)
-                    self.showAutomatedInstructionsLinux(true)
-                    self.showManualInstructionsLinux(false)
-                    // }
-                    // } else if (data["operating_system"] == "Darwin") {
-                    //     self.isMac(true)
-                    // }
+                    if (data["operating_system"] == "Windows") {
+                        self.isWindows(true)
+                    } else if (data["operating_system"] == "Linux") {
+                        self.isLinux(true)
+                        if (!(["localhost", "::", "127.0.0.1"].includes(self.hostname()))) {
+                            self.showTabBarLinux(true)
+                            self.showAutomatedInstructionsLinux(true)
+                            self.showManualInstructionsLinux(false)
+                        }
+                    } else if (data["operating_system"] == "Darwin") {
+                        self.isMac(true)
+                    }
                 }
 
                 if ("showBrowserGUI" in data) {
@@ -552,13 +552,30 @@ $(function () {
         // Hence we wanna ignore the first "NanoFactory Ready" as it is just the command being sent to the terminal
         // It showing up again is when chromium has finished installing
         let firstNanoFactoryReadyDone = false
+        let firstBrowserFailedDone = false
         terminalOutput = function (data) {
-            if (data.includes("NanoFactory Ready")) {
-                if (firstNanoFactoryReadyDone)
-                    console.log("NanoFactory Ready")
+            const NANOFACTORY_READY_LOG = "NanoFactory Ready"
+            const INSTALLATION_FAILED_LOG = "Browser installation failed"
+            if (data.includes(NANOFACTORY_READY_LOG)) {
+                if (firstNanoFactoryReadyDone) {
+                    OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
+                }
                 else {
                     $('#chromium-installation-loading').css('display', 'flex');
                     firstNanoFactoryReadyDone = true
+                }
+            } else if (data.includes(INSTALLATION_FAILED_LOG)) {
+                if (firstBrowserFailedDone) {
+                    $('#chromium-installation-loading').css('display', 'none');
+                    $('#chromium-installation-failed').css('display', 'flex');
+                    new PNotify({
+                        title: "Browser installation failed",
+                        text: "Please try again",
+                        type: "error"
+                    });
+                }
+                else {
+                    firstBrowserFailedDone = true
                 }
             }
         }
