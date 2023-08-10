@@ -9,6 +9,5 @@ dist
 *.zip
 chrome-data
 Scripts
-Lib
 Include
 venv
