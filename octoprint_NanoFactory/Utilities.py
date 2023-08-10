@@ -200,13 +200,16 @@ def start_browser(
 ):
     from . import __plugin_implementation__ as plugin
 
-    url = "file:///{}?apiKey={}&peerID={}&masterPeerID={}&baseURL={}&mode={}".format(
+    plugin_name = plugin._plugin_name
+
+    url = "file:///{}?apiKey={}&peerID={}&masterPeerID={}&baseURL={}&mode={}&name={}".format(
         index_html_file_path,
         api_key,
         peer_ID,
         master_peer_id,
         urllib.parse.quote(base_url, safe=""),
-        plugin.restart_mode
+        plugin.restart_mode,
+        plugin_name
     )
 
     browser_flags = get_browser_flags(plugin.showBrowserGUI)

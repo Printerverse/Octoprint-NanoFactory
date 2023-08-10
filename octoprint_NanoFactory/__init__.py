@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import json
 import os
 import platform
+from time import time
 from uuid import uuid4
 
 import requests
@@ -23,6 +24,14 @@ from .Utilities import (
     start_ssh_proxy_server_thread,
     stop_ssh_proxy_server,
 )
+
+from psutil import Popen
+from typing_extensions import Literal
+
+import octoprint.plugin
+from octoprint.util import RepeatedTimer
+
+from . import BedLevelling
 
 
 class NanofactoryPlugin(
@@ -45,6 +54,9 @@ class NanofactoryPlugin(
         self.browser_installed = False
         self.restart_mode: Literal["stable", "dev"] = "stable"
         self.showBrowserGUI = False
+        self.last_heartbeat_time = 0
+        self.heartbeat_timer = None
+        self.heartbeat_interval = 10
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -63,6 +75,7 @@ class NanofactoryPlugin(
             start_browser_thread(
                 self.os, self.api_key, self.peer_ID, self.master_peer_id, self.base_url
             )
+            self.start_heartbeat_timer()
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
@@ -215,6 +228,12 @@ class NanofactoryPlugin(
             self.send_master_peer_id()
         return "Success"
 
+    @octoprint.plugin.BlueprintPlugin.route("/heartbeat", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def handle_server_heartbeat(self):
+        self.last_heartbeat_time = time()
+        return "Success"
+
     @octoprint.plugin.BlueprintPlugin.route("/peer_connection_error", methods=["GET"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def send_peer_error_message_to_frontend(self):
@@ -290,6 +309,23 @@ class NanofactoryPlugin(
     def on_shutdown(self):
         close_browser()
         stop_ssh_proxy_server()
+
+    def start_heartbeat_timer(self):
+        self.heartbeat_timer = RepeatedTimer(
+            self.heartbeat_interval, self.check_heartbeat
+        )
+        self.heartbeat_timer.start()
+
+    def check_heartbeat(self):
+        if time() - self.last_heartbeat_time > self.heartbeat_interval:
+            self._logger.info("Heartbeat timed out! Restarting browser...")
+            restart_browser(self.os,
+                            self.api_key,
+                            self.peer_ID,
+                            self.master_peer_id,
+                            self.base_url)
+        else:
+            self._logger.info("Heartbeat OK")
 
     def check_api_key_validity(self, api_key):
         if api_key:
