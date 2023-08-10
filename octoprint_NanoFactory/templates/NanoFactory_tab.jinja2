@@ -1,11 +1,17 @@
-<div class="nanofactory-tab-container">
+<div class="nanofactory-tab-container center-flex-box">
+
+    <script src="plugin/NanoFactory/static/js/wasm_exec.js"></script>
+    <!-- Xterm.js -->
+    <script src="plugin/NanoFactory/static/js/node_modules/xterm/lib/xterm.js"></script>
+    <script src="plugin/NanoFactory/static/js/node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+    <link rel="stylesheet" href="plugin/NanoFactory/static/js/node_modules/xterm/css/xterm.css" />
 
     <img class="logo" src="plugin/NanoFactory/static/img/Logo.svg">
 
     <br />
 
-    <div data-bind="hidden: isMac">
-        <div class="nanofactory-tab-container-body" data-bind="visible: showSetupInstructions">
+    <div data-bind="hidden: isMac" class="full-available-width">
+        <div class="nanofactory-tab-container-body center-flex-box" data-bind="visible: showSetupInstructions">
 
             <h2 class="nanofactory-header">Whoops!</h2>
             <h4 class="nanofactory-header">Looks like your server doesn't have a browser &#128513;</h4>
@@ -25,45 +31,140 @@
                         target="_blank">Google Chrome</a>. Please download and install Google Chrome.
                 </div>
 
-                <div data-bind="visible: isLinux">
-                    For Linux, the recommended browser is the chromium browser. Please follow the steps below to install
-                    the
-                    chromium browser.
+                <div data-bind="visible: isLinux" class="linux-setup-instructions">
+                    <div>
+                        For Linux, the recommended browser is the chromium browser.
+                    </div>
+
                     <br />
+
+                    <div class="tab-bar" id="tab-bar" data-bind="visible: showTabBarLinux">
+                        <div class="tab-label"
+                            data-bind="css: { 'active-tab': showAutomatedInstructionsLinux }, click: function() { handleTabBarClick('automated') }">
+                            Install Automatically
+                        </div>
+
+                        <div class="tab-label"
+                            data-bind="css: { 'active-tab': showManualInstructionsLinux }, click: function() { handleTabBarClick('manual') } ">
+                            Install Manually
+                        </div>
+                    </div>
+
                     <br />
-                    <ol>
-                        <li>SSH into your OctoPrint server or open the terminal on the device running OctoPrint</li>
+
+                    <div class="automated-setup-instructions-linux" data-bind="visible: showAutomatedInstructionsLinux">
+                        <div>
+                            <div id="conInf" class="full-width center-flex-box">
+                            </div>
+                            <div>
+                                <div class="full-width">
+                                    <div id="msg" class="alert alert-primary" role="alert"></div>
+                                    <div id="errMsg" class="alert alert-danger" role="alert"> </div>
+                                </div>
+                            </div>
+                            <br />
+                        </div>
+
+
+                        <div id="conPan" class="center-flex-box">
+
+                            <div>
+                                Enter your username and password to tunnel into your printer server
+                            </div>
+
+                            <br />
+
+
+                            <div class="full-width">
+                                <input class="nanofactory-input-field full-width" id="hostInp" type="text"
+                                    placeholder="Host to Connect" data-bind="value: hostname">
+                            </div>
+                            <div class="full-width">
+                                <input class="nanofactory-input-field" id="usrInp" type="text" placeholder="Username"
+                                    value="">
+                                <input class="nanofactory-input-field" id="passInp" type="password"
+                                    placeholder="Password" value="">
+                            </div>
+                            <br />
+                            <div>
+                                <button id="conBtn" type="button" class="nanofactory-button success-button half-width"
+                                    data-bind="click: startProxyServer">Connect
+                                    & Install</button>
+                            </div>
+
+                            <br />
+                        </div>
+
+                        <div id="chromium-installation-loading" class="center-flex-box" style="display:none;">
+                            <div style="font-size:larger;">Hold on, we are installing Chromium...</div>
+                            <br />
+                            <img src="plugin/NanoFactory/static/img/chromium-install.gif" />
+                        </div>
+
+                        <div id="chromium-installation-failed" class="center-flex-box" style="display: none;">
+                            <div>Oops, Chromium Installation failed</div>
+                            <div>Check the logs to find out the cause and try manual installation.
+                            </div>
+                            <br />
+                            <div>Need Support? Join our <a href="https://discord.com/invite/SBBkKk2vqY"
+                                    target="_blank">Discord Community</a></div>
+                        </div>
+
                         <br />
 
-                        <li>
-                            Install new system updates and Install the Chromium Browser
-                            <div class="nanofactory-code">
-                                <span data-bind="text: updateLinuxAndInstallChromiumCommand"></span>
-                                <img class="copy-icon"
-                                    data-bind="click: function() { copyToClipboard('updateLinuxAndInstallChromiumCommand') }"
-                                    src="plugin/NanoFactory/static/img/copy-icon.svg" width="16" height="16" />
+                        <div class="full-width" id="terminal-container" style="display: none;">
+                            <div><small><a href="#" class="muted"
+                                        data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.full-width', container: '.hide' }"><i
+                                            class="fas fa-caret-right"></i> {{ _('Install Logs') }}</a></small>
                             </div>
-                        </li>
-                    </ol>
+                            <div class="hide">
+                                <div class="full-width">
+                                    <div id="terminal" class="full-width"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-setup-instructions-linux" data-bind="visible: showManualInstructionsLinux">
+                        <div style="align-self: flex-start;">Please follow the steps below to install the chromium
+                            browser.
+                        </div>
+                        <br />
+                        <ol>
+                            <li>SSH into your printer server or open the terminal on the device running OctoPrint
+                            </li>
+                            <br />
+
+                            <li>
+                                Install the Chromium Browser
+                                <div class="nanofactory-code">
+                                    <span data-bind="text: updateLinuxAndInstallChromiumCommand"></span>
+                                    <img class="copy-icon"
+                                        data-bind="click: function() { copyToClipboard('updateLinuxAndInstallChromiumCommand') }"
+                                        src="plugin/NanoFactory/static/img/copy-icon.svg" width="16" height="16" />
+                                </div>
+                            </li>
+                        </ol>
+
+                        <br />
+
+                        <div class="full-width">
+                            <div style="align-self: flex-start;">
+                                Start NanoFactory Server after installing the browser
+                            </div>
+
+                            <br />
+
+                            <button class="nanofactory-button full-width success-button"
+                                data-bind="click: startNanoFactoryPostSetup">Start NanoFactory
+                                Server</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-
-            <br />
-
-            <div>
-                Once you have completed the above steps, please click the button below to start NanoFactory.
-            </div>
-
-            <br />
-
-            <button class="nanofactory-button full-width success-button"
-                data-bind="click: startNanoFactoryPostSetup">Start NanoFactory
-                Server</button>
-
         </div>
 
-        <div class="nanofactory-tab-container-body" data-bind="hidden: showSetupInstructions">
+        <div class="nanofactory-tab-container-body center-flex-box" data-bind="hidden: showSetupInstructions">
 
             <div class="combined-container-parent combined-buttons-container">
                 <button class="nanofactory-button half-width success-button" style="text-decoration:none;"
@@ -160,7 +261,7 @@
             </div>
 
             {# Clear NanoFactory Database Modal #}
-            <div class="nanofactory-modal" data-bind="visible: showClearNanoFactoryDatabaseModal">
+            <div class="nanofactory-modal center-flex-box" data-bind="visible: showClearNanoFactoryDatabaseModal">
                 <div class="nanofactory-modal-content">
                     <div class="nanofactory-modal-header">
                         Clear NanoFactory Database
@@ -192,6 +293,56 @@
                 </div>
 
             </div>
+
+            {# Fingerprint Modal #}
+            <div id="fingerprintModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Server fingerprint</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                onclick="acceptFingerprint(false);">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div id="fingerprintMsg" class="modal-body">
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                onclick="acceptFingerprint(true);">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                                onclick="acceptFingerprint(false);">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Reconnect Modal #}
+            <div id="reconnectModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Connection lost</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                onclick="reconnect(false);">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div id="connLostMsg" class="modal-body">
+                            The connection to your server was interrupted.
+                            Do you want to reconnect?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                onclick="reconnect(true);">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                                onclick="reconnect(false);">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
             <div data-bind="visible: isMac">
                 <img src="plugin/NanoFactory/static/img/MacMeme.jpg" />

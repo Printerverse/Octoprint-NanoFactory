@@ -22,6 +22,10 @@ $(function () {
         self.isMac = ko.observable(false)
 
         self.updateLinuxAndInstallChromiumCommand = ko.observable("sudo apt update && sudo apt install chromium chromium-browser -y")
+        self.showTabBarLinux = ko.observable(false)
+        self.showAutomatedInstructionsLinux = ko.observable(false)
+        self.showManualInstructionsLinux = ko.observable(true)
+        self.hostname = ko.observable(window.location.hostname)
 
         self.showAPIKeyEditButton = ko.observable(true)
         self.showAPIKeySubmitButton = ko.observable(false)
@@ -104,8 +108,10 @@ $(function () {
                 if ("browser_installed" in data) {
                     if (data["browser_installed"]) {
                         self.showSetupInstructions(false)
+                        this.stopProxyServer()
                     } else {
                         self.showSetupInstructions(true)
+                        self.initializeSSHUtils()
                         new PNotify({
                             title: "Browser Not Installed",
                             text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
@@ -120,6 +126,11 @@ $(function () {
                         self.isWindows(true)
                     } else if (data["operating_system"] == "Linux") {
                         self.isLinux(true)
+                        if (!(["localhost", "::", "127.0.0.1"].includes(self.hostname()))) {
+                            self.showTabBarLinux(true)
+                            self.showAutomatedInstructionsLinux(true)
+                            self.showManualInstructionsLinux(false)
+                        }
                     } else if (data["operating_system"] == "Darwin") {
                         self.isMac(true)
                     }
@@ -133,17 +144,23 @@ $(function () {
                         type: "notice",
                     })
                 }
+
+                if ("startProxyServer" in data) {
+                    if (data["startProxyServer"]) {
+                        self.initiateSSHConnection()
+                    }
+                }
             }
         }
 
 
         self.onBeforeBinding = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getShowBrowserGUI").done(function (response) { }).catch(error => { console.log(error) });
         }
 
@@ -179,7 +196,6 @@ $(function () {
         }
 
         self.startNanoFactoryPostSetup = function () {
-
             OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
         }
 
@@ -456,6 +472,165 @@ $(function () {
             }
         }
 
+        self.handleTabBarClick = function (tab) {
+            if (tab === "manual") {
+                self.showManualInstructionsLinux(true)
+                self.showAutomatedInstructionsLinux(false)
+            } else {
+                self.showManualInstructionsLinux(false)
+                self.showAutomatedInstructionsLinux(true)
+            }
+        }
+
+        // -------------- SSH related functions --------------
+        self.startProxyServer = function () {
+            $('#conBtn').prop('disabled', true);
+            showMsg('Connecting...');
+            OctoPrint.simpleApiCommand("NanoFactory", "startProxyServer").done(function (response) { }).catch(error => { console.log(error) });
+        }
+
+        self.initiateSSHConnection = function () {
+            $('#terminal-container').css('display', 'block');
+            const SSH_PORT = 22
+            const PASS_KEY = ""
+            const BYPASS_PROXY = false
+            const BYPASS_FINGERPRINT = false
+            initConnection(term.rows, term.cols, $('#hostInp').val(), SSH_PORT, $('#usrInp').val(), $('#passInp').val(), PASS_KEY, BYPASS_PROXY, BYPASS_FINGERPRINT);
+        }
+
+        self.stopProxyServer = function () {
+            OctoPrint.simpleApiCommand("NanoFactory", "stopProxyServer").done(function (response) { }).catch(error => { console.log(error) });
+        }
+
+        self.initializeSSHUtils = async function () {
+            $('#conBtn').prop('disabled', true);
+            $('#hostInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+            $('#portInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+            $('#usrInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+            $('#passInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
+            $('#msg').hide()
+            $('#errMsg').hide()
+
+            initXTerm();
+
+            let go = new Go();
+            let mod = await fetchAndInstantiate("plugin/NanoFactory/static/js/main.wasm", go.importObject);
+            go.run(mod);
+
+        }
+
+        let term;
+
+        function initXTerm() {
+            term = new Terminal({
+                rows: 24,
+                cols: 50,
+                cursorBlink: true
+            });
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(document.getElementById('terminal'));
+            fitAddon.fit();
+            term.write('\n\r');
+            fitAddon.fit();
+
+            // Assigning term to window so that wasm can find it
+            window.term = term;
+        }
+
+        function fetchAndInstantiate(url, importObject) {
+            return fetch(url).then(response =>
+                response.arrayBuffer()
+            ).then(bytes =>
+                WebAssembly.instantiate(bytes, importObject)
+            ).then(results =>
+                results.instance
+            );
+        }
+
+        // an "echo 'NanoFactory Ready'" is sent along with the commands to install Chromium Browser
+        // Hence we wanna ignore the first "NanoFactory Ready" as it is just the command being sent to the terminal
+        // It showing up again is when chromium has finished installing
+        let firstNanoFactoryReadyDone = false
+        let firstBrowserFailedDone = false
+        terminalOutput = function (data) {
+            const NANOFACTORY_READY_LOG = "NanoFactory Ready"
+            const INSTALLATION_FAILED_LOG = "Browser installation failed"
+            if (data.includes(NANOFACTORY_READY_LOG)) {
+                if (firstNanoFactoryReadyDone) {
+                    OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
+                }
+                else {
+                    $('#chromium-installation-loading').css('display', 'flex');
+                    firstNanoFactoryReadyDone = true
+                }
+            } else if (data.includes(INSTALLATION_FAILED_LOG)) {
+                if (firstBrowserFailedDone) {
+                    $('#chromium-installation-loading').css('display', 'none');
+                    $('#chromium-installation-failed').css('display', 'flex');
+                    new PNotify({
+                        title: "Browser installation failed",
+                        text: "Please try again",
+                        type: "error"
+                    });
+                }
+                else {
+                    firstBrowserFailedDone = true
+                }
+            }
+        }
+
+        notReady = function () {
+            return $("portInp").val() == "" || $('#hostInp').val() == "" || $('#usrInp').val() == "" ||
+                ($('#passInp').val() == "" && $('#pkInp').val() == "")
+        }
+
+        showServerKey = function (key) {
+            $('#fingerprintMsg').html("RSA key fingerprint is " + key + " <br>Are you sure you want to continue connecting (yes/no)?")
+            $('#fingerprintModal').modal('show')
+        }
+
+        connected = function (status) {
+            showMsg('');
+            showErr('');
+            $('#msg').hide();
+            $('#errMsg').hide()
+            $('#conPan').hide();
+            $('#conInf').html(status);
+
+            term.focus();
+
+            setTimeout(() => {
+                installChromium()
+            }, 1500);
+        }
+
+        showReconnect = function (errorMsg) {
+            $('#connLostMsg').html("The connection to your server was interrupted: " + errorMsg + "<br>Do you want to reconnect?")
+            $('#reconnectModal').modal('show')
+        }
+
+        reconnect = function (shouldReconnect) {
+            if (shouldReconnect) {
+                initConnection(term.rows, term.cols, $('#hostInp').val(), Number($('#portInp').val()), $('#usrInp').val(), $('#passInp').val(), $('#pkInp').val(), $('#bypassProxyInp').is(':checked'), false);
+            } else {
+                $('#conPan').show();
+            }
+        }
+
+        showMsg = function (msg) {
+            $('#errMsg').hide()
+            $('#msg').show()
+            $('#msg').html(msg);
+        }
+
+        showErr = function (msg) {
+            $('#msg').hide();
+            $('#conPan').show();
+            $('#conBtn').prop('disabled', false);
+            $('#errMsg').show();
+            $('#errMsg').html(msg);
+        }
     }
 
 
