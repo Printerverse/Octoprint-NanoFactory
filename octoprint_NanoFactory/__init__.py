@@ -12,6 +12,7 @@ from flask import request
 from typing_extensions import Literal
 
 import octoprint.plugin
+from octoprint.util import RepeatedTimer
 
 from . import BedLevelling
 from .Utilities import (
@@ -21,17 +22,7 @@ from .Utilities import (
     initialize_user_data_directory,
     restart_browser,
     start_browser_thread,
-    start_ssh_proxy_server_thread,
-    stop_ssh_proxy_server,
 )
-
-from psutil import Popen
-from typing_extensions import Literal
-
-import octoprint.plugin
-from octoprint.util import RepeatedTimer
-
-from . import BedLevelling
 
 
 class NanofactoryPlugin(
@@ -94,8 +85,6 @@ class NanofactoryPlugin(
             "getOperatingSystem": [],
             "getShowBrowserGUI": [],
             "setShowBrowserGUI": ["showBrowserGUI"],
-            "startProxyServer": [],
-            "stopProxyServer": [],
         }
 
     def on_api_command(self, command, data):
@@ -207,12 +196,6 @@ class NanofactoryPlugin(
                             self.master_peer_id,
                             self.base_url)
 
-        elif command == "startProxyServer":
-            start_ssh_proxy_server_thread()
-
-        elif command == "stopProxyServer":
-            stop_ssh_proxy_server()
-
     def updateShowBrowserGUI(self, showBrowserGUI):
         self.showBrowserGUI = showBrowserGUI
         self.update_nf_profile()
@@ -308,7 +291,6 @@ class NanofactoryPlugin(
 
     def on_shutdown(self):
         close_browser()
-        stop_ssh_proxy_server()
 
     def start_heartbeat_timer(self):
         self.heartbeat_timer = RepeatedTimer(

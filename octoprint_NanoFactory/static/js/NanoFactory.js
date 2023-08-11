@@ -108,7 +108,6 @@ $(function () {
                 if ("browser_installed" in data) {
                     if (data["browser_installed"]) {
                         self.showSetupInstructions(false)
-                        this.stopProxyServer()
                     } else {
                         self.showSetupInstructions(true)
                         self.initializeSSHUtils()
@@ -143,12 +142,6 @@ $(function () {
                         text: text,
                         type: "notice",
                     })
-                }
-
-                if ("startProxyServer" in data) {
-                    if (data["startProxyServer"]) {
-                        self.initiateSSHConnection()
-                    }
                 }
             }
         }
@@ -483,23 +476,15 @@ $(function () {
         }
 
         // -------------- SSH related functions --------------
-        self.startProxyServer = function () {
-            $('#conBtn').prop('disabled', true);
-            showMsg('Connecting...');
-            OctoPrint.simpleApiCommand("NanoFactory", "startProxyServer").done(function (response) { }).catch(error => { console.log(error) });
-        }
-
         self.initiateSSHConnection = function () {
             $('#terminal-container').css('display', 'block');
             const SSH_PORT = 22
             const PASS_KEY = ""
             const BYPASS_PROXY = false
             const BYPASS_FINGERPRINT = false
-            initConnection(term.rows, term.cols, $('#hostInp').val(), SSH_PORT, $('#usrInp').val(), $('#passInp').val(), PASS_KEY, BYPASS_PROXY, BYPASS_FINGERPRINT);
-        }
-
-        self.stopProxyServer = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "stopProxyServer").done(function (response) { }).catch(error => { console.log(error) });
+            const HOST = $('#hostInp').val()
+            const USER = $('#usrInp').val()
+            const PASS = $('#passInp').val()
         }
 
         self.initializeSSHUtils = async function () {
@@ -512,11 +497,6 @@ $(function () {
             $('#errMsg').hide()
 
             initXTerm();
-
-            let go = new Go();
-            let mod = await fetchAndInstantiate("plugin/NanoFactory/static/js/main.wasm", go.importObject);
-            go.run(mod);
-
         }
 
         let term;
@@ -536,16 +516,6 @@ $(function () {
 
             // Assigning term to window so that wasm can find it
             window.term = term;
-        }
-
-        function fetchAndInstantiate(url, importObject) {
-            return fetch(url).then(response =>
-                response.arrayBuffer()
-            ).then(bytes =>
-                WebAssembly.instantiate(bytes, importObject)
-            ).then(results =>
-                results.instance
-            );
         }
 
         // an "echo 'NanoFactory Ready'" is sent along with the commands to install Chromium Browser
