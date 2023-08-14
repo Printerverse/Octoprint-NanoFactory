@@ -42,6 +42,11 @@
     width: 100%;
 }
 
+.nanofactory-ssh-iframe {
+    height: 15rem;
+    width: 100%;
+}
+
 .copy-icon {
     cursor: pointer;
     margin-right: 2.5px;

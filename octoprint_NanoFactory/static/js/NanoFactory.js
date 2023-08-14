@@ -106,33 +106,32 @@ $(function () {
                 // check for the key browser_installed in the data
 
                 if ("browser_installed" in data) {
-                    if (data["browser_installed"]) {
-                        self.showSetupInstructions(false)
-                    } else {
-                        self.showSetupInstructions(true)
-                        self.initializeSSHUtils()
-                        new PNotify({
-                            title: "Browser Not Installed",
-                            text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
-                            type: "notice",
-                            hide: false
-                        });
-                    }
+                    // if (data["browser_installed"]) {
+                    //     self.showSetupInstructions(false)
+                    // } else {
+                    self.showSetupInstructions(true)
+                    //     new PNotify({
+                    //         title: "Browser Not Installed",
+                    //         text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
+                    //         type: "notice",
+                    //         hide: false
+                    //     });
+                    // }
                 }
 
                 if (data["operating_system"]) {
-                    if (data["operating_system"] == "Windows") {
-                        self.isWindows(true)
-                    } else if (data["operating_system"] == "Linux") {
-                        self.isLinux(true)
-                        if (!(["localhost", "::", "127.0.0.1"].includes(self.hostname()))) {
-                            self.showTabBarLinux(true)
-                            self.showAutomatedInstructionsLinux(true)
-                            self.showManualInstructionsLinux(false)
-                        }
-                    } else if (data["operating_system"] == "Darwin") {
-                        self.isMac(true)
-                    }
+                    // if (data["operating_system"] == "Windows") {
+                    //     self.isWindows(true)
+                    // } else if (data["operating_system"] == "Linux") {
+                    self.isLinux(true)
+                    // if (!(["localhost", "::", "127.0.0.1"].includes(self.hostname()))) {
+                    self.showTabBarLinux(true)
+                    self.showAutomatedInstructionsLinux(true)
+                    self.showManualInstructionsLinux(false)
+                    // }
+                    // } else if (data["operating_system"] == "Darwin") {
+                    //     self.isMac(true)
+                    // }
                 }
 
                 if ("showBrowserGUI" in data) {
@@ -476,66 +475,52 @@ $(function () {
         }
 
         // -------------- SSH related functions --------------
+        let iframe = $('#hidden-iframe');
+
         self.initiateSSHConnection = function () {
             $('#terminal-container').css('display', 'block');
-            const SSH_PORT = 22
-            const PASS_KEY = ""
-            const BYPASS_PROXY = false
-            const BYPASS_FINGERPRINT = false
-            const HOST = $('#hostInp').val()
-            const USER = $('#usrInp').val()
-            const PASS = $('#passInp').val()
+
+            setTimeout(() => {
+                const SSH_PROXY_PORT = 8888
+                const SSH_PORT = 22
+                const HOST = $('#hostname').val()
+                const USER = $('#username').val()
+                const PASS = $('#password').val()
+                iframe.attr('src', `http://${HOST}:${SSH_PROXY_PORT}`);
+
+                // check that the iframe has loaded before sending the commands
+                iframe.on('load', function () {
+                    postMessageToIframe(JSON.stringify({
+                        action: 'connect',
+                        hostname: HOST,
+                        port: SSH_PORT,
+                        username: USER,
+                        password: PASS
+                    }));
+                })
+            }, 200);
         }
 
-        self.initializeSSHUtils = async function () {
-            $('#conBtn').prop('disabled', true);
-            $('#hostInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-            $('#portInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-            $('#usrInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-            $('#passInp').keyup(function () { $('#conBtn').prop('disabled', notReady() ? true : false); })
-            $('#msg').hide()
-            $('#errMsg').hide()
-
-            initXTerm();
+        postMessageToIframe = function (message) {
+            iframe[0].contentWindow.postMessage(message, '*');
         }
 
-        let term;
 
-        function initXTerm() {
-            term = new Terminal({
-                rows: 24,
-                cols: 50,
-                cursorBlink: true
-            });
-            const fitAddon = new FitAddon.FitAddon();
-            term.loadAddon(fitAddon);
-            term.open(document.getElementById('terminal'));
-            fitAddon.fit();
-            term.write('\n\r');
-            fitAddon.fit();
-
-            // Assigning term to window so that wasm can find it
-            window.term = term;
-        }
-
-        // an "echo 'NanoFactory Ready'" is sent along with the commands to install Chromium Browser
-        // Hence we wanna ignore the first "NanoFactory Ready" as it is just the command being sent to the terminal
-        // It showing up again is when chromium has finished installing
-        let firstNanoFactoryReadyDone = false
-        let firstBrowserFailedDone = false
-        terminalOutput = function (data) {
-            const NANOFACTORY_READY_LOG = "NanoFactory Ready"
-            const INSTALLATION_FAILED_LOG = "Browser installation failed"
-            if (data.includes(NANOFACTORY_READY_LOG)) {
-                if (firstNanoFactoryReadyDone) {
+        window.addEventListener('message', function (event) {
+            let data = JSON.parse(event.data);
+            console.log("parent received: ", data)
+            switch (data.action) {
+                case 'status':
+                    if (data.status === 'connected') {
+                        $('#conPan').css('display', 'none');
+                        $('#chromium-installation-loading').css('display', 'flex');
+                        postMessageToIframe(JSON.stringify({ action: "installChromium" }))
+                    }
+                    break;
+                case 'setupComplete':
                     OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
-                }
-                else {
-                    $('#chromium-installation-loading').css('display', 'flex');
-                    firstNanoFactoryReadyDone = true
-                }
-            } else if (data.includes(INSTALLATION_FAILED_LOG)) {
-                if (firstBrowserFailedDone) {
+                    break
+                case 'setupFailed':
                     $('#chromium-installation-loading').css('display', 'none');
                     $('#chromium-installation-failed').css('display', 'flex');
                     new PNotify({
@@ -543,64 +528,9 @@ $(function () {
                         text: "Please try again",
                         type: "error"
                     });
-                }
-                else {
-                    firstBrowserFailedDone = true
-                }
+                    break
             }
-        }
-
-        notReady = function () {
-            return $("portInp").val() == "" || $('#hostInp').val() == "" || $('#usrInp').val() == "" ||
-                ($('#passInp').val() == "" && $('#pkInp').val() == "")
-        }
-
-        showServerKey = function (key) {
-            $('#fingerprintMsg').html("RSA key fingerprint is " + key + " <br>Are you sure you want to continue connecting (yes/no)?")
-            $('#fingerprintModal').modal('show')
-        }
-
-        connected = function (status) {
-            showMsg('');
-            showErr('');
-            $('#msg').hide();
-            $('#errMsg').hide()
-            $('#conPan').hide();
-            $('#conInf').html(status);
-
-            term.focus();
-
-            setTimeout(() => {
-                installChromium()
-            }, 1500);
-        }
-
-        showReconnect = function (errorMsg) {
-            $('#connLostMsg').html("The connection to your server was interrupted: " + errorMsg + "<br>Do you want to reconnect?")
-            $('#reconnectModal').modal('show')
-        }
-
-        reconnect = function (shouldReconnect) {
-            if (shouldReconnect) {
-                initConnection(term.rows, term.cols, $('#hostInp').val(), Number($('#portInp').val()), $('#usrInp').val(), $('#passInp').val(), $('#pkInp').val(), $('#bypassProxyInp').is(':checked'), false);
-            } else {
-                $('#conPan').show();
-            }
-        }
-
-        showMsg = function (msg) {
-            $('#errMsg').hide()
-            $('#msg').show()
-            $('#msg').html(msg);
-        }
-
-        showErr = function (msg) {
-            $('#msg').hide();
-            $('#conPan').show();
-            $('#conBtn').prop('disabled', false);
-            $('#errMsg').show();
-            $('#errMsg').html(msg);
-        }
+        })
     }
 
 

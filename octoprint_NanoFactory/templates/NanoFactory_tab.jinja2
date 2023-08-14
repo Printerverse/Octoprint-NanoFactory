@@ -1,10 +1,5 @@
 <div class="nanofactory-tab-container center-flex-box">
 
-    <!-- Xterm.js -->
-    <script src="plugin/NanoFactory/static/js/node_modules/xterm/lib/xterm.js"></script>
-    <script src="plugin/NanoFactory/static/js/node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
-    <link rel="stylesheet" href="plugin/NanoFactory/static/js/node_modules/xterm/css/xterm.css" />
-
     <img class="logo" src="plugin/NanoFactory/static/img/Logo.svg">
 
     <br />
@@ -51,17 +46,11 @@
 
                     <br />
 
-                    <div class="automated-setup-instructions-linux" data-bind="visible: showAutomatedInstructionsLinux">
-                        <div>
-                            <div id="conInf" class="full-width center-flex-box">
-                            </div>
-                            <div>
-                                <div class="full-width">
-                                    <div id="msg" class="alert alert-primary" role="alert"></div>
-                                    <div id="errMsg" class="alert alert-danger" role="alert"> </div>
-                                </div>
-                            </div>
-                            <br />
+                    <div class="center-flex box full-width" data-bind="visible: showAutomatedInstructionsLinux">
+
+                        <div class="full-width">
+                            <div id="status" style="color: red;"></div>
+                            <div id="waiter" style="display: none"> Connecting ... </div>
                         </div>
 
 
@@ -74,14 +63,14 @@
                             <br />
 
 
-                            <div class="full-width">
-                                <input class="nanofactory-input-field full-width" id="hostInp" type="text"
+                            <div class="full-width" id="form-container">
+                                <input class="nanofactory-input-field full-width" id="hostname" type="text"
                                     placeholder="Host to Connect" data-bind="value: hostname">
                             </div>
                             <div class="full-width">
-                                <input class="nanofactory-input-field" id="usrInp" type="text" placeholder="Username"
+                                <input class="nanofactory-input-field" id="username" type="text" placeholder="Username"
                                     value="">
-                                <input class="nanofactory-input-field" id="passInp" type="password"
+                                <input class="nanofactory-input-field" id="password" type="password"
                                     placeholder="Password" value="">
                             </div>
                             <br />
@@ -118,13 +107,13 @@
                             </div>
                             <div class="hide">
                                 <div class="full-width">
-                                    <div id="terminal" class="full-width"></div>
+                                    <iframe class="nanofactory-ssh-iframe" id="hidden-iframe"></iframe>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="manual-setup-instructions-linux" data-bind="visible: showManualInstructionsLinux">
+                    <div class="center-flex box full-width" data-bind="visible: showManualInstructionsLinux">
                         <div style="align-self: flex-start;">Please follow the steps below to install the chromium
                             browser.
                         </div>

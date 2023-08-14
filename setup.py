@@ -37,7 +37,8 @@ plugin_url = "https://github.com/Printerverse/Octoprint-NanoFactory/"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["typing-extensions"]
+plugin_requires = ["typing-extensions",
+                   "https://github.com/AdvectResearchGroup/webssh/archive/refs/heads/master.zip"]
 
 # --------------------------------------------------------------------------------------------------------------------
 # More advanced options that you usually shouldn't have to touch follow after this point
