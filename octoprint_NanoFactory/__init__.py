@@ -306,8 +306,6 @@ class NanofactoryPlugin(
                             self.peer_ID,
                             self.master_peer_id,
                             self.base_url)
-        else:
-            self._logger.info("Heartbeat OK")
 
     def check_api_key_validity(self, api_key):
         if api_key:
