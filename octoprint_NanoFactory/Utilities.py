@@ -2,10 +2,10 @@ import getpass
 import os
 import re
 import subprocess
+import sys
 import threading
 import time
 import urllib.parse
-from pathlib import Path
 
 import psutil
 import yaml
@@ -41,8 +41,9 @@ kill_chromium_command_linux = "killall chromium"
 kill_chrome_command_linux = "killall chrome"
 
 browser_thread: threading.Thread = None
-ssh_server_thread: threading.Thread = None
-ssh_server_pid: int = None
+webssh_thread: threading.Thread = None
+webssh_server_pid: int = None
+start_webssh_server_command = ["wssh", "--fbidhttp=False", "--xsrf=False"]
 
 
 def get_browser_flags(check_display=False):
@@ -442,3 +443,32 @@ def is_display_available(operating_system: Literal["Windows", "Darwin", "Linux"]
         return False
     elif operating_system == "Linux":
         return os.environ.get("DISPLAY") is not None
+
+
+def start_webssh_thread():
+    global webssh_thread
+
+    if webssh_thread is None:
+        webssh_thread = threading.Thread(
+            target=start_webssh, daemon=True)
+        webssh_thread.start()
+
+
+def start_webssh():
+    global webssh_server_pid
+
+    if webssh_server_pid:
+        return
+
+    python_executable = sys.executable
+    webssh_server_pid = subprocess.Popen(
+        [python_executable, "-m"].extend(start_webssh_server_command), start_new_session=True).pid
+
+
+def stop_webssh():
+    if webssh_server_pid:
+        subprocess.run(
+            kill_pid_command_linux + str(webssh_server_pid),
+            shell=True,
+            start_new_session=True
+        )
