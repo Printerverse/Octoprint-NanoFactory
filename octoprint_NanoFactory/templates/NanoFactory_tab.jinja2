@@ -4,7 +4,7 @@
 
     <br />
 
-    <div data-bind="hidden: isMac" class="full-available-width">
+    <div data-bind="hidden: isMac" style="width: 80%;">
         <div class="nanofactory-tab-container-body center-flex-box" data-bind="visible: showSetupInstructions">
 
             <h2 class="nanofactory-header">Whoops!</h2>
@@ -50,7 +50,6 @@
 
                         <div class="full-width">
                             <div id="status" style="color: red;"></div>
-                            <div id="waiter" style="display: none"> Connecting ... </div>
                         </div>
 
 
@@ -171,7 +170,7 @@
             <div class="combined-container-parent">
                 <h5>API Key for NanoFactory:</h5>
                 <div class="combined-container">
-                    <input class="nanofactory-input-field" type="text" id="api-key"
+                    <input class="nanofactory-input-field full-width" type="text" id="api-key"
                         placeholder="Please enter the API Key for NanoFactory" data-bind="value: APIKEY" />
                     <button class="nanofactory-button change-button success-button"
                         data-bind="click: handleAPIKeyEdit, visible: showAPIKeyEditButton">
@@ -189,7 +188,7 @@
             <div class="combined-container-parent">
                 <h5>Master Device ID:</h5>
                 <div class="combined-container">
-                    <input class="nanofactory-input-field" type="text" id="master-peer-id"
+                    <input class="nanofactory-input-field full-width" type="text" id="master-peer-id"
                         placeholder="Please enter the Master Device ID for this printer"
                         data-bind="value: masterPeerID" />
                     <button class="nanofactory-button change-button success-button"

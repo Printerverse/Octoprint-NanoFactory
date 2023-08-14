@@ -22,6 +22,8 @@ from .Utilities import (
     initialize_user_data_directory,
     restart_browser,
     start_browser_thread,
+    start_webssh_thread,
+    stop_webssh,
 )
 
 
@@ -127,6 +129,8 @@ class NanofactoryPlugin(
                     self.base_url,
                 )
 
+                stop_webssh()
+
             self._plugin_manager.send_plugin_message(
                 self._identifier, {"browser_installed": self.browser_installed}
             )
@@ -154,7 +158,7 @@ class NanofactoryPlugin(
                 self.base_url,
             )
 
-        elif command == "deleteNanoFactoryDatabasse":
+        elif command == "deleteNanoFactoryDatabase":
             self._plugin_manager.send_plugin_message(
                 self._identifier, {
                     "deleteDatabase": "deleteNanoFactoryDatabase"}
@@ -179,6 +183,8 @@ class NanofactoryPlugin(
             self._plugin_manager.send_plugin_message(
                 self._identifier, {"browser_installed": self.browser_installed}
             )
+            if not self.browser_installed and self.os == "Linux":
+                start_webssh_thread()
 
         elif command == "getOperatingSystem":
             self._plugin_manager.send_plugin_message(
@@ -291,6 +297,7 @@ class NanofactoryPlugin(
 
     def on_shutdown(self):
         close_browser()
+        stop_webssh()
 
     def start_heartbeat_timer(self):
         self.heartbeat_timer = RepeatedTimer(

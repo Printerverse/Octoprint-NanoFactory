@@ -106,36 +106,40 @@ $(function () {
                 // check for the key browser_installed in the data
 
                 if ("browser_installed" in data) {
-                    // if (data["browser_installed"]) {
-                    //     self.showSetupInstructions(false)
-                    // } else {
-                    self.showSetupInstructions(true)
-                    //     new PNotify({
-                    //         title: "Browser Not Installed",
-                    //         text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
-                    //         type: "notice",
-                    //         hide: false
-                    //     });
-                    // }
+                    if (data["browser_installed"]) {
+                        self.showSetupInstructions(false)
+                    } else {
+                        self.showSetupInstructions(true)
+                        new PNotify({
+                            title: "Browser Not Installed",
+                            text: "NanoFactory could not find a browser installed. Please check the NanoFactory tab for setup instructions.",
+                            type: "notice",
+                            hide: false
+                        });
+                    }
                 }
 
                 if (data["operating_system"]) {
-                    // if (data["operating_system"] == "Windows") {
-                    //     self.isWindows(true)
-                    // } else if (data["operating_system"] == "Linux") {
-                    self.isLinux(true)
-                    // if (!(["localhost", "::", "127.0.0.1"].includes(self.hostname()))) {
-                    self.showTabBarLinux(true)
-                    self.showAutomatedInstructionsLinux(true)
-                    self.showManualInstructionsLinux(false)
-                    // }
-                    // } else if (data["operating_system"] == "Darwin") {
-                    //     self.isMac(true)
-                    // }
+                    if (data["operating_system"] == "Windows") {
+                        self.isWindows(true)
+                    } else if (data["operating_system"] == "Linux") {
+                        self.isLinux(true)
+                        if (!(["localhost", "::", "127.0.0.1"].includes(self.hostname()))) {
+                            self.showTabBarLinux(true)
+                            self.showAutomatedInstructionsLinux(true)
+                            self.showManualInstructionsLinux(false)
+                        }
+                    } else if (data["operating_system"] == "Darwin") {
+                        self.isMac(true)
+                    }
                 }
 
                 if ("showBrowserGUI" in data) {
                     self.showBrowserGUI(data["showBrowserGUI"])
+
+                    if (self.showSetupInstructions())
+                        return
+
                     let text = data["showBrowserGUI"] ? "NanoFactory Browser GUI is Enabled" : "NanoFactory Browser GUI is Disabled"
                     new PNotify({
                         text: text,
@@ -164,7 +168,7 @@ $(function () {
                     console.log("apiKey not found. Calling startAuthFlow")
                     self.startAuthFlow()
                     self.handleShowAPIKeySubmitButton()
-                    // self.apiKeyIconPath = ko.observable(self.submitIconPath)
+                    self.apiKeyIconPath = ko.observable(self.submitIconPath)
                 }
 
                 // handle the checkbox on and off
@@ -475,7 +479,8 @@ $(function () {
         }
 
         // -------------- SSH related functions --------------
-        let iframe = $('#hidden-iframe');
+        let iframe = $('#hidden-iframe'),
+            status = $('#status');
 
         self.initiateSSHConnection = function () {
             $('#terminal-container').css('display', 'block');
@@ -517,6 +522,9 @@ $(function () {
                         postMessageToIframe(JSON.stringify({ action: "installChromium" }))
                     }
                     break;
+                case "log_status":
+                    status.html(text.split('\n').join('<br/>'));
+                    break
                 case 'setupComplete':
                     OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
                     break

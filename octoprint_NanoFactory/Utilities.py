@@ -43,18 +43,14 @@ kill_chrome_command_linux = "killall chrome"
 browser_thread: threading.Thread = None
 webssh_thread: threading.Thread = None
 webssh_server_pid: int = None
-start_webssh_server_command = ["wssh", "--fbidhttp=False", "--xsrf=False"]
 
 
 def get_browser_flags(check_display=False):
     browser_flags = flag_for_headless + flags + user_data_directory_path
 
     if check_display:
-        # if is_display_available(operating_system):
         browser_flags = browser_flags.replace(flag_for_headless, "")
-        # else:
-        #     from . import __plugin_implementation__ as plugin
-        #     plugin.updateShowBrowserGUI(False)
+
     return browser_flags
 
 
@@ -460,15 +456,30 @@ def start_webssh():
     if webssh_server_pid:
         return
 
+    from . import __plugin_implementation__ as plugin
+
     python_executable = sys.executable
-    webssh_server_pid = subprocess.Popen(
-        [python_executable, "-m"].extend(start_webssh_server_command), start_new_session=True).pid
+
+    webssh_path = python_executable.split("/")
+    webssh_path = webssh_path[:-1] + ["wssh"]
+    webssh_path = "/".join(webssh_path)
+
+    process = psutil.Popen(
+        webssh_path,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+
+    webssh_server_pid = process.pid
+    plugin._logger.info("WebSSH server started with PID " +
+                        str(webssh_server_pid))  # type: ignore
 
 
 def stop_webssh():
-    if webssh_server_pid:
-        subprocess.run(
-            kill_pid_command_linux + str(webssh_server_pid),
-            shell=True,
-            start_new_session=True
-        )
+    subprocess.run(
+        "killall wssh",
+        shell=True,
+        start_new_session=True
+    )
