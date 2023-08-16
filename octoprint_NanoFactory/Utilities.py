@@ -34,7 +34,6 @@ flag_for_headless = "--headless "
 
 kill_pid_command_windows = "taskkill /F /PID "
 kill_pid_command_linux = "kill -9 "
-kill_chrome_command_windows = "taskkill /f /im chrome.exe 2> nul"
 kill_msedge_command_windows = "taskkill /f /im msedge.exe 2> nul"
 kill_chromium_browser_command_linux = "killall chromium-browser"
 kill_chromium_command_linux = "killall chromium"
@@ -106,13 +105,7 @@ def check_if_browser_is_installed(
 def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"] = ""):
     from . import __plugin_implementation__ as plugin
 
-    if operating_system == "Windows":
-        subprocess.Popen(kill_chrome_command_windows,
-                         start_new_session=True, shell=True)
-        subprocess.Popen(kill_msedge_command_windows,
-                         start_new_session=True, shell=True)
-
-    elif operating_system == "Linux":
+    if operating_system == "Linux":
         command = "pkill -f chrom"
         plugin._logger.info(f"Running command: {command}")  # type: ignore
         result = subprocess.run(
