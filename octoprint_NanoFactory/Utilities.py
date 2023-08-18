@@ -61,7 +61,7 @@ def initialize_user_data_directory(
         user_data_directory_path = r"C:\NanoFactory"
     elif operating_system == "Linux":
         if getpass.getuser() == "root":
-            user_data_directory_path = r"/root/NanoFactory"
+            user_data_directory_path = r"/tmp/NanoFactory"
         else:
             user_data_directory_path = r"/home/{}/NanoFactory".format(
                 getpass.getuser())
