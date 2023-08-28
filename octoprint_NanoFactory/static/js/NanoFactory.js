@@ -33,6 +33,7 @@ $(function () {
         self.showMasterPeerIDSubmitButton = ko.observable(false)
 
         self.showClearNanoFactoryDatabaseModal = ko.observable(false)
+        self.showRestartServerModal = ko.observable(false)
 
         self.restartMode = ko.observable("stable") // can be "stable" or "dev"
 
@@ -146,6 +147,18 @@ $(function () {
                         type: "notice",
                     })
                 }
+
+                if ("getRestartServerModal" in data) {
+                    self.showRestartServerModal(data["getRestartServerModal"])
+
+                    if (data["getRestartServerModal"])
+                        new PNotify({
+                            title: "Restart Device",
+                            text: "Looks like NanoFactory Server has run into some issues. Please restart the device to continue using NanoFactory.",
+                            type: "error",
+                            hide: false
+                        })
+                }
             }
         }
 
@@ -158,6 +171,7 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getShowBrowserGUI").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getRestartServerModal").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
@@ -255,6 +269,10 @@ $(function () {
                     type: "error"
                 });
             });
+        }
+
+        self.togglerRestartSeverModal = function () {
+            self.showRestartServerModal(!self.showRestartServerModal())
         }
 
         self.toggleClearNanoFactoryDatabaseModal = function () {

@@ -50,6 +50,7 @@ class NanofactoryPlugin(
         self.last_heartbeat_time = 0
         self.heartbeat_timer = None
         self.heartbeat_interval = 10
+        self.showRestartServerModal = False
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -87,6 +88,7 @@ class NanofactoryPlugin(
             "getOperatingSystem": [],
             "getShowBrowserGUI": [],
             "setShowBrowserGUI": ["showBrowserGUI"],
+            "getRestartServerModal": [],
         }
 
     def on_api_command(self, command, data):
@@ -202,10 +204,25 @@ class NanofactoryPlugin(
                             self.master_peer_id,
                             self.base_url)
 
+        elif command == "getRestartServerModal":
+            self.send_restart_server_modal()
+
     def updateShowBrowserGUI(self, showBrowserGUI):
         self.showBrowserGUI = showBrowserGUI
         self.update_nf_profile()
         self.send_show_browser_gui()
+
+    @octoprint.plugin.BlueprintPlugin.route("/show_restart_server_modal", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+    def show_restart_server_modal_endpoint(self):
+        show_modal = request.args.get("show_modal", None)
+        if show_modal:
+            self.showRestartServerModal = True
+            self.send_restart_server_modal()
+            self._logger.warning("Device restart required")
+        else:
+            self.showRestartServerModal = False
+        return "Success"
 
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
@@ -364,6 +381,12 @@ class NanofactoryPlugin(
         self._plugin_manager.send_plugin_message(
             self._identifier, {
                 "showBrowserGUI": self.showBrowserGUI}
+        )
+
+    def send_restart_server_modal(self):
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {
+                "getRestartServerModal": self.showRestartServerModal}
         )
 
     def send_proxy_server_started(self):

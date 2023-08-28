@@ -281,6 +281,35 @@
 
             </div>
 
+            {# Restart Modal #}
+            <div class="nanofactory-modal center-flex-box" data-bind="visible: showRestartServerModal">
+                <div class="nanofactory-modal-content">
+                    <div class="nanofactory-modal-header">
+                        Restart Server
+
+                        <div data-bind="click: togglerRestartSeverModal" class="nanofactory-modal-close-icon">
+                            <img src="plugin/NanoFactory/static/img/close-icon.svg" />
+                        </div>
+                    </div>
+
+                    <div class="nanofactory-modal-body">
+                        <div>
+                            Looks like NanoFactory Server has run into some issues. Please restart the device to
+                            continue using NanoFactory.
+                        </div>
+                        <br />
+                        <div class="center-flex-box">
+                            <img src="plugin/NanoFactory/static/img/restart-server.gif" />
+                        </div>
+                    </div>
+
+                    <div class="nanofactory-modal-footer">
+                        <button class="nanofactory-button neutral-button"
+                            data-bind="click: showRestartServerModal">Close</button>
+                    </div>
+                </div>
+            </div>
+
             {# Fingerprint Modal #}
             <div id="fingerprintModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
                 <div class="modal-dialog" role="document">
