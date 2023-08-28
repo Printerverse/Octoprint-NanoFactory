@@ -181,6 +181,14 @@ def start_browser_thread(
     browser_thread.start()
 
 
+def start_close_browser_thread():
+    close_browser_thread = threading.Thread(
+        target=close_browser,
+    )
+    close_browser_thread.daemon = True
+    close_browser_thread.start()
+
+
 def start_browser(
     operating_system: Literal["Windows", "Darwin", "Linux"],
     api_key: str,
