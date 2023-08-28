@@ -313,17 +313,21 @@ def close_browser():
     try:
         if plugin.pid:
             if plugin.os == "Windows":
-                subprocess.run(
+                result = subprocess.run(
                     kill_pid_command_windows + str(plugin.pid),
                     shell=True,
-                    start_new_session=True
+                    start_new_session=True,
+                    capture_output=True,
                 )
             elif plugin.os == "Linux":
-                subprocess.run(
+                result = subprocess.run(
                     kill_pid_command_linux + str(plugin.pid),
                     shell=True,
-                    start_new_session=True
+                    start_new_session=True,
+                    capture_output=True
                 )
+                if result.returncode != 0:
+                    kill_all_browsers(plugin.os)
         else:
             kill_all_browsers(plugin.os)
     except Exception as e:
