@@ -181,14 +181,6 @@ def start_browser_thread(
     browser_thread.start()
 
 
-def start_close_browser_thread():
-    close_browser_thread = threading.Thread(
-        target=close_browser,
-    )
-    close_browser_thread.daemon = True
-    close_browser_thread.start()
-
-
 def start_browser(
     operating_system: Literal["Windows", "Darwin", "Linux"],
     api_key: str,
@@ -317,7 +309,7 @@ def start_browser(
 
 def close_browser():
     from . import __plugin_implementation__ as plugin
-
+    plugin._logger.info("Closing browser..." + str(plugin.pid))  # type: ignore
     try:
         if plugin.pid:
             if plugin.os == "Windows":
@@ -336,6 +328,11 @@ def close_browser():
                 )
                 if result.returncode != 0:
                     kill_all_browsers(plugin.os)
+
+            plugin._logger.info(  # type: ignore
+                "NanoFactory browser closed! " + \
+                str(result.stdout.decode())
+            )
         else:
             kill_all_browsers(plugin.os)
     except Exception as e:

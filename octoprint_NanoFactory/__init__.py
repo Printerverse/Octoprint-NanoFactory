@@ -18,10 +18,10 @@ from . import BedLevelling
 from .Utilities import (
     check_cors_for_octoprint_api,
     check_if_browser_is_installed,
+    close_browser,
     initialize_user_data_directory,
     restart_browser,
     start_browser_thread,
-    start_close_browser_thread,
     start_webssh_thread,
     stop_webssh,
 )
@@ -313,7 +313,7 @@ class NanofactoryPlugin(
         return True
 
     def on_shutdown(self):
-        start_close_browser_thread()
+        close_browser()
         if self.os == "Linux":
             stop_webssh()
 
