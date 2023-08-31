@@ -89,6 +89,7 @@ class NanofactoryPlugin(
             "getShowBrowserGUI": [],
             "setShowBrowserGUI": ["showBrowserGUI"],
             "getRestartServerModal": [],
+            "getServerMode": [],
         }
 
     def on_api_command(self, command, data):
@@ -206,6 +207,9 @@ class NanofactoryPlugin(
 
         elif command == "getRestartServerModal":
             self.send_restart_server_modal()
+
+        elif command == "getServerMode":
+            self.send_server_mode()
 
     def updateShowBrowserGUI(self, showBrowserGUI):
         self.showBrowserGUI = showBrowserGUI
@@ -388,6 +392,12 @@ class NanofactoryPlugin(
         self._plugin_manager.send_plugin_message(
             self._identifier, {
                 "getRestartServerModal": self.showRestartServerModal}
+        )
+
+    def send_server_mode(self):
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {
+                "serverMode": self.restart_mode}
         )
 
     def send_proxy_server_started(self):

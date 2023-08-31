@@ -159,6 +159,13 @@ $(function () {
                             hide: false
                         })
                 }
+
+                if ("serverMode" in data) {
+                    if (data["serverMode"] === "dev")
+                        $("#nanofactory-checkbox-for-plugin-mode").prop("checked", true)
+                    else
+                        $("#nanofactory-checkbox-for-plugin-mode").prop("checked", false)
+                }
             }
         }
 
@@ -172,6 +179,7 @@ $(function () {
             OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getShowBrowserGUI").done(function (response) { }).catch(error => { console.log(error) });
             OctoPrint.simpleApiCommand("NanoFactory", "getRestartServerModal").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("NanoFactory", "getServerMode").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
