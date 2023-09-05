@@ -219,7 +219,7 @@ class NanofactoryPlugin(
     @octoprint.plugin.BlueprintPlugin.route("/show_restart_server_modal", methods=["GET"])
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def show_restart_server_modal_endpoint(self):
-        show_modal = request.args.get("show_modal", None)
+        show_modal = request.args.get("show_modal", None) == "true"
         if show_modal:
             self.showRestartServerModal = True
             self.send_restart_server_modal()
