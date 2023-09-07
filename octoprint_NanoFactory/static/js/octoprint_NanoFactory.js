@@ -5,7 +5,7 @@
  * License: AGPLv3
  */
 $(function () {
-    function NanoFactoryViewModel(parameters) {
+    function octoprint_NanoFactoryViewModel(parameters) {
         var self = this;
 
         self.APIKEY = ko.observable("")
@@ -42,7 +42,7 @@ $(function () {
         // self.settingsViewModel = parameters[1];
 
         self.onDataUpdaterPluginMessage = function (plugin, data) {
-            if (plugin == "NanoFactory") {
+            if (plugin == "octoprint_NanoFactory") {
 
                 if (data["api_key"]) {
                     self.APIKEY(data["api_key"])
@@ -171,15 +171,15 @@ $(function () {
 
 
         self.onBeforeBinding = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getShowBrowserGUI").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getRestartServerModal").done(function (response) { }).catch(error => { console.log(error) });
-            OctoPrint.simpleApiCommand("NanoFactory", "getServerMode").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getOperatingSystem").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getAPIKey").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getMasterPeerID").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getPeerID").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getCors").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getBrowserInstalled").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getShowBrowserGUI").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getRestartServerModal").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "getServerMode").done(function (response) { }).catch(error => { console.log(error) });
         }
 
         self.onStartupComplete = function () {
@@ -214,7 +214,7 @@ $(function () {
         }
 
         self.startNanoFactoryPostSetup = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
         }
 
 
@@ -233,18 +233,18 @@ $(function () {
             // check for availability of navigator.share
             if (navigator.share)
 
-                navigator.share(shareData).catch((err) => console.log(err))
+                navigator.share(shareData).catch((err) => console.error(err))
             else
                 self.copyToClipboard(self.nanoFactoryURL())
         }
 
 
         self.updateShowBrowserGUI = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "setShowBrowserGUI", { "showBrowserGUI": self.showBrowserGUI() }).done(function (response) { }).catch(error => { console.log(error) })
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "setShowBrowserGUI", { "showBrowserGUI": self.showBrowserGUI() }).done(function (response) { }).catch(error => { console.log(error) })
         }
 
         self.restartNanoFactoryApp = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "restartNanoFactoryApp", { "mode": self.restartMode() }).done(function (response) {
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "restartNanoFactoryApp", { "mode": self.restartMode() }).done(function (response) {
                 new PNotify({
                     title: "Restart successful",
                     text: "Restarted NanoFactory Successfully",
@@ -263,7 +263,7 @@ $(function () {
         self.deleteNanoFactoryDatabase = function () {
             self.toggleClearNanoFactoryDatabaseModal()
 
-            OctoPrint.simpleApiCommand("NanoFactory", "deleteNanoFactoryDatabase").done(function (response) {
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "deleteNanoFactoryDatabase").done(function (response) {
                 new PNotify({
                     title: "Delete successful",
                     text: "NanoFactory Database delete successfully",
@@ -288,7 +288,7 @@ $(function () {
         }
 
         self.giveupSnapshotCameraStream = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "giveupSnapshotCameraStream").done(function (response) {
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "giveupSnapshotCameraStream").done(function (response) {
                 new PNotify({
                     title: "Snapshot stream reloaded successfully",
                     type: "success"
@@ -309,7 +309,7 @@ $(function () {
             if (response.ok) {
                 let data = await response.json()
                 for (let object of data.keys) {
-                    if (object.app_id == "NanoFactory") {
+                    if (object.app_id == "octoprint_NanoFactory") {
                         return object.api_key
                     }
                 }
@@ -329,7 +329,7 @@ $(function () {
 
             if (apiKey) {
                 self.APIKEY(apiKey)
-                OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: apiKey }).done(function (response) { }).catch(error => { console.log(error) });
+                OctoPrint.simpleApiCommand("octoprint_NanoFactory", "saveAPIKEY", { api_key: apiKey }).done(function (response) { }).catch(error => { console.log(error) });
                 return
             }
 
@@ -340,7 +340,7 @@ $(function () {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    "app": "NanoFactory",
+                    "app": "octoprint_NanoFactory",
                 })
             })
             if (response.ok) {
@@ -367,7 +367,7 @@ $(function () {
 
                         self.APIKEY(responseBody["api_key"])
 
-                        OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: responseBody["api_key"] }).done(function (response) { }).catch(error => { console.log(error) });
+                        OctoPrint.simpleApiCommand("octoprint_NanoFactory", "saveAPIKEY", { api_key: responseBody["api_key"] }).done(function (response) { }).catch(error => { console.log(error) });
 
                         document.getElementById("master-peer-id").disabled = true
 
@@ -393,7 +393,7 @@ $(function () {
         }
 
         self.handleAPIKeySubmit = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "saveAPIKEY", { api_key: self.APIKEY() }).done(function (response) {
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "saveAPIKEY", { api_key: self.APIKEY() }).done(function (response) {
                 new PNotify({
                     title: "Save Successful",
                     text: 'API Key saved successfully',
@@ -413,7 +413,7 @@ $(function () {
         }
 
         self.handleMasterPeerIDSubmit = function () {
-            OctoPrint.simpleApiCommand("NanoFactory", "saveMasterPeerID", { "masterPeerID": self.masterPeerID() }).done(function (response) {
+            OctoPrint.simpleApiCommand("octoprint_NanoFactory", "saveMasterPeerID", { "masterPeerID": self.masterPeerID() }).done(function (response) {
                 self.nanoFactoryActionButtonText("Go to NanoFactory")
                 new PNotify({
                     title: "Save Successful",
@@ -552,7 +552,7 @@ $(function () {
                     status.html(text.split('\n').join('<br/>'));
                     break
                 case 'setupComplete':
-                    OctoPrint.simpleApiCommand("NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
+                    OctoPrint.simpleApiCommand("octoprint_NanoFactory", "startNanoFactoryPostSetup").done(function (response) { }).catch(error => { console.log(error) });
                     break
                 case 'setupFailed':
                     $('#chromium-installation-loading').css('display', 'none');
@@ -573,10 +573,10 @@ $(function () {
      * and a full list of the available options.
      */
     OCTOPRINT_VIEWMODELS.push({
-        construct: NanoFactoryViewModel,
+        construct: octoprint_NanoFactoryViewModel,
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
         dependencies: [ /* "loginStateViewModel", "settingsViewModel" */],
         // Elements to bind to, e.g. #settings_plugin_NanoFactory, #tab_plugin_NanoFactory, ...
-        elements: ["#tab_plugin_NanoFactory"]
+        elements: ["#tab_plugin_octoprint_NanoFactory"]
     });
 });

@@ -8,7 +8,7 @@ import sys
 
 from setuptools import setup
 
-plugin_identifier = "NanoFactory"
+plugin_identifier = "octoprint_NanoFactory"
 
 # The plugin's python package, should be "octoprint_<plugin identifier>", has to be unique
 plugin_package = "octoprint_NanoFactory"
@@ -38,7 +38,7 @@ plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
 plugin_requires = ["typing-extensions",
-                   "webssh @ git+https://github.com/AdvectResearchGroup/webssh.git"]
+                   "webssh @ git+https://github.com/AdvectResearchGroup/webssh.git", "Pillow", "pystray"]
 
 # --------------------------------------------------------------------------------------------------------------------
 # More advanced options that you usually shouldn't have to touch follow after this point

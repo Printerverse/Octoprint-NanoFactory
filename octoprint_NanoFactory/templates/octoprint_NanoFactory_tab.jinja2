@@ -1,6 +1,6 @@
 <div class="nanofactory-tab-container center-flex-box">
 
-    <img class="logo" src="plugin/NanoFactory/static/img/Logo.svg">
+    <img class="logo" src="plugin/octoprint_NanoFactory/static/img/Logo.svg">
 
     <br />
 
@@ -85,7 +85,7 @@
                         <div id="chromium-installation-loading" class="center-flex-box" style="display:none;">
                             <div style="font-size:larger;">Hold on, we are installing Chromium...</div>
                             <br />
-                            <img src="plugin/NanoFactory/static/img/chromium-install.gif" />
+                            <img src="plugin/octoprint_NanoFactory/static/img/chromium-install.gif" />
                         </div>
 
                         <div id="chromium-installation-failed" class="center-flex-box" style="display: none;">
@@ -128,7 +128,8 @@
                                     <span data-bind="text: updateLinuxAndInstallChromiumCommand"></span>
                                     <img class="copy-icon"
                                         data-bind="click: function() { copyToClipboard('updateLinuxAndInstallChromiumCommand') }"
-                                        src="plugin/NanoFactory/static/img/copy-icon.svg" width="16" height="16" />
+                                        src="plugin/octoprint_NanoFactory/static/img/copy-icon.svg" width="16"
+                                        height="16" />
                                 </div>
                             </li>
                         </ol>
@@ -157,11 +158,13 @@
                 <button class="nanofactory-button half-width success-button" style="text-decoration:none;"
                     data-bind="click: goToNanoFactoryURL">
                     <span data-bind="text: nanoFactoryActionButtonText"></span>
-                    <span> <img src="plugin/NanoFactory/static/img/NewTab.png" width="25" height="25" /></span>
+                    <span> <img src="plugin/octoprint_NanoFactory/static/img/NewTab.png" width="25"
+                            height="25" /></span>
                 </button>
                 <button class="nanofactory-button half-width success-button" data-bind="click: sharePrinter">
                     <span>Share Printer</span>
-                    <span> <img src="plugin/NanoFactory/static/img/share-icon.svg" width="20" height="20" /></span>
+                    <span> <img src="plugin/octoprint_NanoFactory/static/img/share-icon.svg" width="20"
+                            height="20" /></span>
                 </button>
             </div>
 
@@ -174,11 +177,11 @@
                         placeholder="Please enter the API Key for NanoFactory" data-bind="value: APIKEY" />
                     <button class="nanofactory-button change-button success-button"
                         data-bind="click: handleAPIKeyEdit, visible: showAPIKeyEditButton">
-                        <img src="plugin/NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
+                        <img src="plugin/octoprint_NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
                     </button>
                     <button class="nanofactory-button change-button success-button"
                         data-bind="click: handleAPIKeySubmit, visible: showAPIKeySubmitButton">
-                        <img src="plugin/NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
+                        <img src="plugin/octoprint_NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
                     </button>
                 </div>
             </div>
@@ -193,11 +196,11 @@
                         data-bind="value: masterPeerID" />
                     <button class="nanofactory-button change-button success-button"
                         data-bind="click: handleMasterPeerIDClear, visible: showMasterPeerIDEditButton">
-                        <img src="plugin/NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
+                        <img src="plugin/octoprint_NanoFactory/static/img/edit-icon.svg" width="25" height="25" />
                     </button>
                     <button class="nanofactory-button change-button success-button"
                         data-bind="click: handleMasterPeerIDSubmit, visible: showMasterPeerIDSubmitButton">
-                        <img src="plugin/NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
+                        <img src="plugin/octoprint_NanoFactory/static/img/submit-icon.svg" width="25" height="25" />
                     </button>
                 </div>
             </div>
@@ -255,7 +258,7 @@
 
                         <div data-bind="click: toggleClearNanoFactoryDatabaseModal"
                             class="nanofactory-modal-close-icon">
-                            <img src="plugin/NanoFactory/static/img/close-icon.svg" />
+                            <img src="plugin/octoprint_NanoFactory/static/img/close-icon.svg" />
                         </div>
                     </div>
 
@@ -361,7 +364,7 @@
 
 
             <div data-bind="visible: isMac">
-                <img src="plugin/NanoFactory/static/img/MacMeme.jpg" />
+                <img src="plugin/octoprint_NanoFactory/static/img/MacMeme.jpg" />
                 <br />
                 <h4 style="text-align: center">
                     NanoFactory Server will not be supported on Mac OS. Please use Windows or Linux

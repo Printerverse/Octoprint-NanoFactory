@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import json
 import os
 import platform
+import sys
 from time import time
 from uuid import uuid4
 
@@ -20,6 +21,7 @@ from .Utilities import (
     check_if_browser_is_installed,
     close_browser,
     initialize_user_data_directory,
+    is_executable,
     restart_browser,
     start_browser_thread,
     start_webssh_thread,
@@ -50,7 +52,7 @@ class NanofactoryPlugin(
         self.last_heartbeat_time = 0
         self.heartbeat_timer = None
         self.heartbeat_interval = 10
-        self.showRestartServerModal = False
+        self.show_restart_server_modal = False
 
     # # ~~ StartupPlugin mixin
     def on_startup(self, host, port):
@@ -58,9 +60,35 @@ class NanofactoryPlugin(
         if host == "::":
             host = "localhost"
         self.base_url = f"http://{host}:{port}"
+        if is_executable():
+            # running in a bundle as an executable
+            self.config_path = os.path.join(
+                sys._MEIPASS, str(port), "config.json")
+
+    def fetch_executable_config(self):
+        config = {
+            "profile": "nf_profile.json",
+            "start_heartbeat": True,
+        }
+
+        if not is_executable():
+            # not running in an executable env
+            # normal plugin
+            return config
+
+        # open file config.json
+        # and load the configuration
+        with open(self.config_path, "r") as f:
+            config: dict = json.loads(f.read())
+
+        return config
 
     def on_after_startup(self):
-        self.load_nf_profile()
+        executable_config = self.fetch_executable_config()
+        profile_name = executable_config.get("profile", "nf_profile.json")
+        start_hearbeat = executable_config.get("start_heartbeat", True)
+
+        self.load_nf_profile(nf_profile_name=profile_name)
         self.cors_error = check_cors_for_octoprint_api()
         self.browser_installed = check_if_browser_is_installed(self.os)
 
@@ -69,7 +97,49 @@ class NanofactoryPlugin(
             start_browser_thread(
                 self.os, self.api_key, self.peer_ID, self.master_peer_id, self.base_url
             )
-            self.start_heartbeat_timer()
+            if start_hearbeat:
+                self.start_heartbeat_timer()
+
+        # check if a display is available
+        # and the os is mac or windows
+        # system tray is not available on linux
+        if self.os != "Linux" and is_executable():
+            self.start_system_tray()
+
+    def start_system_tray(self):
+        # Importing in the method because this will only
+        # be needed if there is a GUI available
+        import pystray
+        from PIL import Image
+
+        self._logger.info("Starting system tray")
+        # create tray icon
+        image_path = os.path.join(sys._MEIPASS, "NanoFactory.png")
+        image = Image.open(image_path)
+        exit_menu_item = pystray.MenuItem("Exit", self.on_exit)
+        restart_menu_item = pystray.MenuItem(
+            "Restart", lambda _, i: self.restart_server()
+        )
+        menu = pystray.Menu(restart_menu_item, exit_menu_item)
+        icon = pystray.Icon("NanoFactory Server", image,
+                            "NanoFactory Server", menu)
+        icon.run_detached()
+
+    def on_exit(self, icon, item):
+        self._logger.info("Exiting, bye bye")
+        icon.stop()
+        self.on_shutdown()
+        os.kill(os.getpid(), 9)
+        sys.exit(0)
+
+    def restart_server(self):
+        restart_browser(
+            self.os,
+            self.api_key,
+            self.peer_ID,
+            self.master_peer_id,
+            self.base_url,
+        )
 
     # # ~~ SimpleApiPlugin mixin
     def get_api_commands(self):
@@ -199,11 +269,9 @@ class NanofactoryPlugin(
 
         elif command == "setShowBrowserGUI":
             self.updateShowBrowserGUI(data["showBrowserGUI"])
-            restart_browser(self.os,
-                            self.api_key,
-                            self.peer_ID,
-                            self.master_peer_id,
-                            self.base_url)
+            restart_browser(
+                self.os, self.api_key, self.peer_ID, self.master_peer_id, self.base_url
+            )
 
         elif command == "getRestartServerModal":
             self.send_restart_server_modal()
@@ -216,16 +284,18 @@ class NanofactoryPlugin(
         self.update_nf_profile()
         self.send_show_browser_gui()
 
-    @octoprint.plugin.BlueprintPlugin.route("/show_restart_server_modal", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.route(
+        "/show_restart_server_modal", methods=["GET"]
+    )
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def show_restart_server_modal_endpoint(self):
-        show_modal = request.args.get("show_modal", None) == "true"
+        show_modal = request.args.get("show_modal", None)
         if show_modal:
-            self.showRestartServerModal = True
+            self.show_restart_server_modal = True
             self.send_restart_server_modal()
             self._logger.warning("Device restart required")
         else:
-            self.showRestartServerModal = False
+            self.show_restart_server_modal = False
         return "Success"
 
     @octoprint.plugin.BlueprintPlugin.route("/save_master_peer_id", methods=["POST"])
@@ -330,11 +400,9 @@ class NanofactoryPlugin(
     def check_heartbeat(self):
         if time() - self.last_heartbeat_time > self.heartbeat_interval:
             self._logger.info("Heartbeat timed out! Restarting browser...")
-            restart_browser(self.os,
-                            self.api_key,
-                            self.peer_ID,
-                            self.master_peer_id,
-                            self.base_url)
+            restart_browser(
+                self.os, self.api_key, self.peer_ID, self.master_peer_id, self.base_url
+            )
 
     def check_api_key_validity(self, api_key):
         if api_key:
@@ -384,20 +452,18 @@ class NanofactoryPlugin(
 
     def send_show_browser_gui(self):
         self._plugin_manager.send_plugin_message(
-            self._identifier, {
-                "showBrowserGUI": self.showBrowserGUI}
+            self._identifier, {"showBrowserGUI": self.showBrowserGUI}
         )
 
     def send_restart_server_modal(self):
         self._plugin_manager.send_plugin_message(
             self._identifier, {
-                "getRestartServerModal": self.showRestartServerModal}
+                "getRestartServerModal": self.show_restart_server_modal}
         )
 
     def send_server_mode(self):
         self._plugin_manager.send_plugin_message(
-            self._identifier, {
-                "serverMode": self.restart_mode}
+            self._identifier, {"serverMode": self.restart_mode}
         )
 
     def send_proxy_server_started(self):
@@ -410,12 +476,16 @@ class NanofactoryPlugin(
             self._identifier, {"masterPeerID": self.master_peer_id}
         )
 
-    def load_nf_profile(self):
+    def load_nf_profile(self, nf_profile_name: str = ""):
         nf_profile = {}
+
+        if not nf_profile_name:
+            nf_profile_name = "nf_profile.json"
+
         try:
             with open(
                 os.path.join(self.get_plugin_data_folder(),
-                             "nf_profile.json"), "r"
+                             nf_profile_name), "r"
             ) as f:
                 nf_profile = json.loads(f.read())
         except IOError as e:
@@ -474,8 +544,8 @@ class NanofactoryPlugin(
 
     def get_assets(self):
         return {
-            "js": ["js/NanoFactory.js"],
-            "css": ["css/NanoFactory.css"],
+            "js": ["js/octoprint_NanoFactory.js"],
+            "css": ["css/octoprint_NanoFactory.css"],
         }
 
     # ~~ Softwareupdate hook
@@ -504,7 +574,8 @@ class NanofactoryPlugin(
         }
 
 
-__plugin_name__ = "NanoFactory"
+# The plugin's python package, should be "octoprint_<plugin identifier>", has to be unique
+__plugin_package__ = "octoprint_NanoFactory"
 
 
 __plugin_pythoncompat__ = ">=3,<4"  # Only Python 3
@@ -512,7 +583,10 @@ __plugin_pythoncompat__ = ">=3,<4"  # Only Python 3
 
 def __plugin_load__():
     global __plugin_implementation__
+    global __plugin_name__
+
     __plugin_implementation__ = NanofactoryPlugin()
+    __plugin_name__ = "NanoFactory"
 
     global __plugin_hooks__
     __plugin_hooks__ = {
