@@ -37,7 +37,6 @@ kill_pid_command_linux = "kill -9 "
 kill_chrome_command_windows = "taskkill /f /im chrome.exe 2> nul"
 kill_msedge_command_windows = "taskkill /f /im msedge.exe 2> nul"
 kill_brave_browser_command_linux = "killall brave"
-kill_chrome_command_linux = "killall chrome"
 
 browser_thread: threading.Thread = None
 webssh_thread: threading.Thread = None
