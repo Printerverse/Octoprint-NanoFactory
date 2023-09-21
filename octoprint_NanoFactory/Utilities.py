@@ -103,41 +103,22 @@ def check_if_browser_is_installed(
     return False
 
 
-# I would add union types here but this version of python doesn't support them
-# so please ignore the type errors
-
-
 # type: ignore
-def kill_all_browsers(operating_system: Literal["Windows", "Darwin", "Linux"] = ""):
+def kill_all_browsers_linux():
     from . import __plugin_implementation__ as plugin
 
-    if operating_system == "Windows":
-        # subprocess.Popen(
-        #     kill_chrome_command_windows, start_new_session=True, shell=True
-        # )
-        # subprocess.Popen(
-        #     kill_msedge_command_windows, start_new_session=True, shell=True
-        # )
-        pass
+    result = subprocess.run(
+        kill_brave_browser_command_linux.split(), capture_output=True, text=True)
 
-    elif operating_system == "Linux":
+    if result.returncode == 0:
         plugin._logger.info(
-            f"Running command: {kill_brave_browser_command_linux}")  # type: ignore
-        result = subprocess.run(
-            kill_brave_browser_command_linux.split(), capture_output=True, text=True)
-        if result.returncode == 0:
-            plugin._logger.info(
-                "Command executed successfully.")  # type: ignore
-        else:
-            plugin._logger.info(  # type: ignore
-                "Command failed with return code:", result.returncode
-            )
-            plugin._logger.info("Error output:")  # type: ignore
-            plugin._logger.info(result.stderr)  # type: ignore
+            "All browsers killed successfully")  # type: ignore
     else:
-        # If no operating system is specified, kill all browsers
-        kill_all_browsers("Windows")
-        kill_all_browsers("Linux")
+        plugin._logger.warn(  # type: ignore
+            "Killing all browsers failed with return code:", result.returncode
+        )
+        plugin._logger.warn("Error output:")  # type: ignore
+        plugin._logger.warn(result.stderr)  # type: ignore
 
 
 def restart_browser(
@@ -326,42 +307,44 @@ def start_browser(
 
 def close_browser():
     from . import __plugin_implementation__ as plugin
-
     try:
-        if plugin.pid:
-            if plugin.os == "Windows":
+        if plugin.os == "Windows":
+            if plugin.pid:
                 result = subprocess.run(
                     kill_pid_command_windows + str(plugin.pid),
                     shell=True,
                     start_new_session=True,
                     capture_output=True,
                 )
-            elif plugin.os == "Linux":
+            else:
+                plugin._logger.warn(  # type: ignore
+                    "Browser PID not found. Please close the browser manually"
+                )
+
+        elif plugin.os == "Linux":
+            pids = get_all_browser_pids_for_linux()
+
+            if not pids:
+                plugin._logger.warn(  # type: ignore
+                    "Browser PID not found"
+                )
+                kill_all_browsers_linux()
+
+            for pid in pids:
                 result = subprocess.run(
-                    kill_pid_command_linux + str(plugin.pid),
+                    kill_pid_command_linux + str(pid),
                     shell=True,
                     start_new_session=True,
                     capture_output=True,
                 )
 
                 if result.returncode != 0:
-                    plugin._logger.info(  # type: ignore
-                        f"Error while closing browser with pid {plugin.pid}."
-                    )
-                    kill_all_browsers(plugin.os)
-                else:
-                    plugin._logger.info(  # type: ignore
-                        f"Browser with PID {plugin.pid} closed successfully."
-                    )
-        else:
-            plugin._logger.info(  # type: ignore
-                "PID not found. Killing all browsers..."
-            )
-            kill_all_browsers(plugin.os)
+                    plugin._logger.warn(
+                        f"Return code of kill command for pid {pid} : {result.returncode}")  # type: ignore
+
     except Exception as e:
         plugin._logger.warning(e, exc_info=True)  # type: ignore
-        plugin._logger.info("Closing all browsers...")  # type: ignore
-        kill_all_browsers(plugin.os)
+        kill_all_browsers_linux()
 
 
 def extract_version_registry(output):
@@ -522,3 +505,14 @@ def modify_brave_preferences():
 
     with open(preferences_path, "w") as f:
         json.dump(settings, f, indent=4)
+
+
+def get_all_browser_pids_for_linux():
+    processes = [p for p in psutil.process_iter(
+        attrs=['pid', 'name', 'cmdline']) if 'brave' in p.info['name']]
+
+    # Get the PIDs of all "brave" processes that include "NanoFactory"
+    pids = [p.info['pid']
+            for p in processes if 'NanoFactory' in ' '.join(p.info['cmdline'])]
+
+    return pids
