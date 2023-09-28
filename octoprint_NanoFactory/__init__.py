@@ -22,7 +22,6 @@ from .Utilities import (
     check_cors_for_octoprint_api,
     check_if_browser_is_installed,
     close_browser,
-    get_printer_name,
     initialize_user_data_directory,
     is_executable,
     restart_browser,
@@ -45,6 +44,8 @@ class NanofactoryPlugin(
         self.peer_ID = ""
         self.api_key: str = ""
         self.base_url: str = ""
+        self.host: str = "localhost"
+        self.port: int = 5000
         self.master_peer_id: str = ""
         self.pid: str = ""
         self.cors_error = False
@@ -63,6 +64,8 @@ class NanofactoryPlugin(
         if host == "::":
             host = "localhost"
         self.base_url = f"http://{host}:{port}"
+        self.host = host
+        self.port = port
         if is_executable():
             # running in a bundle as an executable
             self.config_path = os.path.join(sys._MEIPASS, str(port), "config.json")
@@ -119,7 +122,7 @@ class NanofactoryPlugin(
         image_path = os.path.join(sys._MEIPASS, "NanoFactory.png")
         image = Image.open(image_path)
         printer_name_menu_item = pystray.MenuItem(
-            get_printer_name(), lambda _, i: self.open_printer_octoprint()
+            self.get_printer_name(), lambda _, i: self.open_printer_octoprint()
         )
         exit_menu_item = pystray.MenuItem("Exit", self.on_exit)
         restart_menu_item = pystray.MenuItem(
@@ -129,6 +132,16 @@ class NanofactoryPlugin(
         icon = pystray.Icon("NanoFactory Server", image, "NanoFactory Server", menu)
         icon.run_detached()
 
+    def get_printer_name(self):
+        printer_profile_path = os.path.join(
+            self.get_plugin_data_folder(), "printerProfiles", f"{self.port}.profile"
+        )
+        if os.path.isfile(printer_profile_path):
+            with open(printer_profile_path, "r") as f:
+                printer_profile = json.load(f)
+                return printer_profile["name"]
+        else:
+            return f"Printer {self.port}"
 
     def open_printer_octoprint(self):
         """

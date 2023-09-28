@@ -511,14 +511,3 @@ def get_all_browser_pids_for_linux():
     ]
 
     return pids
-
-
-def get_current_printer_profile():
-    profile_manager = PrinterProfileManager()
-    current_profile = profile_manager.get_current_or_default()
-    return current_profile
-
-
-def get_printer_name():
-    current_profile = get_current_printer_profile()
-    return current_profile["name"]
