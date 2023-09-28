@@ -7,6 +7,8 @@ import platform
 import sys
 from time import time
 from uuid import uuid4
+import webbrowser
+
 
 import requests
 from flask import request
@@ -62,8 +64,7 @@ class NanofactoryPlugin(
         self.base_url = f"http://{host}:{port}"
         if is_executable():
             # running in a bundle as an executable
-            self.config_path = os.path.join(
-                sys._MEIPASS, str(port), "config.json")
+            self.config_path = os.path.join(sys._MEIPASS, str(port), "config.json")
 
     def fetch_executable_config(self):
         config = {
@@ -116,14 +117,27 @@ class NanofactoryPlugin(
         # create tray icon
         image_path = os.path.join(sys._MEIPASS, "NanoFactory.png")
         image = Image.open(image_path)
+        printer_name_menu_item = pystray.MenuItem(
+            self.get_printer_name(), lambda _, i: self.open_printer_octoprint()
+        )
         exit_menu_item = pystray.MenuItem("Exit", self.on_exit)
         restart_menu_item = pystray.MenuItem(
             "Restart", lambda _, i: self.restart_server()
         )
         menu = pystray.Menu(restart_menu_item, exit_menu_item)
-        icon = pystray.Icon("NanoFactory Server", image,
-                            "NanoFactory Server", menu)
+        icon = pystray.Icon("NanoFactory Server", image, "NanoFactory Server", menu)
         icon.run_detached()
+
+    def get_printer_name(self):
+        return "Printer name"
+
+    def open_printer_octoprint(self):
+        """
+        Open the printer's OctoPrint page in the browser
+        The url will look something like this:
+        http://localhost:42069/?#tab_plugin_octoprint_NanoFactory
+        """
+        webbrowser.open(self.base_url + "/?#tab_plugin_octoprint_NanoFactory")
 
     def on_exit(self, icon, item):
         self._logger.info("Exiting, bye bye")
@@ -167,8 +181,7 @@ class NanofactoryPlugin(
             self.api_key = data["api_key"]
             try:
                 with open(
-                    os.path.join(self.get_plugin_data_folder(),
-                                 "nf_profile.json"), "r+"
+                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r+"
                 ) as f:
                     nf_profile = json.loads(f.read())
                     nf_profile["api_key"] = self.api_key
@@ -233,14 +246,12 @@ class NanofactoryPlugin(
 
         elif command == "deleteNanoFactoryDatabase":
             self._plugin_manager.send_plugin_message(
-                self._identifier, {
-                    "deleteDatabase": "deleteNanoFactoryDatabase"}
+                self._identifier, {"deleteDatabase": "deleteNanoFactoryDatabase"}
             )
 
         elif command == "giveupSnapshotCameraStream":
             self._plugin_manager.send_plugin_message(
-                self._identifier, {
-                    "releaseSnapshotStream": "releaseSnapshotStream"}
+                self._identifier, {"releaseSnapshotStream": "releaseSnapshotStream"}
             )
 
         elif command == "getCors":
@@ -417,8 +428,7 @@ class NanofactoryPlugin(
     def update_nf_profile(self):
         try:
             with open(
-                os.path.join(self.get_plugin_data_folder(),
-                             "nf_profile.json"), "r+"
+                os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "r+"
             ) as f:
                 nf_profile = json.loads(f.read())
                 nf_profile["api_key"] = self.api_key
@@ -436,8 +446,7 @@ class NanofactoryPlugin(
         self._logger.info("Saving bed levelling data")
         try:
             with open(
-                os.path.join(self.get_plugin_data_folder(),
-                             "bed_levelling_data.json"),
+                os.path.join(self.get_plugin_data_folder(), "bed_levelling_data.json"),
                 "w+",
             ) as f:
                 json.dump(data, f)
@@ -457,8 +466,7 @@ class NanofactoryPlugin(
 
     def send_restart_server_modal(self):
         self._plugin_manager.send_plugin_message(
-            self._identifier, {
-                "getRestartServerModal": self.show_restart_server_modal}
+            self._identifier, {"getRestartServerModal": self.show_restart_server_modal}
         )
 
     def send_server_mode(self):
@@ -484,8 +492,7 @@ class NanofactoryPlugin(
 
         try:
             with open(
-                os.path.join(self.get_plugin_data_folder(),
-                             nf_profile_name), "r"
+                os.path.join(self.get_plugin_data_folder(), nf_profile_name), "r"
             ) as f:
                 nf_profile = json.loads(f.read())
         except IOError as e:
@@ -497,14 +504,12 @@ class NanofactoryPlugin(
                     os.path.join(self.get_plugin_data_folder(), "apiKey.txt")
                 ):
                     with open(
-                        os.path.join(self.get_plugin_data_folder(),
-                                     "apiKey.txt"), "r"
+                        os.path.join(self.get_plugin_data_folder(), "apiKey.txt"), "r"
                     ) as f:
                         self._logger.info("Loading API key from apiKey.txt")
                         api_key = f.read().strip()
                 if os.path.isfile(
-                    os.path.join(self.get_plugin_data_folder(),
-                                 "masterDeviceID.txt")
+                    os.path.join(self.get_plugin_data_folder(), "masterDeviceID.txt")
                 ):
                     with open(
                         os.path.join(
@@ -517,8 +522,7 @@ class NanofactoryPlugin(
                         )
                         master_peer_id = f.read().strip()
                 with open(
-                    os.path.join(self.get_plugin_data_folder(),
-                                 "nf_profile.json"), "w"
+                    os.path.join(self.get_plugin_data_folder(), "nf_profile.json"), "w"
                 ) as f:
                     nf_profile = {
                         "peer_ID": str(uuid4()),
