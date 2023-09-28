@@ -12,6 +12,8 @@ import psutil
 from typing_extensions import Literal
 
 from octoprint.server import settings
+from octoprint.printer.profile import PrinterProfileManager
+
 
 # CONSTANTS:
 index_html_file_path = os.path.join(
@@ -68,8 +70,7 @@ def initialize_user_data_directory(
         if getpass.getuser() == "root":
             user_data_directory_path = r"/root/NanoFactory"
         else:
-            user_data_directory_path = r"/home/{}/NanoFactory".format(
-                getpass.getuser())
+            user_data_directory_path = r"/home/{}/NanoFactory".format(getpass.getuser())
     if not os.path.isdir(user_data_directory_path):
         os.mkdir(user_data_directory_path)
 
@@ -108,11 +109,11 @@ def kill_all_browsers_linux():
     from . import __plugin_implementation__ as plugin
 
     result = subprocess.run(
-        kill_brave_browser_command_linux.split(), capture_output=True, text=True)
+        kill_brave_browser_command_linux.split(), capture_output=True, text=True
+    )
 
     if result.returncode == 0:
-        plugin._logger.info(
-            "All browsers killed successfully")  # type: ignore
+        plugin._logger.info("All browsers killed successfully")  # type: ignore
     else:
         plugin._logger.warn(  # type: ignore
             "Killing all browsers failed with return code:", result.returncode
@@ -130,8 +131,7 @@ def restart_browser(
 ):
     close_browser()
     time.sleep(1)
-    start_browser_thread(operating_system, api_key,
-                         peer_ID, master_peer_id, base_url)
+    start_browser_thread(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
@@ -236,16 +236,12 @@ def start_browser(
         try:
             modify_brave_preferences()
         except Exception as e:
-            plugin._logger.error(  # type: ignore
-                e, exc_info=True
-            )
+            plugin._logger.error(e, exc_info=True)  # type: ignore
         try:
             browser_path = get_browser_path(operating_system)
 
             if not browser_path:
-                plugin._logger.error(  # type: ignore
-                    linux_brave_path + " not found."
-                )
+                plugin._logger.error(linux_brave_path + " not found.")  # type: ignore
                 return
 
             process = psutil.Popen(
@@ -256,8 +252,7 @@ def start_browser(
                 start_new_session=True,
             )
             plugin._logger.info(  # type: ignore
-                "NanoFactory browser started with PID: " + \
-                str(process.as_dict()["pid"])
+                "NanoFactory browser started with PID: " + str(process.as_dict()["pid"])
             )
             plugin.pid = process.as_dict()["pid"]
 
@@ -270,8 +265,7 @@ def start_browser(
                 "Checking if the browser is running..."
             )  # type: ignore
             command = "pgrep -f chrom"
-            result = subprocess.run(
-                command.split(), capture_output=True, text=True)
+            result = subprocess.run(command.split(), capture_output=True, text=True)
             if result.returncode == 0:
                 plugin._logger.warning(  # type: ignore
                     "Output of pgrep -f chrom:"
@@ -307,6 +301,7 @@ def start_browser(
 
 def close_browser():
     from . import __plugin_implementation__ as plugin
+
     try:
         if plugin.os == "Windows":
             if plugin.pid:
@@ -325,9 +320,7 @@ def close_browser():
             pids = get_all_browser_pids_for_linux()
 
             if not pids:
-                plugin._logger.warn(  # type: ignore
-                    "Browser PID not found"
-                )
+                plugin._logger.warn("Browser PID not found")  # type: ignore
                 kill_all_browsers_linux()
 
             for pid in pids:
@@ -340,7 +333,8 @@ def close_browser():
 
                 if result.returncode != 0:
                     plugin._logger.warn(
-                        f"Return code of kill command for pid {pid} : {result.returncode}")  # type: ignore
+                        f"Return code of kill command for pid {pid} : {result.returncode}"
+                    )  # type: ignore
 
     except Exception as e:
         plugin._logger.warning(e, exc_info=True)  # type: ignore
@@ -350,7 +344,7 @@ def close_browser():
 def extract_version_registry(output):
     try:
         google_version = ""
-        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24:]:
+        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24 :]:
             if letter != "\n":
                 google_version += letter
             else:
@@ -421,8 +415,7 @@ def get_windows_chrome_version():
         print(ex)
 
     version = (
-        os.popen(
-            f"{install_path} --version").read().strip("Google Chrome ").strip()
+        os.popen(f"{install_path} --version").read().strip("Google Chrome ").strip()
         if install_path
         else version
     )
@@ -433,14 +426,12 @@ def get_windows_chrome_version():
 def is_display_available(operating_system: Literal["Windows", "Darwin", "Linux"]):
     if operating_system == "Windows":
         command = "wmic path Win32_VideoController get Status /value"
-        result = subprocess.run(
-            command, capture_output=True, text=True, shell=True)
+        result = subprocess.run(command, capture_output=True, text=True, shell=True)
 
         # Check the output for the status
         if result.returncode == 0:
             output_lines = result.stdout.strip().split("\n")
-            status_line = [
-                line for line in output_lines if line.startswith("Status=")]
+            status_line = [line for line in output_lines if line.startswith("Status=")]
             if status_line:
                 status = status_line[0].split("=")[1].strip()
                 return status == "OK"
@@ -492,8 +483,8 @@ def stop_webssh():
 
 def modify_brave_preferences():
     from . import __plugin_implementation__ as plugin
-    preferences_path = os.path.join(
-        user_data_directory_path, "Default/Preferences")
+
+    preferences_path = os.path.join(user_data_directory_path, "Default/Preferences")
 
     with open(preferences_path, "r") as f:
         settings = json.load(f)
@@ -508,11 +499,26 @@ def modify_brave_preferences():
 
 
 def get_all_browser_pids_for_linux():
-    processes = [p for p in psutil.process_iter(
-        attrs=['pid', 'name', 'cmdline']) if 'brave' in p.info['name']]
+    processes = [
+        p
+        for p in psutil.process_iter(attrs=["pid", "name", "cmdline"])
+        if "brave" in p.info["name"]
+    ]
 
     # Get the PIDs of all "brave" processes that include "NanoFactory"
-    pids = [p.info['pid']
-            for p in processes if 'NanoFactory' in ' '.join(p.info['cmdline'])]
+    pids = [
+        p.info["pid"] for p in processes if "NanoFactory" in " ".join(p.info["cmdline"])
+    ]
 
     return pids
+
+
+def get_current_printer_profile():
+    profile_manager = PrinterProfileManager()
+    current_profile = profile_manager.get_current_or_default()
+    return current_profile
+
+
+def get_printer_name():
+    current_profile = get_current_printer_profile()
+    return current_profile["name"]

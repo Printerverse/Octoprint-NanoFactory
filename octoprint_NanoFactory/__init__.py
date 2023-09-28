@@ -16,13 +16,13 @@ from typing_extensions import Literal
 
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
-from octoprint.printer.profile import PrinterProfileManager
 
 from . import BedLevelling
 from .Utilities import (
     check_cors_for_octoprint_api,
     check_if_browser_is_installed,
     close_browser,
+    get_printer_name,
     initialize_user_data_directory,
     is_executable,
     restart_browser,
@@ -119,25 +119,16 @@ class NanofactoryPlugin(
         image_path = os.path.join(sys._MEIPASS, "NanoFactory.png")
         image = Image.open(image_path)
         printer_name_menu_item = pystray.MenuItem(
-            self.get_printer_name(), lambda _, i: self.open_printer_octoprint()
+            get_printer_name(), lambda _, i: self.open_printer_octoprint()
         )
         exit_menu_item = pystray.MenuItem("Exit", self.on_exit)
         restart_menu_item = pystray.MenuItem(
             "Restart", lambda _, i: self.restart_server()
         )
-        menu = pystray.Menu(restart_menu_item, exit_menu_item)
+        menu = pystray.Menu(printer_name_menu_item, restart_menu_item, exit_menu_item)
         icon = pystray.Icon("NanoFactory Server", image, "NanoFactory Server", menu)
         icon.run_detached()
 
-
-    def get_current_printer_profile(self):
-        profile_manager = PrinterProfileManager()
-        current_profile = profile_manager.get_current_profile()
-        return current_profile
-
-    def get_printer_name(self):
-        current_profile = self.get_current_printer_profile()
-        return current_profile["name"]
 
     def open_printer_octoprint(self):
         """
