@@ -16,6 +16,7 @@ from typing_extensions import Literal
 
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
+from octoprint.printer.profile import PrinterProfileManager
 
 from . import BedLevelling
 from .Utilities import (
@@ -128,8 +129,15 @@ class NanofactoryPlugin(
         icon = pystray.Icon("NanoFactory Server", image, "NanoFactory Server", menu)
         icon.run_detached()
 
+
+    def get_current_printer_profile(self):
+        profile_manager = PrinterProfileManager()
+        current_profile = profile_manager.get_current_profile()
+        return current_profile
+
     def get_printer_name(self):
-        return "Printer name"
+        current_profile = self.get_current_printer_profile()
+        return current_profile["name"]
 
     def open_printer_octoprint(self):
         """
