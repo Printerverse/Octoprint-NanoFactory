@@ -47,6 +47,7 @@ webssh_server_pid: int = None
 
 def get_browser_flags(check_display=False):
     # if user_data_directory_path has spaces, wrap it in quotes
+    global user_data_directory_path
     if " " in user_data_directory_path:
         user_data_directory_path = '"' + user_data_directory_path + '"'
 
