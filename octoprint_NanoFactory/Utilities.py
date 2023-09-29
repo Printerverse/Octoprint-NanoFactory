@@ -174,7 +174,7 @@ def start_browser_thread(
     browser_thread.start()
 
 
-def split_browser_flags(browser_flags: str) -> list[str]:
+def split_browser_flags(browser_flags: str):
     """
     Browser flags are stored in the `flags` variable as a single string.
     If we wish to pass browser flags as a list, we need to split the string.
