@@ -49,7 +49,7 @@ def get_browser_flags(check_display=False):
     # if user_data_directory_path has spaces, wrap it in quotes
     data_dir = user_data_directory_path
     if " " in data_dir:
-        data_dir = '"' + data_dir + '"'
+        data_dir = "'" + data_dir + "'"
 
     browser_flags = flag_for_headless + flags + data_dir
 
