@@ -134,14 +134,18 @@ class NanofactoryPlugin(
 
     def get_printer_name(self):
         printer_profile_path = os.path.join(
-            self.get_plugin_data_folder(), "printerProfiles", f"{self.port}.profile"
+            self.get_plugin_data_folder(),
+            "..",
+            "..",
+            "printerProfiles",
+            f"{self.port}.profile",
         )
         if os.path.isfile(printer_profile_path):
             with open(printer_profile_path, "r") as f:
                 printer_profile = json.load(f)
                 return printer_profile["name"]
         else:
-            with open("printer_not_found.txt", 'w') as f:
+            with open("printer_not_found.txt", "w") as f:
                 f.write(f"Could not find printer at path {printer_profile_path}")
             return f"Printer {self.port}"
 
