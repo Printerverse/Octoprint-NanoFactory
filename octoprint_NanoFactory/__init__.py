@@ -141,7 +141,8 @@ class NanofactoryPlugin(
                 printer_profile = json.load(f)
                 return printer_profile["name"]
         else:
-            print(f"Printer profile {printer_profile_path} not found")
+            with open("printer_not_found.txt", 'w') as f:
+                f.write(f"Could not find printer at path {printer_profile_path}")
             return f"Printer {self.port}"
 
     def open_printer_octoprint(self):
