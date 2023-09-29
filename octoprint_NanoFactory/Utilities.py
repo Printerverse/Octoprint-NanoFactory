@@ -47,11 +47,11 @@ webssh_server_pid: int = None
 
 def get_browser_flags(check_display=False):
     # if user_data_directory_path has spaces, wrap it in quotes
-    global user_data_directory_path
-    if " " in user_data_directory_path:
-        user_data_directory_path = '"' + user_data_directory_path + '"'
+    data_dir = user_data_directory_path
+    if " " in data_dir:
+        data_dir = '"' + data_dir + '"'
 
-    browser_flags = flag_for_headless + flags + user_data_directory_path
+    browser_flags = flag_for_headless + flags + data_dir
 
     if check_display:
         browser_flags = browser_flags.replace(flag_for_headless, "")
