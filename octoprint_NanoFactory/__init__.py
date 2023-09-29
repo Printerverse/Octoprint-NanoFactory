@@ -16,6 +16,7 @@ from typing_extensions import Literal
 
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
+import yaml
 
 from . import BedLevelling
 from .Utilities import (
@@ -142,7 +143,7 @@ class NanofactoryPlugin(
         )
         if os.path.isfile(printer_profile_path):
             with open(printer_profile_path, "r") as f:
-                printer_profile = json.load(f)
+                printer_profile = yaml.load(f)
                 return printer_profile["name"]
         else:
             with open("printer_not_found.txt", "w") as f:
