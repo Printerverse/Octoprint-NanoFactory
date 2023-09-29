@@ -183,6 +183,8 @@ def split_browser_flags(browser_flags: str):
     """
     split_flags = browser_flags.split(" --")
     split_flags = ["--" + flag for flag in split_flags]
+    # remove the first flag which is just empty
+    split_flags = split_flags[1:]
     return split_flags
 
 
