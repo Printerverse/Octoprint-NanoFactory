@@ -30,7 +30,7 @@ windows_edge_path = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\mse
 linux_brave_path = "/usr/bin/brave-browser"
 
 user_data_directory_path = ""
-flags = "--allow-file-access-from-files --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=9222 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
+flags = " --allow-file-access-from-files --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=9222 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
 flag_for_headless = "--headless "
 
 command_to_check_existence_of_pid_linux = "kill -0 "
@@ -46,12 +46,7 @@ webssh_server_pid: int = None
 
 
 def get_browser_flags(check_display=False):
-    # if user_data_directory_path has spaces, wrap it in quotes
-    data_dir = user_data_directory_path
-    if " " in data_dir:
-        data_dir = "'" + data_dir + "'"
-
-    browser_flags = flag_for_headless + flags + data_dir
+    browser_flags = flag_for_headless + flags + user_data_directory_path
 
     if check_display:
         browser_flags = browser_flags.replace(flag_for_headless, "")
@@ -179,6 +174,18 @@ def start_browser_thread(
     browser_thread.start()
 
 
+def split_browser_flags(browser_flags: str) -> list[str]:
+    """
+    Browser flags are stored in the `flags` variable as a single string.
+    If we wish to pass browser flags as a list, we need to split the string.
+    We cannot just split the string by spaces, because the path to the
+    user data directory may contain spaces.
+    """
+    split_flags = browser_flags.split(" --")
+    split_flags = ["--" + flag for flag in split_flags]
+    return split_flags
+
+
 def start_browser(
     operating_system: Literal["Windows", "Darwin", "Linux"],
     api_key: str,
@@ -208,7 +215,7 @@ def start_browser(
 
             if browser_path:
                 process = psutil.Popen(
-                    [browser_path, url] + browser_flags.split(" "),
+                    [browser_path, url] + split_browser_flags(browser_flags),
                     stdin=subprocess.PIPE,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.PIPE,
@@ -250,7 +257,7 @@ def start_browser(
                 return
 
             process = psutil.Popen(
-                [browser_path, url] + (browser_flags).split(" "),
+                [browser_path, url] + split_browser_flags(browser_flags),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -291,7 +298,7 @@ def start_browser(
                 try:
                     browser_path = get_browser_path(operating_system)
                     subprocess.run(
-                        [browser_path, url] + (browser_flags).split(" "),
+                        [browser_path, url] + split_browser_flags(browser_flags),
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
