@@ -143,7 +143,8 @@ class NanofactoryPlugin(
         )
         if os.path.isfile(printer_profile_path):
             with open(printer_profile_path, "r") as f:
-                printer_profile = yaml.load(f)
+                # load the yaml file
+                printer_profile = yaml.load(f, Loader=yaml.FullLoader)
                 return printer_profile["name"]
         else:
             with open("printer_not_found.txt", "w") as f:
