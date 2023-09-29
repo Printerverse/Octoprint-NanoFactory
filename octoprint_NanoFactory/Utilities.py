@@ -65,7 +65,7 @@ def initialize_user_data_directory(
     if operating_system == "Windows" and not is_executable():
         user_data_directory_path = r"C:\NanoFactory"
     elif operating_system == "Windows" and is_executable():
-        user_data_directory_path = os.path.join(sys._MEIPASS, "ChromeData")
+        user_data_directory_path = f"\"{os.path.join(sys._MEIPASS, 'ChromeData')}\""
     elif operating_system == "Linux":
         if getpass.getuser() == "root":
             user_data_directory_path = r"/root/NanoFactory"
