@@ -12,6 +12,8 @@ import psutil
 from typing_extensions import Literal
 
 from octoprint.server import settings
+from octoprint.printer.profile import PrinterProfileManager
+
 
 # CONSTANTS:
 index_html_file_path = os.path.join(
@@ -30,7 +32,7 @@ linux_chrome_path_1 = "/snap/chromium/current/usr/lib/chromium-browser/chrome"
 linux_chrome_path_2 = "/usr/bin/chromium-browser"
 
 user_data_directory_path = ""
-flags = "--allow-file-access-from-files --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=9222 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
+flags = " --allow-file-access-from-files --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=9222 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
 flag_for_headless = "--headless "
 
 command_to_check_existence_of_pid_linux = "kill -0 "
@@ -72,8 +74,7 @@ def initialize_user_data_directory(
         if getpass.getuser() == "root":
             user_data_directory_path = r"/root/NanoFactory"
         else:
-            user_data_directory_path = r"/home/{}/NanoFactory".format(
-                getpass.getuser())
+            user_data_directory_path = r"/home/{}/NanoFactory".format(getpass.getuser())
     if not os.path.isdir(user_data_directory_path):
         os.mkdir(user_data_directory_path)
 
@@ -118,8 +119,7 @@ def kill_all_browsers_linux():
     #     kill_brave_browser_command_linux.split(), capture_output=True, text=True)
 
     if result.returncode == 0:
-        plugin._logger.info(
-            "All browsers killed successfully")  # type: ignore
+        plugin._logger.info("All browsers killed successfully")  # type: ignore
     else:
         plugin._logger.warn(  # type: ignore
             "Killing all browsers failed with return code:", result.returncode
@@ -137,8 +137,7 @@ def restart_browser(
 ):
     close_browser()
     time.sleep(1)
-    start_browser_thread(operating_system, api_key,
-                         peer_ID, master_peer_id, base_url)
+    start_browser_thread(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
@@ -185,6 +184,20 @@ def start_browser_thread(
     browser_thread.start()
 
 
+def split_browser_flags(browser_flags: str):
+    """
+    Browser flags are stored in the `flags` variable as a single string.
+    If we wish to pass browser flags as a list, we need to split the string.
+    We cannot just split the string by spaces, because the path to the
+    user data directory may contain spaces.
+    """
+    split_flags = browser_flags.split(" --")
+    split_flags = ["--" + flag for flag in split_flags]
+    # remove the first flag which is just empty
+    split_flags = split_flags[1:]
+    return split_flags
+
+
 def start_browser(
     operating_system: Literal["Windows", "Darwin", "Linux"],
     api_key: str,
@@ -214,7 +227,7 @@ def start_browser(
 
             if browser_path:
                 process = psutil.Popen(
-                    [browser_path, url] + browser_flags.split(" "),
+                    [browser_path, url] + split_browser_flags(browser_flags),
                     stdin=subprocess.PIPE,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.PIPE,
@@ -260,15 +273,14 @@ def start_browser(
                 return
 
             process = psutil.Popen(
-                [browser_path, url] + (browser_flags).split(" "),
+                [browser_path, url] + split_browser_flags(browser_flags),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 start_new_session=True,
             )
             plugin._logger.info(  # type: ignore
-                "NanoFactory browser started with PID: " + \
-                str(process.as_dict()["pid"])
+                "NanoFactory browser started with PID: " + str(process.as_dict()["pid"])
             )
             plugin.pid = process.as_dict()["pid"]
 
@@ -281,8 +293,7 @@ def start_browser(
                 "Checking if the browser is running..."
             )  # type: ignore
             command = "pgrep -f chrom"
-            result = subprocess.run(
-                command.split(), capture_output=True, text=True)
+            result = subprocess.run(command.split(), capture_output=True, text=True)
             if result.returncode == 0:
                 plugin._logger.warning(  # type: ignore
                     "Output of pgrep -f chrom:"
@@ -303,7 +314,7 @@ def start_browser(
                 try:
                     browser_path = get_browser_path(operating_system)
                     subprocess.run(
-                        [browser_path, url] + (browser_flags).split(" "),
+                        [browser_path, url] + split_browser_flags(browser_flags),
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
@@ -318,6 +329,7 @@ def start_browser(
 
 def close_browser():
     from . import __plugin_implementation__ as plugin
+
     try:
         if plugin.os == "Windows":
             if plugin.pid:
@@ -336,9 +348,7 @@ def close_browser():
             pids = get_all_browser_pids_for_linux()
 
             if not pids:
-                plugin._logger.warn(  # type: ignore
-                    "Browser PID not found"
-                )
+                plugin._logger.warn("Browser PID not found")  # type: ignore
                 kill_all_browsers_linux()
 
             for pid in pids:
@@ -351,7 +361,8 @@ def close_browser():
 
                 if result.returncode != 0:
                     plugin._logger.warn(
-                        f"Return code of kill command for pid {pid} : {result.returncode}")  # type: ignore
+                        f"Return code of kill command for pid {pid} : {result.returncode}"
+                    )  # type: ignore
 
     except Exception as e:
         plugin._logger.warning(e, exc_info=True)  # type: ignore
@@ -361,7 +372,7 @@ def close_browser():
 def extract_version_registry(output):
     try:
         google_version = ""
-        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24:]:
+        for letter in output[output.rindex("DisplayVersion    REG_SZ") + 24 :]:
             if letter != "\n":
                 google_version += letter
             else:
@@ -432,8 +443,7 @@ def get_windows_chrome_version():
         print(ex)
 
     version = (
-        os.popen(
-            f"{install_path} --version").read().strip("Google Chrome ").strip()
+        os.popen(f"{install_path} --version").read().strip("Google Chrome ").strip()
         if install_path
         else version
     )
@@ -444,14 +454,12 @@ def get_windows_chrome_version():
 def is_display_available(operating_system: Literal["Windows", "Darwin", "Linux"]):
     if operating_system == "Windows":
         command = "wmic path Win32_VideoController get Status /value"
-        result = subprocess.run(
-            command, capture_output=True, text=True, shell=True)
+        result = subprocess.run(command, capture_output=True, text=True, shell=True)
 
         # Check the output for the status
         if result.returncode == 0:
             output_lines = result.stdout.strip().split("\n")
-            status_line = [
-                line for line in output_lines if line.startswith("Status=")]
+            status_line = [line for line in output_lines if line.startswith("Status=")]
             if status_line:
                 status = status_line[0].split("=")[1].strip()
                 return status == "OK"
