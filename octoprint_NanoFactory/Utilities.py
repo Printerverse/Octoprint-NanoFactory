@@ -27,7 +27,9 @@ windows_chrome_path_2 = (
     r"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
 )
 windows_edge_path = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
-linux_brave_path = "/usr/bin/brave-browser"
+# linux_brave_path = "/usr/bin/brave-browser"
+linux_chrome_path_1 = "/snap/chromium/current/usr/lib/chromium-browser/chrome"
+linux_chrome_path_2 = "/usr/bin/chromium-browser"
 
 user_data_directory_path = ""
 flags = " --allow-file-access-from-files --allow-pre-commit-input --disable-background-networking --disable-client-side-phishing-detection --disable-default-apps --disable-gpu --disable-hang-monitor --disable-logging --disable-mipmap-generation --disable-popup-blocking --disable-prompt-on-repost --disable-sync --disable-web-security --enable-blink-features=ShadowDOMV0 --log-level=3 --no-first-run --no-sandbox --no-service-autorun --no-unsandboxed-zygote --password-store=basic --profile-directory=Default --remote-debugging-port=9222 --use-fake-ui-for-media-stream --use-mock-keychain --user-data-dir="
@@ -38,7 +40,9 @@ kill_pid_command_windows = "taskkill /F /PID "
 kill_pid_command_linux = "kill -9 "
 kill_chrome_command_windows = "taskkill /f /im chrome.exe 2> nul"
 kill_msedge_command_windows = "taskkill /f /im msedge.exe 2> nul"
-kill_brave_browser_command_linux = "killall brave"
+# kill_brave_browser_command_linux = "killall brave"
+kill_chromium_browser_command_linux = "pkill -f chrom"
+
 
 browser_thread: threading.Thread = None
 webssh_thread: threading.Thread = None
@@ -98,7 +102,7 @@ def check_if_browser_is_installed(
             return True
 
     if operating_system == "Linux":
-        if os.path.isfile(linux_brave_path):
+        if os.path.isfile(linux_chrome_path_1) or os.path.isfile(linux_chrome_path_2):
             return True
 
     return False
@@ -109,8 +113,10 @@ def kill_all_browsers_linux():
     from . import __plugin_implementation__ as plugin
 
     result = subprocess.run(
-        kill_brave_browser_command_linux.split(), capture_output=True, text=True
-    )
+        kill_chromium_browser_command_linux.split(), capture_output=True, text=True)
+
+    # result = subprocess.run(
+    #     kill_brave_browser_command_linux.split(), capture_output=True, text=True)
 
     if result.returncode == 0:
         plugin._logger.info("All browsers killed successfully")  # type: ignore
@@ -149,8 +155,12 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
             return None
 
     if operating_system == "Linux":
-        if os.path.isfile(linux_brave_path):
-            return linux_brave_path
+        # if os.path.isfile(linux_brave_path):
+        #     return linux_brave_path
+        if os.path.isfile(linux_chrome_path_1):
+            return linux_chrome_path_1
+        elif os.path.isfile(linux_chrome_path_2):
+            return linux_chrome_path_2
         else:
             return None
 
@@ -247,15 +257,19 @@ def start_browser(
             plugin._logger.error(e, exc_info=True)  # type: ignore
 
     if operating_system == "Linux":
-        try:
-            modify_brave_preferences()
-        except Exception as e:
-            plugin._logger.error(e, exc_info=True)  # type: ignore
+        # try:
+        #     modify_brave_preferences()
+        # except Exception as e:
+        #     plugin._logger.error(  # type: ignore
+        #         e, exc_info=True
+        #     )
         try:
             browser_path = get_browser_path(operating_system)
 
             if not browser_path:
-                plugin._logger.error(linux_brave_path + " not found.")  # type: ignore
+                plugin._logger.error(  # type: ignore
+                    linux_chrome_path_1 + " or " + linux_chrome_path_2 + " not found."
+                )
                 return
 
             process = psutil.Popen(
@@ -495,33 +509,28 @@ def stop_webssh():
     subprocess.run("killall wssh", shell=True, start_new_session=True)
 
 
-def modify_brave_preferences():
-    from . import __plugin_implementation__ as plugin
+# def modify_brave_preferences():
+#     from . import __plugin_implementation__ as plugin
+#     preferences_path = os.path.join(
+#         user_data_directory_path, "Default/Preferences")
 
-    preferences_path = os.path.join(user_data_directory_path, "Default/Preferences")
+#     with open(preferences_path, "r") as f:
+#         settings = json.load(f)
 
-    with open(preferences_path, "r") as f:
-        settings = json.load(f)
+#     if "session" not in settings:
+#         settings["session"] = {}
 
-    if "session" not in settings:
-        settings["session"] = {}
+#     settings["session"]["restore_on_startup"] = 5
 
-    settings["session"]["restore_on_startup"] = 5
-
-    with open(preferences_path, "w") as f:
-        json.dump(settings, f, indent=4)
+#     with open(preferences_path, "w") as f:
+#         json.dump(settings, f, indent=4)
 
 
 def get_all_browser_pids_for_linux():
-    processes = [
-        p
-        for p in psutil.process_iter(attrs=["pid", "name", "cmdline"])
-        if "brave" in p.info["name"]
-    ]
+    processes = [p for p in psutil.process_iter(
+        attrs=['pid', 'name', 'cmdline']) if 'chrom' in p.info['name']]
 
-    # Get the PIDs of all "brave" processes that include "NanoFactory"
-    pids = [
-        p.info["pid"] for p in processes if "NanoFactory" in " ".join(p.info["cmdline"])
-    ]
+    pids = [p.info['pid']
+            for p in processes if 'NanoFactory' in ' '.join(p.info['cmdline'])]
 
     return pids
