@@ -56,7 +56,7 @@ class NanofactoryPlugin(
         self.showBrowserGUI = False
         self.last_heartbeat_time = 0
         self.heartbeat_timer = None
-        self.heartbeat_interval = 120
+        self.heartbeat_interval = 20
         self.show_restart_server_modal = False
 
     # # ~~ StartupPlugin mixin
