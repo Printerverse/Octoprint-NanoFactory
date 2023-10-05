@@ -287,7 +287,13 @@ class NanofactoryPlugin(
             self._plugin_manager.send_plugin_message(
                 self._identifier, {"browser_installed": self.browser_installed}
             )
-            if not self.browser_installed and self.os == "Linux":
+            # start webssh if browser is not installed
+            # executable will ensure that the browser is installed
+            if (
+                not self.browser_installed
+                and self.os == "Linux"
+                and not is_executable()
+            ):
                 start_webssh_thread()
 
         elif command == "getOperatingSystem":
