@@ -113,7 +113,8 @@ def kill_all_browsers_linux():
     from . import __plugin_implementation__ as plugin
 
     result = subprocess.run(
-        kill_chromium_browser_command_linux.split(), capture_output=True, text=True)
+        kill_chromium_browser_command_linux.split(), capture_output=True, text=True
+    )
 
     # result = subprocess.run(
     #     kill_brave_browser_command_linux.split(), capture_output=True, text=True)
@@ -487,6 +488,7 @@ def start_webssh():
 
     python_executable = sys.executable
 
+    print("Starting webssh")
     webssh_path = python_executable.split("/")
     webssh_path = webssh_path[:-1] + ["wssh"]
     webssh_path = "/".join(webssh_path)
@@ -506,6 +508,7 @@ def start_webssh():
 
 
 def stop_webssh():
+    print("Stopping webssh")
     subprocess.run("killall wssh", shell=True, start_new_session=True)
 
 
@@ -527,10 +530,14 @@ def stop_webssh():
 
 
 def get_all_browser_pids_for_linux():
-    processes = [p for p in psutil.process_iter(
-        attrs=['pid', 'name', 'cmdline']) if 'chrom' in p.info['name']]
+    processes = [
+        p
+        for p in psutil.process_iter(attrs=["pid", "name", "cmdline"])
+        if "chrom" in p.info["name"]
+    ]
 
-    pids = [p.info['pid']
-            for p in processes if 'NanoFactory' in ' '.join(p.info['cmdline'])]
+    pids = [
+        p.info["pid"] for p in processes if "NanoFactory" in " ".join(p.info["cmdline"])
+    ]
 
     return pids
