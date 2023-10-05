@@ -508,7 +508,9 @@ def start_webssh():
 
 
 def stop_webssh():
-    print("Stopping webssh")
+    # executable will never start wssh
+    if is_executable():
+        return
     subprocess.run("killall wssh", shell=True, start_new_session=True)
 
 
