@@ -122,15 +122,16 @@ class NanofactoryPlugin(
         # create tray icon
         image_path = os.path.join(sys._MEIPASS, "NanoFactory.png")
         image = Image.open(image_path)
+        printer_name = self.get_printer_name()
         printer_name_menu_item = pystray.MenuItem(
-            self.get_printer_name(), lambda _, i: self.open_printer_octoprint()
+            printer_name, lambda _, i: self.open_printer_octoprint()
         )
         exit_menu_item = pystray.MenuItem("Exit", self.on_exit)
         restart_menu_item = pystray.MenuItem(
             "Restart", lambda _, i: self.restart_server()
         )
         menu = pystray.Menu(printer_name_menu_item, restart_menu_item, exit_menu_item)
-        icon = pystray.Icon("NanoFactory Server", image, "NanoFactory Server", menu)
+        icon = pystray.Icon(printer_name, image, printer_name, menu)
         icon.run_detached()
 
     def get_printer_name(self):
