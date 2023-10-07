@@ -130,9 +130,18 @@ class NanofactoryPlugin(
         restart_menu_item = pystray.MenuItem(
             "Restart", lambda _, i: self.restart_server()
         )
-        menu = pystray.Menu(printer_name_menu_item, restart_menu_item, exit_menu_item)
+        manage_menu_item = pystray.MenuItem(
+            "Manage", lambda _, i: self.open_manage_executable()
+        )
+        menu = pystray.Menu(
+            printer_name_menu_item, manage_menu_item, restart_menu_item, exit_menu_item
+        )
         icon = pystray.Icon(printer_name, image, printer_name, menu)
         icon.run_detached()
+
+    def open_manage_executable(self):
+        manager_executable = os.path.join(sys._MEIPASS, "Manager.exe")
+        os.startfile(manager_executable)
 
     def get_printer_name(self):
         printer_profile_path = os.path.join(
