@@ -148,11 +148,15 @@ def check_browser_path(browser_path: str) -> bool:
                     [browser_path] + split_browser_flags(browser_flags),
                     stderr=subprocess.PIPE,
                 )
+    time.sleep(1)
     exit_code = process.poll()
     if exit_code is not None:
         _, error = process.communicate()
         if error:
-            print(f"Error: {error}")
+            from . import __plugin_implementation__ as plugin
+            plugin._logger.warning(  # type: ignore
+                f"Error while opening browser for {browser_path}: {error.decode('utf-8')}"
+            )
         return False
     else:
         process.kill()
