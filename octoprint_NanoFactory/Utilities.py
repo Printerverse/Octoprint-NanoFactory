@@ -141,27 +141,23 @@ def restart_browser(
     start_browser_thread(operating_system, api_key, peer_ID, master_peer_id, base_url)
 
 
-def check_browser_path( browser_path: str) -> bool:
+def check_browser_path(browser_path: str) -> bool:
     # checks if the provided browser path actually opens the browser without failing
     browser_flags = get_browser_flags(False)
     process = psutil.Popen(
                     [browser_path] + split_browser_flags(browser_flags),
                     stderr=subprocess.PIPE,
                 )
-    time.sleep(0.5)
-    # check if the process is still running
-    if process.is_running():
+    exit_code = process.poll()
+    if exit_code is not None:
+        _, error = process.communicate()
+        if error:
+            print(f"Error: {error}")
+        return False
+    else:
         process.kill()
         return True
-    else:
-        # if the process is not running, it means that the browser failed to open
-        # log the error
-        from . import __plugin_implementation__ as plugin
-        _, errors = process.communicate()
-        plugin._logger.error(  # type: ignore
-            f"Error while opening browser with {browser_path}: {errors.decode('utf-8')}"
-        )
-        return False
+
 
 def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
     if operating_system == "Windows":
@@ -180,9 +176,13 @@ def get_browser_path(operating_system: Literal["Windows", "Darwin", "Linux"]):
     if operating_system == "Linux":
         # if os.path.isfile(linux_brave_path):
         #     return linux_brave_path
-        if os.path.isfile(linux_chrome_path_1) and check_browser_path(linux_chrome_path_1):
+        if os.path.isfile(linux_chrome_path_1) and check_browser_path(
+            linux_chrome_path_1
+        ):
             return linux_chrome_path_1
-        elif os.path.isfile(linux_chrome_path_2) and check_browser_path(linux_chrome_path_2):
+        elif os.path.isfile(linux_chrome_path_2) and check_browser_path(
+            linux_chrome_path_2
+        ):
             return linux_chrome_path_2
         else:
             return None
