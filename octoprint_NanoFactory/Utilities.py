@@ -265,6 +265,13 @@ def start_browser(
                 )
                 plugin.pid = process.as_dict()["pid"]
 
+                plugin._logger.info("==== Brower logs ==== ")
+                output, error = process.communicate()
+                if output:
+                    plugin._logger.info(output.decode("utf-8"))
+                if error:
+                    plugin._logger.error(error.decode("utf-8"))
+
             else:
                 if get_windows_chrome_version():
                     subprocess.run(
@@ -310,6 +317,13 @@ def start_browser(
                 "NanoFactory browser started with PID: " + str(process.as_dict()["pid"])
             )
             plugin.pid = process.as_dict()["pid"]
+
+            plugin._logger.info("==== Brower logs ==== ")
+            output, error = process.communicate()
+            if output:
+                plugin._logger.info(output.decode("utf-8"))
+            if error:
+                plugin._logger.error(error.decode("utf-8"))
 
         except Exception as e:
             plugin._logger.warning(  # type: ignore
