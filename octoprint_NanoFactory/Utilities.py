@@ -270,7 +270,7 @@ def start_browser(
                 if output:
                     plugin._logger.info(output.decode("utf-8"))
                 if error:
-                    plugin._logger.error(error.decode("utf-8"))
+                    plugin._logger.warn(error.decode("utf-8"))
 
             else:
                 if get_windows_chrome_version():
