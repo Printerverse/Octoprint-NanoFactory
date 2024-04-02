@@ -5,18 +5,17 @@ import json
 import os
 import platform
 import sys
+import webbrowser
 from time import time
 from uuid import uuid4
-import webbrowser
-
 
 import requests
+import yaml
 from flask import request
 from typing_extensions import Literal
 
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
-import yaml
 
 from . import BedLevelling
 from .Utilities import (
@@ -335,7 +334,8 @@ class NanofactoryPlugin(
     )
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def show_restart_server_modal_endpoint(self):
-        show_modal = request.args.get("show_modal", None)
+        show_modal = request.args.get("show_modal", None) == "true"
+        print(show_modal)
         if show_modal:
             self.show_restart_server_modal = True
             self.send_restart_server_modal()
