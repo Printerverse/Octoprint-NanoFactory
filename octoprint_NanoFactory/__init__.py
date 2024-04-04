@@ -335,7 +335,6 @@ class NanofactoryPlugin(
     @octoprint.plugin.BlueprintPlugin.csrf_exempt()
     def show_restart_server_modal_endpoint(self):
         show_modal = request.args.get("show_modal", None) == "true"
-        print(show_modal)
         if show_modal:
             self.show_restart_server_modal = True
             self.send_restart_server_modal()
